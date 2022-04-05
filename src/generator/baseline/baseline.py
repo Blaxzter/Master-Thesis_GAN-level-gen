@@ -1149,18 +1149,18 @@ class BaselineGenerator:
                     restricted_combinations[i] = restricted_combinations[
                         i].split()  # if all materials are baned for a block type then do not use that block type
                 pig_range = FILE.readline().split(',')
-                time_limit = int(
-                    FILE.readline())  # time limit to create the levels, shouldn't be an issue for most generators (approximately an hour for 10 levels)
+                # time limit to create the levels, shouldn't be an issue for most generators (approximately an hour for 10 levels)
+                time_limit = int(FILE.readline())
                 checker = FILE.readline()
 
-                restricted_blocks = []  # block types that cannot be used with any materials
+                self.restricted_blocks = []  # block types that cannot be used with any materials
                 for key, value in self.block_names.items():
                     completely_restricted = True
                     for material in self.materials:
                         if [material, value] not in restricted_combinations:
                             completely_restricted = False
                     if completely_restricted == True:
-                        restricted_blocks.append(value)
+                        self.restricted_blocks.append(value)
 
                 self.probability_table_blocks = deepcopy(backup_probability_table_blocks)
                 self.trihole_allowed = True
@@ -1170,7 +1170,7 @@ class BaselineGenerator:
                 self.TNT_allowed = True
 
                 # remove restricted block types from the structure generation process
-                self.probability_table_blocks = self.remove_blocks(restricted_blocks)
+                self.probability_table_blocks = self.remove_blocks(self.restricted_blocks)
                 if "TriangleHole" in restricted_blocks:
                     self.trihole_allowed = False
                 if "Triangle" in restricted_blocks:
