@@ -1,0 +1,3 @@
+[submodule "src/science_birds/sciencebirdsframework"]
+	path = src/science_birds/sciencebirdsframework
+	url = git@gitlab.com:aibirds/sciencebirdsframework.git
