@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 import threading
 import time
 from subprocess import Popen as new
@@ -11,7 +12,7 @@ from websocket_server import WebsocketServer
 class GameConnection(threading.Thread):
     def __init__(self, host = 'localhost', port = 9000):
         super().__init__()
-        self.server = WebsocketServer(host = host, port = port, loglevel = logging.INFO)
+        self.server: WebsocketServer = WebsocketServer(host = host, port = port, loglevel = logging.INFO)
         self.server.set_fn_new_client(self.new_client)
         self.server.set_fn_message_received(self.game_response)
         self.server.set_fn_client_left(self.game_window_closed)
@@ -38,7 +39,7 @@ class GameConnection(threading.Thread):
 
     def game_response(self, client, server, message: str):
         print(f"Game Response: {message}")
-        self.response = message
+        self.response = json.loads(message)
         self.condition_object.acquire()
         self.condition_object.notify()
         self.condition_object.release()
@@ -49,7 +50,7 @@ class GameConnection(threading.Thread):
         self.game_process.wait()
         self.client = None
 
-    def start_game(self, game_path = '../science_birds/rewin/ScienceBirds.exe'):
+    def start_game(self, game_path = '../science_birds/win-new/ScienceBirds.exe'):
         self.game_process = new(game_path, shell = False)
 
     def new_client(self, client, server: WebsocketServer):
@@ -59,6 +60,10 @@ class GameConnection(threading.Thread):
         self.condition_object.notify()
         self.condition_object.release()
 
+    def send(self, msg):
+        self.response = None
+        self.server.send_message(self.client, json.dumps(msg))
+
     def wait_for_game_window(self):
         counter = 0
         self.condition_object = threading.Condition()
@@ -67,19 +72,36 @@ class GameConnection(threading.Thread):
             print(f"Waiting for client window: {counter}")
             self.condition_object.wait()
 
+        print("Load level scene")
         message = [0, 'loadscene', {'scene': 'LevelSelectMenu'}]
-        self.server.send_message(self.client, json.dumps(message))
+        self.send(message)
         self.wait_for_response()
 
+        while True:
+            if self.response is not None and 'data' in self.response[1] and self.response[1]['data'] == "True":
+                break
+
+            print(f"In loop: {self.response}")
+            print("Is level loaded")
+            message = [0, 'levelsloaded']
+            self.send(message)
+            self.wait_for_response()
+            time.sleep(0.2)
 
     def change_level(self, index = 0):
         message = [0, 'selectlevel', {'levelIndex': index}]
-        self.server.send_message(self.client, json.dumps(message))
+        self.send(message)
         self.wait_for_response()
 
     def stop(self):
         self.game_process.terminate()
-        self.game_process.wait()
+        self.server.shutdown_gracefully()
+
+    def getData(self):
+        message = [0, 'getdata']
+        self.send(message)
+        self.wait_for_response()
+        return self.response[1]['data']
 
 
 if __name__ == '__main__':
@@ -91,9 +113,16 @@ if __name__ == '__main__':
 
     print("Start wait")
     game_connection.wait_for_game_window()
-    time.sleep(2.4)
+    # time.sleep(2.4)
 
     print("Change Level")
-    game_connection.change_level(index = 1)
+    game_connection.change_level(index = 3)
 
+    time.sleep(5)
+
+    print("Change Level")
+    game_connection.getData()
+
+    print("Wait for keyboard: p")
     keyboard.wait("p")
+    game_connection.stop()
