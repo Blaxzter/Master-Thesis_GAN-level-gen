@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-16"?>
+<config_generation>
+  <novelty_detection_measurement step="1" measure_in_training="true" measure_in_testing="true" />
+  <trials>
+
+    <trial notify_novelty="true">
+      <count>1</count>
+      <repeats>1</repeats>
+      <checkpoint>
+        <limit type="time">200</limit>
+        <limit type="interaction">200</limit>
+      </checkpoint>
+      <training>
+        <limits>
+          <limit type="time">120</limit>
+          <limit type="interaction">60000</limit>
+          <limit type="attempt_per_level">1</limit>
+          <limit type="allow_level_selection">true</limit>
+        </limits>
+        <game_level_sets>
+          <game_level_set novelty_level="0" novelty_type="0" amount="1" />
+        </game_level_sets>
+      </training>
+      <test ordered="true">
+        <game_level_sets></game_level_sets>
+      </test>
+    </trial>
+  </trials>
+</config_generation>

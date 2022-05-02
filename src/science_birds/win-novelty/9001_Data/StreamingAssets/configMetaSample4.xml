@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="utf-16"?>
+<config_generation>
+  <novelty_detection_measurement step="1" measure_in_training="true" measure_in_testing="true" />
+  <trials>
+
+    <trial notify_novelty="true">
+      <count>1</count>
+      <repeats>1</repeats>
+      <checkpoint>
+        <limit type="time">200</limit>
+        <limit type="interaction">200</limit>
+      </checkpoint>
+      <training>
+        <limits>
+          <limit type="time">120</limit>
+          <limit type="interaction">60000</limit>
+          <limit type="attempt_per_level">1</limit>
+          <limit type="allow_level_selection">false</limit>
+        </limits>
+        <game_level_sets>
+          <game_level_set novelty_level="0" novelty_type="1150" amount="5" />
+          <game_level_set novelty_level="11" novelty_type="50" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="11130" amount="5" />
+          <game_level_set novelty_level="11" novelty_type="130" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="1230" amount="5" />
+          <game_level_set novelty_level="12" novelty_type="30" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="12110" amount="5" />
+          <game_level_set novelty_level="12" novelty_type="110" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="1320" amount="5" />
+          <game_level_set novelty_level="13" novelty_type="20" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="1390" amount="5" />
+          <game_level_set novelty_level="13" novelty_type="90" amount="5" />
+        </game_level_sets>
+      </training>
+      <test ordered="true">
+        <game_level_sets></game_level_sets>
+      </test>
+    </trial>
+    <trial notify_novelty="both">
+      <count>1</count>
+      <repeats>1</repeats>
+      <checkpoint>
+        <limit type="time">200</limit>
+        <limit type="interaction">200</limit>
+      </checkpoint>
+      <training>
+        <limits>
+          <limit type="time">120</limit>
+          <limit type="interaction">60000</limit>
+          <limit type="attempt_per_level">1</limit>
+          <limit type="allow_level_selection">false</limit>
+        </limits>
+        <game_level_sets>
+          <game_level_set novelty_level="0" novelty_type="222" amount="5" />                    
+          <game_level_set novelty_level="0" novelty_type="223" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="224" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="225" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="226" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="227" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="232" amount="5" />                    
+          <game_level_set novelty_level="0" novelty_type="233" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="234" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="235" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="236" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="237" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="242" amount="5" />                    
+          <game_level_set novelty_level="0" novelty_type="243" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="244" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="245" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="246" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="247" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="252" amount="5" />                    
+          <game_level_set novelty_level="0" novelty_type="253" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="254" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="255" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="256" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="257" amount="5" />
+        </game_level_sets>
+      </training>
+      <test ordered="true">
+        <game_level_sets></game_level_sets>
+      </test>
+    </trial>
+
+    <trial notify_novelty="both">
+      <count>1</count>
+      <repeats>1</repeats>
+      <checkpoint>
+        <limit type="time">200</limit>
+        <limit type="interaction">200</limit>
+      </checkpoint>
+      <training>
+        <limits>
+          <limit type="time">180</limit>
+          <limit type="interaction">60000</limit>
+          <limit type="attempt_per_level">1</limit>
+          <limit type="allow_level_selection">false</limit>
+        </limits>
+        <game_level_sets>
+          <game_level_set novelty_level="0" novelty_type="22" amount="5" />                    
+          <game_level_set novelty_level="22" novelty_type="1" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="23" amount="5" />
+          <game_level_set novelty_level="23" novelty_type="1" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="24" amount="5" />
+          <game_level_set novelty_level="24" novelty_type="1" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="25" amount="5" />
+          <game_level_set novelty_level="25" novelty_type="1" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="4" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="5" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="6" amount="5" />
+          <game_level_set novelty_level="0" novelty_type="7" amount="5" />
+        </game_level_sets>
+      </training>
+      <test ordered="true">
+        <game_level_sets></game_level_sets>
+      </test>
+    </trial>
+    <trial notify_novelty="both">
+      <count>1</count>
+      <repeats>1</repeats>
+      <checkpoint>
+        <limit type="time">200</limit>
+        <limit type="interaction">200</limit>
+      </checkpoint>
+      <training>
+        <limits>
+          <limit type="time">180</limit>
+          <limit type="interaction">60000</limit>
+          <limit type="attempt_per_level">1</limit>
+          <limit type="allow_level_selection">false</limit>
+        </limits>
+        <game_level_sets>
+          <game_level_set novelty_level="0" novelty_type="4" amount="20" />
+        </game_level_sets>
+      </training>
+      <test ordered="true">
+        <game_level_sets></game_level_sets>
+      </test>
+    </trial>
+    <trial notify_novelty="both">
+      <count>1</count>
+      <repeats>1</repeats>
+      <checkpoint>
+        <limit type="time">200</limit>
+        <limit type="interaction">200</limit>
+      </checkpoint>
+      <training>
+        <limits>
+          <limit type="time">180</limit>
+          <limit type="interaction">60000</limit>
+          <limit type="attempt_per_level">1</limit>
+          <limit type="allow_level_selection">false</limit>
+        </limits>
+        <game_level_sets>
+          <game_level_set novelty_level="0" novelty_type="5" amount="20" />
+        </game_level_sets>
+      </training>
+      <test ordered="true">
+        <game_level_sets></game_level_sets>
+      </test>
+    </trial>
+    <trial notify_novelty="both">
+      <count>1</count>
+      <repeats>1</repeats>
+      <checkpoint>
+        <limit type="time">200</limit>
+        <limit type="interaction">200</limit>
+      </checkpoint>
+      <training>
+        <limits>
+          <limit type="time">180</limit>
+          <limit type="interaction">60000</limit>
+          <limit type="attempt_per_level">1</limit>
+          <limit type="allow_level_selection">false</limit>
+        </limits>
+        <game_level_sets>
+          <game_level_set novelty_level="0" novelty_type="6" amount="20" />
+        </game_level_sets>
+      </training>
+      <test ordered="true">
+        <game_level_sets></game_level_sets>
+      </test>
+    </trial>
+    <trial notify_novelty="both">
+      <count>1</count>
+      <repeats>1</repeats>
+      <checkpoint>
+        <limit type="time">200</limit>
+        <limit type="interaction">200</limit>
+      </checkpoint>
+      <training>
+        <limits>
+          <limit type="time">180</limit>
+          <limit type="interaction">60000</limit>
+          <limit type="attempt_per_level">1</limit>
+          <limit type="allow_level_selection">false</limit>
+        </limits>
+        <game_level_sets>
+          <game_level_set novelty_level="0" novelty_type="7" amount="20" />
+        </game_level_sets>
+      </training>
+      <test ordered="true">
+        <game_level_sets></game_level_sets>
+      </test>
+    </trial>
+    <trial notify_novelty="both">
+      <count>1</count>
+      <repeats>1</repeats>
+      <checkpoint>
+        <limit type="time">200</limit>
+        <limit type="interaction">200</limit>
+      </checkpoint>
+      <training>
+        <limits>
+          <limit type="time">180</limit>
+          <limit type="interaction">60000</limit>
+          <limit type="attempt_per_level">1</limit>
+          <limit type="allow_level_selection">false</limit>
+        </limits>
+        <game_level_sets>
+          <game_level_set novelty_level="22" novelty_type="1" amount="20" />
+        </game_level_sets>
+      </training>
+      <test ordered="true">
+        <game_level_sets></game_level_sets>
+      </test>
+    </trial>
+    <trial notify_novelty="both">
+      <count>1</count>
+      <repeats>1</repeats>
+      <checkpoint>
+        <limit type="time">200</limit>
+        <limit type="interaction">200</limit>
+      </checkpoint>
+      <training>
+        <limits>
+          <limit type="time">180</limit>
+          <limit type="interaction">60000</limit>
+          <limit type="attempt_per_level">1</limit>
+          <limit type="allow_level_selection">false</limit>
+        </limits>
+        <game_level_sets>
+          <game_level_set novelty_level="23" novelty_type="1" amount="20" />
+        </game_level_sets>
+      </training>
+      <test ordered="true">
+        <game_level_sets></game_level_sets>
+      </test>
+    </trial>
+    <trial notify_novelty="both">
+      <count>1</count>
+      <repeats>1</repeats>
+      <checkpoint>
+        <limit type="time">200</limit>
+        <limit type="interaction">200</limit>
+      </checkpoint>
+      <training>
+        <limits>
+          <limit type="time">180</limit>
+          <limit type="interaction">60000</limit>
+          <limit type="attempt_per_level">1</limit>
+          <limit type="allow_level_selection">false</limit>
+        </limits>
+        <game_level_sets>
+          <game_level_set novelty_level="24" novelty_type="1" amount="20" />
+        </game_level_sets>
+      </training>
+      <test ordered="true">
+        <game_level_sets></game_level_sets>
+      </test>
+    </trial>
+    <trial notify_novelty="both">
+      <count>1</count>
+      <repeats>1</repeats>
+      <checkpoint>
+        <limit type="time">200</limit>
+        <limit type="interaction">200</limit>
+      </checkpoint>
+      <training>
+        <limits>
+          <limit type="time">180</limit>
+          <limit type="interaction">60000</limit>
+          <limit type="attempt_per_level">1</limit>
+          <limit type="allow_level_selection">false</limit>
+        </limits>
+        <game_level_sets>
+          <game_level_set novelty_level="25" novelty_type="1" amount="20" />
+        </game_level_sets>
+      </training>
+      <test ordered="true">
+        <game_level_sets></game_level_sets>
+      </test>
+    </trial>
+        
+  </trials>
+</config_generation>

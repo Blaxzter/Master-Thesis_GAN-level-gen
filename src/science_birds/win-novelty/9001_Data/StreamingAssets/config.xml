@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-16"?>
+<evaluation>
+  <novelty_detection_measurement step="1" measure_in_training="True" measure_in_testing="True" />
+  <trials>
+    <trial id="0" number_of_executions="1" checkpoint_time_limit="200" checkpoint_interaction_limit="200" notify_novelty="True">
+      <game_level_set mode="training" time_limit="120" total_interaction_limit="60000" attempt_limit_per_level="1" allow_level_selection="True">
+        <game_levels level_path="U:/Programming/ProgrammingUNI/Master-Thesis_GAN-level-gen/src/science_birds/win/9001_Data/StreamingAssets/Levels\novelty_level_0\type0/Levels/level-00.xml" />
+      </game_level_set>
+    </trial>
+  </trials>
+</evaluation>

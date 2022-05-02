@@ -94,6 +94,7 @@ class AgentClient:
             self._logger = logging.getLogger('Agent Client')
 
         logging.getLogger().setLevel(logging.INFO)
+
     def _read_raw_from_buff(self, size):
         """Read a specific number of bytes from server_socket"""
         self._logger.debug("Reading %s bytes from server", size)
