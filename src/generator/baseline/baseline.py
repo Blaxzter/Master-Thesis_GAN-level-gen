@@ -64,8 +64,7 @@ class BaselineGenerator:
 
         self.min_ground_width = 2.5  # minimum amount of space allocated to ground structure
         # desired height limit of ground structures
-        self.ground_structure_height_limit = ((
-                                                          self.level_height_max - self.minimum_height_gap) - self.absolute_ground) / 1.5
+        self.ground_structure_height_limit = ((self.level_height_max - self.minimum_height_gap) - self.absolute_ground) / 1.5
 
         self.max_attempts = 100  # number of times to attempt to place a platform before abandoning it
 
@@ -248,8 +247,6 @@ class BaselineGenerator:
                 max_x = round((block[1] + (self.blocks[str(block[0])][0] / 2)), 10)
         return (round(max_x - min_x, 10))
 
-    #
-
     def find_structure_height(self, structure):
         """
         finds the height of the given structure
@@ -325,9 +322,11 @@ class BaselineGenerator:
             # choose a new block and try again if no options available
             return self.add_new_row(current_tree_bottom, total_tree)
 
-    # creates the peaks (first row) of the structure
-
     def make_peaks(self, center_point):
+        """
+        creates the peaks (first row) of the structurev
+        """
+
         current_tree_bottom = []  # bottom blocks of structure
         number_peaks = randint(1, self.max_peaks)  # this is the number of peaks the structure will have
         top_item = self.choose_item(self.probability_table_blocks)  # this is the item at top of structure
@@ -543,10 +542,11 @@ class BaselineGenerator:
 
         return len(ground_positions), self.complete_locations, self.final_pig_positions
 
-    # creates a set number of platforms within the level
-    # automatically reduced if space not found after set number of attempts
-
     def create_platforms(self, number_platforms, complete_locations, final_pig_positions):
+        """
+        creates a set number of platforms within the level
+        automatically reduced if space not found after set number of attempts
+        """
         platform_centers = []
         attempts = 0  # number of attempts so far to find space for platform
         self.final_platforms = []
@@ -661,9 +661,10 @@ class BaselineGenerator:
 
         return number_platforms, self.final_platforms, platform_centers
 
-    # create sutiable structures for each platform
-
     def create_platform_structures(self, final_platforms, platform_centers, complete_locations, final_pig_positions):
+        """
+        create sutiable structures for each platform
+        """
         current_platform = 0
         for platform_set in final_platforms:
             platform_set_width = len(platform_set) * self.platform_size[0]
@@ -709,9 +710,10 @@ class BaselineGenerator:
             self.final_pig_positions.pop(remove_pos)
         return self.final_pig_positions, removed_pigs
 
-    # add pigs on the ground until number equals the desired amount
-
     def add_necessary_pigs(self, number_pigs):
+        """
+        add pigs on the ground until number equals the desired amount
+        """
         while len(self.final_pig_positions) < number_pigs:
             test_position = [uniform(self.level_width_min, self.level_width_max), self.absolute_ground]
             pig_width = self.pig_size[0]
@@ -737,18 +739,20 @@ class BaselineGenerator:
                 self.final_pig_positions.append(test_position)
         return self.final_pig_positions
 
-    # choose the number of birds based on the number of pigs and structures present within level
-
     def choose_number_birds(self, final_pig_positions, number_ground_structures, number_platforms):
+        """
+        choose the number of birds based on the number of pigs and structures present within level
+        """
         number_birds = int(ceil(len(final_pig_positions) / 2))
         if (number_ground_structures + number_platforms) >= number_birds:
             number_birds = number_birds + 1
         number_birds = number_birds + 1  # adjust based on desired difficulty
         return number_birds
 
-    # identify all possible triangleHole positions on top of blocks
-
     def find_trihole_positions(self, complete_locations):
+        """
+        identify all possible triangleHole positions on top of blocks
+        """
         possible_trihole_positions = []
         for block in complete_locations:
             block_width = round(self.blocks[str(block[0])][0], 10)
@@ -812,9 +816,10 @@ class BaselineGenerator:
 
         return possible_trihole_positions
 
-    # identify all possible triangle positions on top of blocks
-
     def find_tri_positions(self, complete_locations):
+        """
+        identify all possible triangle positions on top of blocks
+        """
         possible_tri_positions = []
         for block in complete_locations:
             block_width = round(self.blocks[str(block[0])][0], 10)
@@ -876,9 +881,10 @@ class BaselineGenerator:
 
         return possible_tri_positions
 
-    # identify all possible circle positions on top of blocks (can only be placed in middle of block)
-
     def find_cir_positions(self, complete_locations):
+        """
+        identify all possible circle positions on top of blocks (can only be placed in middle of block)
+        """
         possible_cir_positions = []
         for block in complete_locations:
             block_width = round(self.blocks[str(block[0])][0], 10)
@@ -930,9 +936,10 @@ class BaselineGenerator:
 
         return possible_cir_positions
 
-    # identify all possible circleSmall positions on top of blocks
-
     def find_cirsmall_positions(self, complete_locations):
+        """
+        identify all possible circleSmall positions on top of blocks
+        """
         possible_cirsmall_positions = []
         for block in complete_locations:
             block_width = round(self.blocks[str(block[0])][0], 10)
@@ -996,9 +1003,10 @@ class BaselineGenerator:
 
         return possible_cirsmall_positions
 
-    # finds possible positions for valid additional block types
-
     def find_additional_block_positions(self, complete_locations):
+        """
+        finds possible positions for valid additional block types
+        """
         possible_trihole_positions = []
         possible_tri_positions = []
         possible_cir_positions = []
@@ -1013,10 +1021,10 @@ class BaselineGenerator:
             possible_cirsmall_positions = self.find_cirsmall_positions(complete_locations)
         return possible_trihole_positions, possible_tri_positions, possible_cir_positions, possible_cirsmall_positions
 
-    # combine all possible additonal block positions into one set
-
-    def add_additional_blocks(self, possible_trihole_positions, possible_tri_positions, possible_cir_positions,
-                              possible_cirsmall_positions):
+    def add_additional_blocks(self, possible_trihole_positions, possible_tri_positions, possible_cir_positions, possible_cirsmall_positions):
+        """
+        combine all possible additonal block positions into one set
+        """
         all_other = []
         for i in possible_trihole_positions:
             all_other.append(['1', i[0], i[1]])
@@ -1049,9 +1057,10 @@ class BaselineGenerator:
 
         return selected_other
 
-    # remove restricted block types from the available selection
-
     def remove_blocks(self, restricted_blocks):
+        """
+        remove restricted block types from the available selection
+        """
         total_prob_removed = 0.0
         new_prob_table = deepcopy(self.probability_table_blocks)
         for block_name in restricted_blocks:
@@ -1064,19 +1073,21 @@ class BaselineGenerator:
             new_prob_table[key] = value / new_total
         return new_prob_table
 
-    # add TNT blocks based on removed pig positions
-
     def add_TNT(self, potential_positions):
+        """
+        add TNT blocks based on removed pig positions
+        """
         self.final_TNT_positions = []
         for position in potential_positions:
             if (uniform(0.0, 1.0) < self.TNT_block_probability):
                 self.final_TNT_positions.append(position)
         return self.final_TNT_positions
 
-    # write level out in desired xml format
-
     def write_level_xml(self, complete_locations, selected_other, final_pig_positions, final_TNT_positions,
                         final_platforms, number_birds, current_level, restricted_combinations, folder_path = "./"):
+        """
+        write level out in desired xml format
+        """
         Path(folder_path).mkdir(parents = True, exist_ok = True)
         f = open(f"{folder_path}level-{current_level}.xml", "w")
 
@@ -1129,13 +1140,13 @@ class BaselineGenerator:
 
         f.close()
 
-    def generate_level_init(self, folder_path = "./"):
+    def generate_level_init(self, folder_path = "./", parameter_path = "./generator/baseline/parameters.txt"):
         # generate levels using input parameters
 
         backup_probability_table_blocks = deepcopy(self.probability_table_blocks)
         backup_materials = deepcopy(self.materials)
 
-        FILE = open("parameters.txt", 'r')
+        FILE = open(parameter_path, 'r')
         checker = FILE.readline()
         finished_levels = 0
         while checker != "":
@@ -1143,11 +1154,12 @@ class BaselineGenerator:
                 checker = FILE.readline()
             else:
                 number_levels = int(deepcopy(checker))  # the number of levels to generate
-                restricted_combinations = FILE.readline().split(
-                    ',')  # block type and material combination that are banned from the level
+                # block type and material combination that are banned from the level
+                restricted_combinations = FILE.readline().split(',')
                 for i in range(len(restricted_combinations)):
-                    restricted_combinations[i] = restricted_combinations[
-                        i].split()  # if all materials are baned for a block type then do not use that block type
+                    # if all materials are baned for a block type then do not use that block type
+                    restricted_combinations[i] = restricted_combinations[i].split()
+
                 pig_range = FILE.readline().split(',')
                 # time limit to create the levels, shouldn't be an issue for most generators (approximately an hour for 10 levels)
                 time_limit = int(FILE.readline())
@@ -1171,13 +1183,13 @@ class BaselineGenerator:
 
                 # remove restricted block types from the structure generation process
                 self.probability_table_blocks = self.remove_blocks(self.restricted_blocks)
-                if "TriangleHole" in restricted_blocks:
+                if "TriangleHole" in self.restricted_blocks:
                     self.trihole_allowed = False
-                if "Triangle" in restricted_blocks:
+                if "Triangle" in self.restricted_blocks:
                     self.tri_allowed = False
-                if "Circle" in restricted_blocks:
+                if "Circle" in self.restricted_blocks:
                     self.cir_allowed = False
-                if "CircleSmall" in restricted_blocks:
+                if "CircleSmall" in self.restricted_blocks:
                     self.cirsmall_allowed = False
 
                 for current_level in range(number_levels):
@@ -1216,4 +1228,4 @@ class BaselineGenerator:
 
 if __name__ == '__main__':
     baseline_generator = BaselineGenerator()
-    baseline_generator.generate_level_init(folder_path = "./level/")
+    baseline_generator.generate_level_init(folder_path = "../generated_level/BaseLine/")

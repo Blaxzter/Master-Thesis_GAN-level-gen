@@ -12,6 +12,9 @@ from websocket_server import WebsocketServer
 class GameConnection(threading.Thread):
     def __init__(self, host = 'localhost', port = 9000):
         super().__init__()
+
+        self.condition_object = threading.Condition()
+
         self.server: WebsocketServer = WebsocketServer(host = host, port = port, loglevel = logging.INFO)
         self.server.set_fn_new_client(self.new_client)
         self.server.set_fn_message_received(self.game_response)
@@ -21,7 +24,6 @@ class GameConnection(threading.Thread):
 
         self.client = None
         self.game_process = None
-        self.condition_object: threading.Condition = None
 
     def run(self):
         self.server.run_forever()
@@ -66,7 +68,6 @@ class GameConnection(threading.Thread):
 
     def wait_for_game_window(self):
         counter = 0
-        self.condition_object = threading.Condition()
         self.condition_object.acquire()
         while self.client is None:
             print(f"Waiting for client window: {counter}")
@@ -94,8 +95,9 @@ class GameConnection(threading.Thread):
         self.wait_for_response()
 
     def stop(self):
-        self.game_process.terminate()
         self.server.shutdown_gracefully()
+        if self.game_process:
+            self.game_process.terminate()
 
     def getData(self):
         message = [0, 'getdata']
