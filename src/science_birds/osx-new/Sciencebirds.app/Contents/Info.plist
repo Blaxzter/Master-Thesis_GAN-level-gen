@@ -10,7 +10,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>Sciencebirds</string>
+	<string>ScienceBirds</string>
 	<key>CFBundleGetInfoString</key>
 	<string>Unity Player version 2017.4.40f1 (6e14067f8a9a). (c) 2020 Unity Technologies ApS. All rights reserved.</string>
 	<key>CFBundleIconFile</key>

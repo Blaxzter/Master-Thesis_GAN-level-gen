@@ -1,9 +1,10 @@
 import json
 import logging
-import sys
+import os
 import threading
 import time
 from subprocess import Popen as new
+import platform
 
 import keyboard
 from websocket_server import WebsocketServer
@@ -48,12 +49,8 @@ class GameConnection(threading.Thread):
 
     def game_window_closed(self, client, server):
         print(f"Game Window Closed")
-        self.game_process.terminate()
-        self.game_process.wait()
+        self.stop_game()
         self.client = None
-
-    def start_game(self, game_path = '../science_birds/win-new/ScienceBirds.exe'):
-        self.game_process = new(game_path, shell = False)
 
     def new_client(self, client, server: WebsocketServer):
         print("New game window connected")
@@ -94,10 +91,24 @@ class GameConnection(threading.Thread):
         self.send(message)
         self.wait_for_response()
 
+    def start_game(self, game_path = '../science_birds/win-new/ScienceBirds.exe'):
+        os_name = platform.system()
+        if os_name == 'Windows':
+            self.game_process = new(game_path, shell = False)
+        elif os_name == 'Darwin':
+            os.system(f"open {game_path}")
+
     def stop(self):
         self.server.shutdown_gracefully()
-        if self.game_process:
-            self.game_process.terminate()
+        self.stop_game()
+
+    def stop_game(self):
+        os_name = platform.system()
+        if os_name == 'Windows':
+            if self.game_process:
+                self.game_process.terminate()
+        elif os_name == 'Darwin':
+            os.system("pkill ScienceBirds")
 
     def getData(self):
         message = [0, 'getdata']
