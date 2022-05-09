@@ -19,10 +19,12 @@
 
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class LevelList : ABSingleton<LevelList> {
 
 	private ABLevel[]   _levels;
+	private Dictionary<int, bool> levelPlayed = new Dictionary<int, bool>();
 
 	public int CurrentIndex;
 
@@ -72,5 +74,22 @@ public class LevelList : ABSingleton<LevelList> {
 		ABLevel level = _levels [CurrentIndex];
 
 		return level;
+	}
+
+	public void ClearNewLevel()
+	{
+		this.levelPlayed.Clear();
+	}
+
+	public void AddLevelPlayed(bool succsessfully)
+	{
+		this.levelPlayed.Add(CurrentIndex, succsessfully);
+	}
+	
+	public bool AllLevelPlayed() {
+		if (levelPlayed.Count == _levels.Length)
+			return true;
+		
+		return false;
 	}
 }

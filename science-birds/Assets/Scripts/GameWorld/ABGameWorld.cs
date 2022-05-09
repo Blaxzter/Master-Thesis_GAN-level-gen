@@ -22,6 +22,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
+ using GameWorld;
 
 public class ABGameWorld : ABSingleton<ABGameWorld> {
 
@@ -40,6 +41,9 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 	private Transform  _slingshotBaseTransform;
 
 	private GameObject _slingshot;
+	
+	private ABRandomAI _abRandomAI;
+	
 	public GameObject Slingshot() { return _slingshot; }
 
 	private GameObject _levelFailedBanner;
@@ -133,9 +137,15 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 			}
 		}
 
+		_abRandomAI = new ABRandomAI(this, _slingshot, _pigs, _birds);	
 		_slingshotBaseTransform = GameObject.Find ("slingshot_base").transform;
 	}
 
+	public bool Solve()
+	{
+		return _abRandomAI.Solve();
+	}
+	
 	public void DecodeLevel(ABLevel currentLevel)  {
 		
 		ClearWorld();
@@ -291,6 +301,12 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 		ABSceneManager.Instance.LoadScene(SceneManager.GetActiveScene().name);
 	}
 
+	public void StartAI()
+	{
+
+		_abRandomAI.Solve();
+	}
+	
 	public void AddTrajectoryParticle(ABParticle trajectoryParticle) {
 
 		_birdTrajectory.Add (trajectoryParticle);
@@ -395,6 +411,8 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 		}
 		else {
 			
+			LevelList.Instance.AddLevelPlayed(false);
+			
 			// Player lost the game
 			HUD.Instance.gameObject.SetActive(false);
 
@@ -417,10 +435,12 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 			Invoke("ShowLevelClearedBanner", 1f);
 		}
 		else {
-			
 			// Player won the game
 			HUD.Instance.gameObject.SetActive(false);
 
+			LevelList.Instance.AddLevelPlayed(true);
+			ScoreHud.Instance.AddScore(LevelList.Instance.CurrentIndex, HUD.Instance.GetScore());
+			
 			_levelClearedBanner.SetActive(true);
 			_levelClearedBanner.GetComponentInChildren<Text>().text = "Level Cleared!";
 		}

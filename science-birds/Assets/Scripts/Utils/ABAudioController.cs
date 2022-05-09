@@ -45,9 +45,9 @@ public class ABAudioController : ABSingleton<ABAudioController> {
 
 	public void PlayMusic(AudioClip music, bool loop = true)
 	{
-		gameObject.GetComponent<AudioSource>().clip = music;
-		gameObject.GetComponent<AudioSource>().loop = loop;
-		gameObject.GetComponent<AudioSource>().Play();
+		// gameObject.GetComponent<AudioSource>().clip = music;
+		// gameObject.GetComponent<AudioSource>().loop = loop;
+		// gameObject.GetComponent<AudioSource>().Play();
 	}
 
 	public bool IsPlayingMusic(AudioClip music) 
@@ -58,18 +58,18 @@ public class ABAudioController : ABSingleton<ABAudioController> {
 
 	public void StopMusic()
 	{
-		gameObject.GetComponent<AudioSource>().Stop();
+		// gameObject.GetComponent<AudioSource>().Stop();
 	}
 
 	public void PlayIndependentSFX(AudioClip music, bool loop = false)
 	{
-		GameObject independentSFX = new GameObject();
-		independentSFX.transform.parent = transform;
-		AudioSource indAudioSource = independentSFX.AddComponent<AudioSource>();
-		indAudioSource.clip = music;
-		indAudioSource.loop = loop;
-		indAudioSource.Play();
-
-		_independentAudioSources.Add (indAudioSource);
+		// GameObject independentSFX = new GameObject();
+		// independentSFX.transform.parent = transform;
+		// AudioSource indAudioSource = independentSFX.AddComponent<AudioSource>();
+		// indAudioSource.clip = music;
+		// indAudioSource.loop = loop;
+		// indAudioSource.Play();
+		//
+		// _independentAudioSources.Add (indAudioSource);
 	}
 }

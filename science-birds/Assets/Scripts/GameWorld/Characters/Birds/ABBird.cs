@@ -17,9 +17,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>
 //
 
-﻿using UnityEngine;
+using System;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using Random = UnityEngine.Random;
 
 public class ABBird : ABCharacter {
 
@@ -68,7 +70,7 @@ public class ABBird : ABCharacter {
 			if (Random.value < 0.5f) {
 
 				int randomSfx = Random.Range ((int)OBJECTS_SFX.MISC1, (int)OBJECTS_SFX.MISC2 + 1);
-				_audioSource.PlayOneShot (_clips [randomSfx]);
+				// _audioSource.PlayOneShot (_clips [randomSfx]);
 			}
 		}
 
@@ -125,8 +127,8 @@ public class ABBird : ABCharacter {
             if(JumpToSlingshot)
 				ABGameWorld.Instance.SetSlingshotBaseActive(false);
 
-			if(IsSelected && IsFlying)
-				_audioSource.PlayOneShot(_clips[(int)OBJECTS_SFX.DRAGED]);
+			// if(IsSelected && IsFlying)
+			// 	_audioSource.PlayOneShot(_clips[(int)OBJECTS_SFX.DRAGED]);
         }
     }
 
@@ -154,11 +156,11 @@ public class ABBird : ABCharacter {
 	{
 		if(collider.tag == "Slingshot")
 		{
-			if(IsSelected && !IsFlying)
-				_audioSource.PlayOneShot(_clips[(int)OBJECTS_SFX.DRAGED]);
-
-			if(!IsSelected && IsFlying)
-				_audioSource.PlayOneShot(_clips[(int)OBJECTS_SFX.FLYING]);
+			// if(IsSelected && !IsFlying)
+			// 	_audioSource.PlayOneShot(_clips[(int)OBJECTS_SFX.DRAGED]);
+			//
+			// if(!IsSelected && IsFlying)
+			// 	_audioSource.PlayOneShot(_clips[(int)OBJECTS_SFX.FLYING]);
 		}
 	}
 	
@@ -169,7 +171,7 @@ public class ABBird : ABCharacter {
 		
 		IsSelected = true;
 
-		_audioSource.PlayOneShot (_clips[(int)OBJECTS_SFX.MISC1]);
+		// _audioSource.PlayOneShot (_clips[(int)OBJECTS_SFX.MISC1]);
         _animator.Play("selected", 0, 0f);
 
 		ABGameWorld.Instance.SetSlingshotBaseActive(true);
@@ -234,6 +236,6 @@ public class ABBird : ABCharacter {
 		if(!ABGameWorld.Instance._isSimulation)
 			_trailParticles._shootParticles = true;
 
-		_audioSource.PlayOneShot(_clips[(int)OBJECTS_SFX.SHOT]);
+		// _audioSource.PlayOneShot(_clips[(int)OBJECTS_SFX.SHOT]);
 	}
 }

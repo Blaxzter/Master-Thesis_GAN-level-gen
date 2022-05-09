@@ -17,7 +17,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>
 //
 
-﻿using UnityEngine;
+ using UnityEngine;
 using System;
 using System.IO;
 using System.Xml;

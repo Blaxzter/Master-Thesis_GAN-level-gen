@@ -104,8 +104,8 @@ public class ABGameObject : MonoBehaviour
 			if(_spriteChangedTimes < _sprites.Length)
 				_spriteRenderer.sprite = _sprites[_spriteChangedTimes];
 
-			if(!ABGameWorld.Instance._isSimulation)
-				_audioSource.PlayOneShot(_clips[(int)OBJECTS_SFX.DAMAGE]);
+			// if(!ABGameWorld.Instance._isSimulation)
+			// 	_audioSource.PlayOneShot(_clips[(int)OBJECTS_SFX.DAMAGE]);
 
 			_spriteChangedTimes++;
 		}
@@ -114,6 +114,11 @@ public class ABGameObject : MonoBehaviour
 			Die ();
 	}
 
+	public Bounds GetBounds()
+	{
+		return _collider.bounds;
+	}
+	
 	void DestroyIfOutScreen() {
 
 		if (ABGameWorld.Instance.IsObjectOutOfWorld (transform, _collider)) {

@@ -35,14 +35,18 @@ class Evaluator:
         else:
             shutil.rmtree(os.path.join(self.conf.get_game_level_path(), '*'))
 
+        ret_copied_levels = []
+
         for src_file in Path(self.conf.level_path).glob('*.*'):
+            ret_copied_levels.append(src_file)
             shutil.move(str(src_file), self.conf.get_game_level_path())
 
+        return ret_copied_levels
 
     def evaluate_level(self, index = 4):
         self.game_connection.change_level(index = index)
         time.sleep(2)
-        ret_dat = self.game_connection.getData()
+        ret_dat = self.game_connection.get_data()
         self.data[index] = ret_dat
 
 

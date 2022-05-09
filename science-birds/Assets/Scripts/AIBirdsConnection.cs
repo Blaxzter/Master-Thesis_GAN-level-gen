@@ -26,7 +26,7 @@ using System;
  using SimpleJSON;
 using UnityEngine.SceneManagement;
 
-delegate IEnumerator Handler(JSONNode data);
+delegate IEnumerator Handler(JSONNode data, WebSocket serverSocket);
 
 public class Message {
 
@@ -39,9 +39,12 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 
 	public bool _levelLoaded = false;
 	Dictionary<String, Handler> handlers;
-	WebSocket socket;
+	WebSocket generatorWebSocket;
+	WebSocket aiWebSocket;
 
-	IEnumerator Click(JSONNode data) {
+	private bool listenToAI = false;
+
+	IEnumerator Click(JSONNode data, WebSocket serverSocket) {
 
 		yield return new WaitForEndOfFrame ();
 
@@ -58,13 +61,13 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		string message = "[" + id + "," + "{}" + "]";
 
 	#if UNITY_WEBGL && !UNITY_EDITOR
-		socket.Send(System.Text.Encoding.UTF8.GetBytes(message));	
+		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));	
 	#else
-		socket.Send(message);	
+		serverSocket.Send(message);	
 	#endif
 	}
 
-	IEnumerator Drag(JSONNode data) {
+	IEnumerator Drag(JSONNode data, WebSocket serverSocket) {
 
 		yield return new WaitForEndOfFrame ();
 
@@ -88,14 +91,14 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		string message = "[" + id + "," + "{}" + "]";
 
 	#if UNITY_WEBGL && !UNITY_EDITOR
-		socket.Send(System.Text.Encoding.UTF8.GetBytes(message));
+		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
 	#else
-		socket.Send(message);	
+		serverSocket.Send(message);	
 	#endif
 
 	}
 
-	IEnumerator MouseWheel(JSONNode data) {
+	IEnumerator MouseWheel(JSONNode data, WebSocket serverSocket) {
 
 		yield return new WaitForEndOfFrame ();
 
@@ -108,14 +111,14 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 
 
 	#if UNITY_WEBGL && !UNITY_EDITOR
-		socket.Send(System.Text.Encoding.UTF8.GetBytes(message));
+		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
 	#else
-		socket.Send(message);	
+		serverSocket.Send(message);	
 	#endif
 
 	}
 
-	IEnumerator Screenshot(JSONNode data) {
+	IEnumerator Screenshot(JSONNode data, WebSocket serverSocket) {
 
 		yield return new WaitForEndOfFrame ();
 
@@ -135,14 +138,14 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		string message = "[" + id + "," + json + "]";
 
 	#if UNITY_WEBGL && !UNITY_EDITOR
-		socket.Send(System.Text.Encoding.UTF8.GetBytes(message));
+		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
 	#else
-		socket.Send(message);	
+		serverSocket.Send(message);	
 	#endif
 
 	}
 
-	IEnumerator SelectLevel(JSONNode data) {
+	IEnumerator SelectLevel(JSONNode data, WebSocket serverSocket) {
 
 		yield return new WaitForEndOfFrame ();
 
@@ -157,14 +160,14 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		string message = "[" + id + "," + "{}" + "]";
 
 	#if UNITY_WEBGL && !UNITY_EDITOR
-		socket.Send(System.Text.Encoding.UTF8.GetBytes(message));
+		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
 	#else
-		socket.Send(message);	
+		serverSocket.Send(message);	
 	#endif
 
 	}
 
-	IEnumerator LoadScene(JSONNode data) {
+	IEnumerator LoadScene(JSONNode data, WebSocket serverSocket) {
 
 		yield return new WaitForEndOfFrame ();
 
@@ -175,14 +178,15 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		string message = "[" + id + "," + "{}" + "]";
 
 	#if UNITY_WEBGL && !UNITY_EDITOR
-		socket.Send(System.Text.Encoding.UTF8.GetBytes(message));
+		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
 	#else
-		socket.Send(message);	
+		serverSocket.Send(message);	
 	#endif
 
 	}
-
-	IEnumerator Score(JSONNode data) {
+	
+	
+	IEnumerator Score(JSONNode data, WebSocket serverSocket) {
 
 		yield return new WaitForEndOfFrame ();
 
@@ -196,13 +200,36 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		string message = "[" + id + "," + json + "]";
 
 	#if UNITY_WEBGL && !UNITY_EDITOR
-		socket.Send(System.Text.Encoding.UTF8.GetBytes(message));
+		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
 	#else
-		socket.Send(message);	
+		serverSocket.Send(message);	
+	#endif
+	}	
+	
+	
+	IEnumerator Solve(JSONNode data, WebSocket serverSocket) {
+
+		yield return new WaitForEndOfFrame ();
+
+		string id = data [0];
+		ABGameWorld gameWorld = ABGameWorld.Instance;
+		bool result = gameWorld.Solve();
+
+		Message msg = new Message ();
+		msg.data = result.ToString();
+		msg.time = DateTime.Now.ToString ();
+
+		string json = JsonUtility.ToJson (msg);
+		string message = "[" + id + "," + json + "]";
+
+	#if UNITY_WEBGL && !UNITY_EDITOR
+		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
+	#else
+		serverSocket.Send(message);	
 	#endif
 	}
 
-	IEnumerator GetData(JSONNode data) {
+	IEnumerator GetData(JSONNode data, WebSocket serverSocket) {
 
 		yield return new WaitForEndOfFrame ();
 
@@ -223,13 +250,13 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		string message = "[" + id + "," + json + "]";
 
 	#if UNITY_WEBGL && !UNITY_EDITOR
-		socket.Send(System.Text.Encoding.UTF8.GetBytes(message));
+		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
 	#else
-		socket.Send(message);	
+		serverSocket.Send(message);	
 	#endif
 	}
 	
-	IEnumerator LevelsLoaded(JSONNode data) {
+	IEnumerator LevelsLoaded(JSONNode data, WebSocket serverSocket) {
 
 		yield return new WaitForEndOfFrame ();
 
@@ -243,13 +270,56 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		string message = "[" + id + "," + json + "]";
 
 	#if UNITY_WEBGL && !UNITY_EDITOR
-		socket.Send(System.Text.Encoding.UTF8.GetBytes(message));
+		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
 	#else
-		socket.Send(message);	
+		serverSocket.Send(message);	
 	#endif
 	}
 
-	IEnumerator GameState(JSONNode data) {
+	IEnumerator AiModus(JSONNode data, WebSocket serverSocket) {
+
+		yield return new WaitForEndOfFrame ();
+
+		string id = data [0];
+		string value = data[2];
+
+		this.listenToAI = value == "true";
+		
+		Message msg = new Message ();
+		msg.data = this.listenToAI.ToString();
+		msg.time = DateTime.Now.ToString ();
+
+		string json = JsonUtility.ToJson (msg);
+		string message = "[" + id + "," + json + "]";
+
+	#if UNITY_WEBGL && !UNITY_EDITOR
+		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
+	#else
+		serverSocket.Send(message);	
+	#endif
+	}
+	
+	IEnumerator AllLevelsPlayed(JSONNode data, WebSocket serverSocket) {
+
+		yield return new WaitForEndOfFrame ();
+
+		string id = data [0];
+
+		Message msg = new Message ();
+		msg.data = LevelList.Instance.AllLevelPlayed().ToString();
+		msg.time = DateTime.Now.ToString ();
+
+		string json = JsonUtility.ToJson (msg);
+		string message = "[" + id + "," + json + "]";
+
+	#if UNITY_WEBGL && !UNITY_EDITOR
+		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
+	#else
+		serverSocket.Send(message);	
+	#endif
+	}
+
+	IEnumerator GameState(JSONNode data, WebSocket serverSocket) {
 
 		yield return new WaitForEndOfFrame ();
 
@@ -278,9 +348,9 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		string message = "[" + id + "," + json + "]";
 
 	#if UNITY_WEBGL && !UNITY_EDITOR
-		socket.Send(System.Text.Encoding.UTF8.GetBytes(message));
+		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
 	#else
-		socket.Send(message);	
+		serverSocket.Send(message);	
 	#endif
 	}
 
@@ -298,6 +368,9 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		handlers ["score"]        = Score;
 		handlers ["getdata"]      = GetData;
 		handlers ["levelsloaded"] = LevelsLoaded;
+		handlers ["solve"]        = Solve;
+		handlers ["aimodus"]      = AiModus;
+		handlers ["alllevelsplayed"] = AllLevelsPlayed;
 	}
 
 	// Use this for initialization
@@ -306,25 +379,31 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		DontDestroyOnLoad (this.gameObject);
 
 		InitHandlers ();
+		
+		generatorWebSocket = new WebSocket(new Uri("ws://localhost:9001/"));
+		yield return StartCoroutine(generatorWebSocket.Connect());
+		
+		if (listenToAI) {
+			aiWebSocket = new WebSocket(new Uri("ws://localhost:9000/"));
+			yield return StartCoroutine(aiWebSocket.Connect());
+		}
 
-		socket = new WebSocket(new Uri("ws://localhost:9000/"));
-		yield return StartCoroutine(socket.Connect());
 
 		while (true) {
 			
-			string reply = socket.RecvString();
-		
-			if (reply != null) {
+			string generatorReply = generatorWebSocket.RecvString();
 
-				JSONNode data = JSON.Parse(reply);
+			if (generatorReply != null) {
+
+				JSONNode data = JSON.Parse(generatorReply);
 
 				string type = data [1];
 
-//				Debug.Log("Received message: " + type);
+				Debug.Log("Received message: " + type);
 
 				if (handlers[type] != null) {
 
-					StartCoroutine(handlers [type] (data));
+					StartCoroutine(handlers [type] (data, generatorWebSocket));
 				} 
 				else {
 					
@@ -332,14 +411,54 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 				}
 			}
 
-			if (socket.error != null) {
+			if (generatorWebSocket.error != null) {
 
-				Debug.Log ("Error: " + socket.error);
+				Debug.Log ("Error: " + generatorWebSocket.error);
 
 				yield return new WaitForSeconds (1);
 
-				socket = new WebSocket(new Uri("ws://localhost:9000/"));
-				yield return StartCoroutine(socket.Connect());
+				generatorWebSocket = new WebSocket(new Uri("ws://localhost:9001/"));
+				yield return StartCoroutine(generatorWebSocket.Connect());
+			}
+
+			if (listenToAI) {
+				if (aiWebSocket == null)
+				{
+					aiWebSocket = new WebSocket(new Uri("ws://localhost:9000/"));
+					yield return StartCoroutine(aiWebSocket.Connect());
+				}
+				else
+				{
+					string aiReply = aiWebSocket.RecvString();
+					
+					if (aiReply != null) {
+
+						JSONNode data = JSON.Parse(aiReply);
+
+						string type = data [1];
+
+						Debug.Log("Received message: " + type);
+
+						if (handlers[type] != null) {
+
+							StartCoroutine(handlers [type] (data, aiWebSocket));
+						} 
+						else {
+						
+							Debug.Log("Invalid message: " + type);
+						}
+					}
+					
+					if (aiWebSocket.error != null) {
+
+						Debug.Log ("Error: " + aiWebSocket.error);
+
+						yield return new WaitForSeconds (1);
+
+						aiWebSocket = new WebSocket(new Uri("ws://localhost:9000/"));
+						yield return StartCoroutine(aiWebSocket.Connect());
+					}
+				}
 			}
 
 			yield return 0;

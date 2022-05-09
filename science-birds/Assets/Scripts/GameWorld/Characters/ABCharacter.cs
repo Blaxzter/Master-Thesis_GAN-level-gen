@@ -1,4 +1,4 @@
-// SCIENCE BIRDS: A clone version of the Angry Birds game used for 
+	// SCIENCE BIRDS: A clone version of the Angry Birds game used for 
 // research purposes
 // 
 // Copyright (C) 2016 - Lucas N. Ferreira - lucasnfe@gmail.com

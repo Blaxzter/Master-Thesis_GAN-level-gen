@@ -22,8 +22,10 @@ class GeneratorFramework:
         )
 
     def evaluate(self):
-        self.evaluator.copy_game_levels()
+        copied_levels = self.evaluator.copy_game_levels()
         self.evaluator.start_game()
-        self.evaluator.evaluate_level(4)
+        for copied_level in copied_levels:
+            level_index = int(copied_level.name[6:8])
+            self.evaluator.evaluate_level(index = level_index)
 
 

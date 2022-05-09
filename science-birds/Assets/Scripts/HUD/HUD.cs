@@ -154,6 +154,9 @@ public class HUD : ABSingleton<HUD> {
 		Ray ray = Camera.main.ScreenPointToRay(position);
 		RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
 
+		Debug.Log("Ray Origin: " + ray.origin + "Ray Direction: " + ray.direction);
+		Debug.Log("Bird: " + ABGameWorld.Instance.GetCurrentBird ().transform.position);
+		
 		if (hit && hit.transform.tag == "Bird") {
 			
 			_selectedBird = hit.transform.gameObject.GetComponent<ABBird> ();
