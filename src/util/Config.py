@@ -24,6 +24,10 @@ class Config:
                 self.game_folder_path = self.game_folder_path.replace('{os}', 'win-new')
                 self.game_path = os.path.join(self.game_folder_path, "ScienceBirds.exe")
                 self.copy_dest = os.path.normpath('ScienceBirds_Data/StreamingAssets/Levels/')
+            elif os_name == 'Darwin':
+                self.game_folder_path = self.game_folder_path.replace('{os}', 'osx-new')
+                self.game_path = os.path.join(self.game_folder_path, "ScienceBirds.app")
+                self.copy_dest = os.path.normpath('Sciencebirds.app/Contents/Resources/Data/StreamingAssets/Levels')
             else:
                 raise OSNotSupported("OS is not support atm")
 

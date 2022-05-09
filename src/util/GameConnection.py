@@ -1,10 +1,10 @@
 import json
 import logging
-import sys
+import os
 import threading
 import time
 from subprocess import Popen as new
-
+import platform
 import subprocess
 
 import keyboard
@@ -51,9 +51,7 @@ class GameConnection(threading.Thread):
 
     def game_window_closed(self, client, server):
         print(f"Game Window Closed")
-        if self.game_process:
-            self.game_process.terminate()
-            self.game_process.wait()
+        self.stop_game()
 
         if self.ai_process:
             self.ai_process.terminate()
@@ -62,7 +60,11 @@ class GameConnection(threading.Thread):
         self.client = None
 
     def start_game(self, game_path = '../science_birds/win-new/ScienceBirds.exe'):
-        self.game_process = new(game_path, shell = False)
+        os_name = platform.system()
+        if os_name == 'Windows':
+            self.game_process = new(game_path, shell = False)
+        elif os_name == 'Darwin':
+            os.system(f"open {game_path}")
 
     def startAi(self, ai_process = '../ai/Naive-Agent-standalone-Streamlined.jar'):
 
@@ -87,8 +89,7 @@ class GameConnection(threading.Thread):
 
     def stop(self):
         self.server.shutdown_gracefully()
-        if self.game_process:
-            self.game_process.terminate()
+        self.stop_game()
         if self.ai_process:
             self.ai_process.terminate()
 
@@ -141,6 +142,14 @@ class GameConnection(threading.Thread):
         message = [0, 'selectlevel', {'levelIndex': index}]
         self.send(message)
         self.wait_for_response()
+
+    def stop_game(self):
+        os_name = platform.system()
+        if os_name == 'Windows':
+            if self.game_process:
+                self.game_process.terminate()
+        elif os_name == 'Darwin':
+            os.system("pkill ScienceBirds")
 
     def get_data(self):
         message = [0, 'getdata']
