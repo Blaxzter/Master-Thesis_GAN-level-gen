@@ -51,7 +51,8 @@ public class ScoreHud : ABSingleton<ScoreHud> {
 
 	public void AddScore(int levelId, uint score)
 	{
-		levelIdToScore.Add(levelId, score);
+		if (!this.levelIdToScore.ContainsKey(levelId))
+			levelIdToScore.Add(levelId, score);
 	}
 
 	public void ClearScores()

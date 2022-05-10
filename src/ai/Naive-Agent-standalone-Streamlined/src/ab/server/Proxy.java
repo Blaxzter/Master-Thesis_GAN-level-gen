@@ -58,7 +58,7 @@ public class Proxy extends WebSocketServer {
         Long id = (Long) j.get(0);
         JSONObject data = (JSONObject) j.get(1);
       
-        System.out.println("Received message." + id);
+//        System.out.println("Received message." + id);
         
         ProxyResult<?> result = results.get(id);
         

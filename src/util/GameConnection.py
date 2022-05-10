@@ -66,7 +66,7 @@ class GameConnection(threading.Thread):
         elif os_name == 'Darwin':
             os.system(f"open {game_path}")
 
-    def startAi(self, ai_process = '../ai/Naive-Agent-standalone-Streamlined.jar'):
+    def startAi(self, ai_path = '../ai/Naive-Agent-standalone-Streamlined.jar'):
 
         if self.ai_process:
             self.ai_process.terminate()
@@ -75,7 +75,7 @@ class GameConnection(threading.Thread):
         message = [0, 'aimodus', 'true']
         self.send(message)
         self.wait_for_response()
-        self.ai_process = new(ai_process)
+        self.ai_process = new(f"java -jar {ai_path}", shell = False)
 
     def stopAI(self):
 
@@ -169,10 +169,14 @@ if __name__ == '__main__':
         game_connection.wait_for_game_window()
 
         print("Change Level")
-        game_connection.change_level(index = 3)
+        game_connection.change_level(index = 1)
+
+        print("Start AI")
+        print(game_connection.get_data())
 
         print("Start AI")
         game_connection.startAi()
+        game_connection.wait_till_all_level_played()
 
         print("Change Level")
         game_connection.get_data()

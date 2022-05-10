@@ -108,6 +108,8 @@ public class HUD : ABSingleton<HUD> {
 			isMouseControlling = false;
 		}
 
+		// Debug.Log("SimulateInputEvent: " + SimulateInputEvent + " Hash Code " + this.GetHashCode());
+		
 		if(Input.GetMouseButtonDown(0) || SimulateInputEvent == 1) {
 
 			ClickDown (_inputPos);
@@ -149,14 +151,13 @@ public class HUD : ABSingleton<HUD> {
 
 	private void ClickDown(Vector3 position) {
 
+		Debug.Log("Click Down");
+		
 		_dragOrigin = position;
 
 		Ray ray = Camera.main.ScreenPointToRay(position);
 		RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
 
-		Debug.Log("Ray Origin: " + ray.origin + "Ray Direction: " + ray.direction);
-		Debug.Log("Bird: " + ABGameWorld.Instance.GetCurrentBird ().transform.position);
-		
 		if (hit && hit.transform.tag == "Bird") {
 			
 			_selectedBird = hit.transform.gameObject.GetComponent<ABBird> ();
@@ -238,7 +239,8 @@ public class HUD : ABSingleton<HUD> {
 	public void AddScore(uint score) {
 		
 		_totalScore += score;
-		_scoreDisplay.GetComponent<Text>().text = _totalScore.ToString();
+		if (_scoreDisplay != null)
+			_scoreDisplay.GetComponent<Text>().text = _totalScore.ToString();
 	}
 
 	public uint GetScore() {

@@ -46,7 +46,7 @@ public class ActionRobot {
 	static {
 		if (proxy == null) {
 			try {
-				proxy = new Proxy(9001) {
+				proxy = new Proxy(9000) {
 					@Override
 					public void onOpen() {
 						System.out.println("Client connected");

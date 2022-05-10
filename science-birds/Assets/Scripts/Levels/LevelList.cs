@@ -83,7 +83,8 @@ public class LevelList : ABSingleton<LevelList> {
 
 	public void AddLevelPlayed(bool succsessfully)
 	{
-		this.levelPlayed.Add(CurrentIndex, succsessfully);
+		if (!this.levelPlayed.ContainsKey(CurrentIndex))
+			this.levelPlayed.Add(CurrentIndex, succsessfully);
 	}
 	
 	public bool AllLevelPlayed() {

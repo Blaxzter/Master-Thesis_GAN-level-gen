@@ -85,8 +85,6 @@ public class ABLevelSelect : ABMenu {
 			Vector2 pos = _startPos + new Vector2 ((i % _lines) * _buttonSize.x, j * _buttonSize.y);
 			obj.transform.position = pos;
 
-			Debug.Log(obj.transform.position);
-
 			ABLevelSelector sel = obj.AddComponent<ABLevelSelector> ();
 			sel.LevelIndex = i;
 

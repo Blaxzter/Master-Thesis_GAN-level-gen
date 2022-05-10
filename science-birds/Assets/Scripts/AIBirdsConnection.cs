@@ -83,7 +83,9 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		Debug.Log ("POS = " + dragPos);
 		Debug.Log ("DRAG = " + deltaPos);
 
+		Debug.Log("SimulatedInputEvent Connection: " + HUD.Instance.SimulateInputEvent);
 		HUD.Instance.SimulateInputEvent = 1;
+		Debug.Log("SimulatedInputEvent Connection: " + HUD.Instance.SimulateInputEvent);
 		HUD.Instance.SimulateInputPos = dragPos;
 		HUD.Instance.SimulateInputDelta = deltaPos;
 
@@ -413,7 +415,7 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 
 			if (generatorWebSocket.error != null) {
 
-				Debug.Log ("Error: " + generatorWebSocket.error);
+				// Debug.Log ("Error: " + generatorWebSocket.error);
 
 				yield return new WaitForSeconds (1);
 

@@ -52,8 +52,8 @@ public class NaiveAgent implements Runnable {
 	// run the client
 	public void run() {
 
-//		aRobot.loadLevel(currentLevel);
-		
+		aRobot.loadLevel(currentLevel);
+
 		while (true) {
 			GameState state = solve();
 			System.out.println("CURRENT STATE NAIVE AGENT: " + state.toString());
