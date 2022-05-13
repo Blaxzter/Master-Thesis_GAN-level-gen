@@ -154,6 +154,19 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		LevelList.Instance.SetLevel(levelIndex - 1);
 		ABSceneManager.Instance.LoadScene ("GameWorld");
 
+		while (SceneManager.GetActiveScene ().name != "GameWorld")
+		{
+			print("Load scene");
+			yield return null;
+		}
+		
+		while (ABGameWorld.Instance.IsLevelStable())
+		{
+			print("Not Stable");
+			yield return null;
+		}
+		print("Stable");
+		
 		string id = data [0];
 		string message = "[" + id + "," + "{}" + "]";
 

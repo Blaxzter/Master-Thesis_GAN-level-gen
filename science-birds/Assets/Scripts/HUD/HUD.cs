@@ -42,6 +42,8 @@ public class HUD : ABSingleton<HUD> {
 	private float _totalDamage;
 	private uint _totalDeath;
 	private float _simulatedDragTimer;
+	
+	private bool _levelIsStable = false;
 
 	private Vector3 _inputPos;
 	private Vector3 _dragOrigin;

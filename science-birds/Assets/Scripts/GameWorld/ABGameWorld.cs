@@ -132,7 +132,7 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 				
 				DecodeLevel (currentLevel);
 				AdaptCameraWidthToLevel ();
-
+				
 				_levelTimesTried = 0;
 			}
 		}

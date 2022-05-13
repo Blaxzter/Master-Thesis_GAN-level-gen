@@ -168,17 +168,17 @@ if __name__ == '__main__':
         # game_connection.start_game()
         game_connection.wait_for_game_window()
 
-        print("Change Level")
-        game_connection.change_level(index = 1)
+        print("\nChange Level")
+        game_connection.change_level(index = 3)
 
-        print("Get Data")
+        print("\nGet Data")
         game_connection.get_data()
 
-        print("Start AI")
-        game_connection.startAi()
-        game_connection.wait_till_all_level_played()
+        # print("Start AI")
+        # game_connection.startAi()
+        # game_connection.wait_till_all_level_played()
 
-        print("Get Data Again")
+        print("\nGet Data Again")
         game_connection.get_data()
 
         game_connection.stop()
