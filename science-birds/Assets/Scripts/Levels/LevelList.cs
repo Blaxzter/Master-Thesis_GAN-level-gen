@@ -27,6 +27,7 @@ public class LevelList : ABSingleton<LevelList> {
 	private Dictionary<int, bool> levelPlayed = new Dictionary<int, bool>();
 
 	public int CurrentIndex;
+	private int _amountOfLevelsRequired;
 
 	public ABLevel GetCurrentLevel() { 
 
@@ -76,7 +77,7 @@ public class LevelList : ABSingleton<LevelList> {
 		return level;
 	}
 
-	public void ClearNewLevel()
+	public void ClearLevelsPlayed()
 	{
 		this.levelPlayed.Clear();
 	}
@@ -88,9 +89,14 @@ public class LevelList : ABSingleton<LevelList> {
 	}
 	
 	public bool AllLevelPlayed() {
-		if (levelPlayed.Count == _levels.Length)
+		if (levelPlayed.Count >= this._amountOfLevelsRequired)
 			return true;
 		
 		return false;
+	}
+
+	public void RequiredLevel(int amountOfLevelsRequired)
+	{
+		this._amountOfLevelsRequired = amountOfLevelsRequired;
 	}
 }

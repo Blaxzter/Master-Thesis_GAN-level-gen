@@ -97,11 +97,11 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 
 		_levelCleared = false;
 
-		if(!_isSimulation) {
-
-			GetComponent<AudioSource>().PlayOneShot(_clips[0]);
-			GetComponent<AudioSource>().PlayOneShot(_clips[1]);
-		}
+		// if(!_isSimulation) {
+		//
+		// 	GetComponent<AudioSource>().PlayOneShot(_clips[0]);
+		// 	GetComponent<AudioSource>().PlayOneShot(_clips[1]);
+		// }
 
 		GameObject slingshot = GameObject.Find ("Slingshot");
 

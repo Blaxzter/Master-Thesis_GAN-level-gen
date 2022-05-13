@@ -43,6 +43,7 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 	WebSocket aiWebSocket;
 
 	private bool listenToAI = false;
+	private HUD _hudInstance = null;
 
 	IEnumerator Click(JSONNode data, WebSocket serverSocket) {
 
@@ -53,9 +54,9 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 
 		Vector2 clickPos = new Vector2 (clickX, clickY);
 
-		HUD.Instance.SimulateInputEvent = 1;
-		HUD.Instance.SimulateInputPos = clickPos;
-		HUD.Instance.SimulateInputDelta = clickPos;
+		HUDInstance.SimulateInputEvent = 1;
+		HUDInstance.SimulateInputPos = clickPos;
+		HUDInstance.SimulateInputDelta = clickPos;
 
 		string id = data [0];
 		string message = "[" + id + "," + "{}" + "]";
@@ -80,14 +81,9 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		Vector2 dragPos = new Vector2 (dragX, Screen.height - dragY);
 		Vector2 deltaPos = new Vector2 (dragDX, Screen.height - dragDY);
 
-		Debug.Log ("POS = " + dragPos);
-		Debug.Log ("DRAG = " + deltaPos);
-
-		Debug.Log("SimulatedInputEvent Connection: " + HUD.Instance.SimulateInputEvent);
-		HUD.Instance.SimulateInputEvent = 1;
-		Debug.Log("SimulatedInputEvent Connection: " + HUD.Instance.SimulateInputEvent);
-		HUD.Instance.SimulateInputPos = dragPos;
-		HUD.Instance.SimulateInputDelta = deltaPos;
+		HUDInstance.SimulateInputEvent = 1;
+		HUDInstance.SimulateInputPos = dragPos;
+		HUDInstance.SimulateInputDelta = deltaPos;
 
 		string id = data [0];
 		string message = "[" + id + "," + "{}" + "]";
@@ -106,7 +102,7 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 
 		float delta = data[2]["delta"].AsFloat;
 
-		HUD.Instance.CameraZoom (-delta);
+		HUDInstance.CameraZoom (-delta);
 
 		string id = data [0];
 		string message = "[" + id + "," + "{}" + "]";
@@ -195,7 +191,7 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		string id = data [0];
 
 		Message msg = new Message ();
-		msg.data = HUD.Instance.GetScore ().ToString();
+		msg.data = HUDInstance.GetScore ().ToString();
 		msg.time = DateTime.Now.ToString ();
 
 		string json = JsonUtility.ToJson (msg);
@@ -235,14 +231,19 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 
 		yield return new WaitForEndOfFrame ();
 
+		while (HUDInstance == null)
+		{
+			yield return null;
+		}
+		
 		string id = data [0];
 
 		string msgData = 
-			"{{" +
-			"'damage': " + HUD.Instance.GetDamage().ToString(CultureInfo.InvariantCulture) +
-			"'death': " + HUD.Instance.GetDeath().ToString() +
-			"'score': " + HUD.Instance.GetScore().ToString() +
-			"}}";
+			"{" +
+			"'damage': " + HUDInstance.GetDamage().ToString(CultureInfo.InvariantCulture) +
+			"'death': " + HUDInstance.GetDeath().ToString() +
+			"'score': " + HUDInstance.GetScore().ToString() +
+			"}";
 		
 		Message msg = new Message ();
 		msg.data = msgData;
@@ -285,7 +286,30 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		string id = data [0];
 		string value = data[2];
 
-		this.listenToAI = value == "true";
+		bool aiMode = data[2]["mode"].AsBool;
+		int startLevel = data[2]["startLevel"].AsInt;
+		int endLevel = data[2]["endLevel"].AsInt;
+
+		if (startLevel != -1 && startLevel != LevelList.Instance.CurrentIndex)
+		{
+			LevelList.Instance.SetLevel(startLevel - 1);
+			ABSceneManager.Instance.LoadScene ("GameWorld");
+			yield return new WaitForEndOfFrame ();
+		}
+		else
+		{
+			startLevel = LevelList.Instance.CurrentIndex;
+		}
+
+		if (endLevel != -1 && endLevel < startLevel)
+		{
+			Debug.LogError("End level lower then start level.");
+			LevelList.Instance.RequiredLevel(endLevel - startLevel);
+		}
+		
+		this.listenToAI = aiMode;
+		
+		LevelList.Instance.ClearLevelsPlayed();
 		
 		Message msg = new Message ();
 		msg.data = this.listenToAI.ToString();
@@ -385,12 +409,6 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		generatorWebSocket = new WebSocket(new Uri("ws://localhost:9001/"));
 		yield return StartCoroutine(generatorWebSocket.Connect());
 		
-		if (listenToAI) {
-			aiWebSocket = new WebSocket(new Uri("ws://localhost:9000/"));
-			yield return StartCoroutine(aiWebSocket.Connect());
-		}
-
-
 		while (true) {
 			
 			string generatorReply = generatorWebSocket.RecvString();
@@ -401,7 +419,7 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 
 				string type = data [1];
 
-				Debug.Log("Received message: " + type);
+				Debug.Log("Generator message: " + type);
 
 				if (handlers[type] != null) {
 
@@ -414,9 +432,6 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 			}
 
 			if (generatorWebSocket.error != null) {
-
-				// Debug.Log ("Error: " + generatorWebSocket.error);
-
 				yield return new WaitForSeconds (1);
 
 				generatorWebSocket = new WebSocket(new Uri("ws://localhost:9001/"));
@@ -439,7 +454,7 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 
 						string type = data [1];
 
-						Debug.Log("Received message: " + type);
+						Debug.Log("AI message: " + type);
 
 						if (handlers[type] != null) {
 
@@ -467,6 +482,12 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		}
 
 //		socket.Close();
+	}
+
+	public HUD HUDInstance
+	{
+		get { return _hudInstance; }
+		set { _hudInstance = value; }
 	}
 
 	public bool LevelLoaded

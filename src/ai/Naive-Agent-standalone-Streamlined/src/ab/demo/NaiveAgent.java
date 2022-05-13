@@ -52,7 +52,7 @@ public class NaiveAgent implements Runnable {
 	// run the client
 	public void run() {
 
-		aRobot.loadLevel(currentLevel);
+//		aRobot.loadLevel(currentLevel);
 
 		while (true) {
 			GameState state = solve();

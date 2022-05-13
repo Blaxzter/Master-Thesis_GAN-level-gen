@@ -38,7 +38,6 @@ class GameConnection(threading.Thread):
             self.condition_object.acquire()
             self.condition_object.wait()
             self.condition_object.release()
-            print("Message received")
         else:
             self.response = None
 
@@ -62,20 +61,20 @@ class GameConnection(threading.Thread):
     def start_game(self, game_path = '../science_birds/win-new/ScienceBirds.exe'):
         os_name = platform.system()
         if os_name == 'Windows':
-            self.game_process = new(game_path, shell = False)
+            self.game_process = new(game_path, shell = False, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         elif os_name == 'Darwin':
             os.system(f"open {game_path}")
 
-    def startAi(self, ai_path = '../ai/Naive-Agent-standalone-Streamlined.jar'):
+    def startAi(self, start_level = -1, end_level = -1, ai_path = '../ai/Naive-Agent-standalone-Streamlined.jar'):
 
         if self.ai_process:
             self.ai_process.terminate()
             self.ai_process.wait()
 
-        message = [0, 'aimodus', 'true']
+        message = [0, 'aimodus', f'{{"mode": true, "startLevel" : {start_level}, "endLevel": {end_level}}}']
         self.send(message)
         self.wait_for_response()
-        self.ai_process = new(f"java -jar {ai_path}", shell = False)
+        self.ai_process = new(f"java -jar {ai_path}", shell = False, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
     def stopAI(self):
 
@@ -128,6 +127,7 @@ class GameConnection(threading.Thread):
             time.sleep(0.2)
 
     def wait_till_all_level_played(self):
+        self.response = None
         while True:
             if self.response is not None and 'data' in self.response[1] and self.response[1]['data'] == "True":
                 break
@@ -164,25 +164,23 @@ if __name__ == '__main__':
     try:
         game_connection.start()
 
-        # print("Start game")
+        print("Start game")
         # game_connection.start_game()
         game_connection.wait_for_game_window()
 
         print("Change Level")
         game_connection.change_level(index = 1)
 
-        print("Start AI")
-        print(game_connection.get_data())
+        print("Get Data")
+        game_connection.get_data()
 
         print("Start AI")
         game_connection.startAi()
         game_connection.wait_till_all_level_played()
 
-        print("Change Level")
+        print("Get Data Again")
         game_connection.get_data()
 
-        print("Wait for keyboard: p")
-        keyboard.wait("p")
         game_connection.stop()
     except KeyboardInterrupt:
         game_connection.stop()

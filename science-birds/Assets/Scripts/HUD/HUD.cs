@@ -47,6 +47,11 @@ public class HUD : ABSingleton<HUD> {
 	private Vector3 _dragOrigin;
 	private ABBird _selectedBird;
 
+	protected HUD() : base()
+	{
+		AIBirdsConnection.Instance.HUDInstance = this;
+	}
+
 	void Start() {
 
 		SetScoreDisplay(_totalScore);
@@ -151,8 +156,6 @@ public class HUD : ABSingleton<HUD> {
 
 	private void ClickDown(Vector3 position) {
 
-		Debug.Log("Click Down");
-		
 		_dragOrigin = position;
 
 		Ray ray = Camera.main.ScreenPointToRay(position);

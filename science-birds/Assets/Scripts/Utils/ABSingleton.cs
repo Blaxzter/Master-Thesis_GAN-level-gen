@@ -27,14 +27,7 @@ public class ABSingleton<T> : MonoBehaviour where T : MonoBehaviour {
 	
 	// Avoid calling contructor with new
 	protected ABSingleton()
-	{
-		if (this.GetType().Name == "HUD")
-		{
-			System.Diagnostics.StackTrace t = new System.Diagnostics.StackTrace();
-			Debug.Log(t);
-			Debug.Log("Heyy Hooo");
-		}
-	}
+	{}
 
 	//This is the public reference that other classes will use
 	public static T Instance
