@@ -23,6 +23,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
  using System.Globalization;
+ using System.Linq;
  using SimpleJSON;
 using UnityEngine.SceneManagement;
 
@@ -149,23 +150,32 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 
 		int levelIndex = data[2]["levelIndex"].AsInt;
 
-		Debug.Log ("Level index:" + levelIndex);
+		Debug.Log ("Level index: " + levelIndex);
 
-		LevelList.Instance.SetLevel(levelIndex - 1);
+		LevelList levelList = LevelList.Instance;
+		if (levelIndex == -1)
+		{
+			levelIndex = levelList.CurrentIndex + 2;
+		}
+
+		levelList.SetLevel(levelIndex - 1);
 		ABSceneManager.Instance.LoadScene ("GameWorld");
 
 		while (SceneManager.GetActiveScene ().name != "GameWorld")
 		{
 			print("Load scene");
-			yield return null;
+			yield return new WaitForSeconds(0.2f);
 		}
 		
-		while (ABGameWorld.Instance.IsLevelStable())
+		var currentLevelData = levelList.GetCurrentLevelData();
+		while (!ABGameWorld.Instance.IsLevelStable())
 		{
-			print("Not Stable");
-			yield return null;
+			print("Not Stable " + levelList.CurrentIndex + " level stability " + ABGameWorld.Instance.GetLevelStability());
+			currentLevelData.IsStable = false;
+			yield return new WaitForSeconds(0.2f);
 		}
-		print("Stable");
+		currentLevelData.InitialDamage = currentLevelData.CumulativeDamage;
+		print("Stable: " + currentLevelData.InitialDamage);
 		
 		string id = data [0];
 		string message = "[" + id + "," + "{}" + "]";
@@ -251,12 +261,7 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		
 		string id = data [0];
 
-		string msgData = 
-			"{" +
-			"'damage': " + HUDInstance.GetDamage().ToString(CultureInfo.InvariantCulture) +
-			"'death': " + HUDInstance.GetDeath().ToString() +
-			"'score': " + HUDInstance.GetScore().ToString() +
-			"}";
+		string msgData = "[" + String.Join(",", LevelList.Instance.GetAllLevelData().Select(pair => pair.Value.GetJson()).ToArray()) + "]";
 		
 		Message msg = new Message ();
 		msg.data = msgData;
@@ -299,11 +304,13 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		string id = data [0];
 		string value = data[2];
 
-		bool aiMode = data[2]["mode"].AsBool;
-		int startLevel = data[2]["startLevel"].AsInt;
-		int endLevel = data[2]["endLevel"].AsInt;
+		JSONNode request = JSON.Parse(data[2]);
+		
+		bool aiMode = request["mode"].AsBool;
+		int startLevel = request["startLevel"].AsInt;
+		int endLevel = request["endLevel"].AsInt;
 
-		if (startLevel != -1 && startLevel != LevelList.Instance.CurrentIndex)
+		if (startLevel > 0 && startLevel - 1 != LevelList.Instance.CurrentIndex)
 		{
 			LevelList.Instance.SetLevel(startLevel - 1);
 			ABSceneManager.Instance.LoadScene ("GameWorld");
@@ -314,16 +321,20 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 			startLevel = LevelList.Instance.CurrentIndex;
 		}
 
-		if (endLevel != -1 && endLevel < startLevel)
+		if (endLevel > 0 && endLevel >= startLevel)
 		{
-			Debug.LogError("End level lower then start level.");
 			LevelList.Instance.RequiredLevel(endLevel - startLevel);
 		}
+		else
+		{
+			Debug.LogError("End level lower then start level.");
+		}
+
+		LevelList.Instance.startIndex = startLevel;
+		LevelList.Instance.endIndex = endLevel;
 		
 		this.listenToAI = aiMode;
-		
-		LevelList.Instance.ClearLevelsPlayed();
-		
+
 		Message msg = new Message ();
 		msg.data = this.listenToAI.ToString();
 		msg.time = DateTime.Now.ToString ();
@@ -392,6 +403,26 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		serverSocket.Send(message);	
 	#endif
 	}
+	
+	IEnumerator ClearLevelData(JSONNode data, WebSocket serverSocket) {
+
+		yield return new WaitForEndOfFrame ();
+
+		string id = data [0];
+		LevelList.Instance.ClearLevelData();
+
+		Message msg = new Message ();
+		msg.time = DateTime.Now.ToString ();
+
+		string json = JsonUtility.ToJson (msg);
+		string message = "[" + id + "," + json + "]";
+
+	#if UNITY_WEBGL && !UNITY_EDITOR
+		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
+	#else
+		serverSocket.Send(message);	
+	#endif
+	}
 
 	public void InitHandlers() {
 
@@ -410,6 +441,7 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		handlers ["solve"]        = Solve;
 		handlers ["aimodus"]      = AiModus;
 		handlers ["alllevelsplayed"] = AllLevelsPlayed;
+		handlers ["clearleveldata"] = ClearLevelData;
 	}
 
 	// Use this for initialization
@@ -432,7 +464,7 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 
 				string type = data [1];
 
-				Debug.Log("Generator message: " + type);
+				Debug.Log("Generator message: " + data.Children.Aggregate("", (acc, jsonNode) => acc + jsonNode + ", "));
 
 				if (handlers[type] != null) {
 
@@ -467,7 +499,7 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 
 						string type = data [1];
 
-						Debug.Log("AI message: " + type);
+						Debug.Log("AI message: " + data.Children.Aggregate("", (acc, jsonNode) => acc + jsonNode + ", "));
 
 						if (handlers[type] != null) {
 
@@ -475,7 +507,7 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 						} 
 						else {
 						
-							Debug.Log("Invalid message: " + type);
+							Debug.Log("Invalid message: " + data.Children.Aggregate("", (acc, jsonNode) => acc + jsonNode + ", "));
 						}
 					}
 					

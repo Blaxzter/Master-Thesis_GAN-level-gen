@@ -20,15 +20,20 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+ using System.Linq;
+ using Levels;
 
 public class LevelList : ABSingleton<LevelList> {
 
 	private ABLevel[]   _levels;
-	private Dictionary<int, bool> levelPlayed = new Dictionary<int, bool>();
+	private Dictionary<int, LevelData> levelData = new Dictionary<int, LevelData>();
 
 	public int CurrentIndex;
 	private int _amountOfLevelsRequired;
 
+	public int startIndex = 0;
+	public int endIndex = -1;
+	
 	public ABLevel GetCurrentLevel() { 
 
 		if (_levels == null)
@@ -51,6 +56,9 @@ public class LevelList : ABSingleton<LevelList> {
 
 		for(int i = 0; i < levelSource.Length; i++)
 			_levels[i] = LevelLoader.LoadXmlLevel(levelSource[i]);
+
+		if (endIndex == -1)
+			endIndex = _levels.Length;
 	}
 
 	// Use this for initialization
@@ -71,30 +79,55 @@ public class LevelList : ABSingleton<LevelList> {
 		if(index < 0 || index >= _levels.Length)
 			return null;
 
+		if (!levelData.ContainsKey(index))
+		{
+			Debug.Log("Create new Level Data: " + index);
+			levelData.Add(index, new LevelData(index));
+		}
+		
 		CurrentIndex = index;
 		ABLevel level = _levels [CurrentIndex];
 
 		return level;
 	}
 
-	public void ClearLevelsPlayed()
+	public void ClearLevelData()
 	{
-		this.levelPlayed.Clear();
+		this.levelData.Clear();
 	}
 
-	public void AddLevelPlayed(bool succsessfully)
+	public LevelData GetLevelData(int levelIndex)
 	{
-		if (!this.levelPlayed.ContainsKey(CurrentIndex))
-			this.levelPlayed.Add(CurrentIndex, succsessfully);
+		if (!levelData.ContainsKey(levelIndex))
+		{
+			return null;
+		}
+		
+		return levelData[levelIndex];
 	}
-	
+
+	public LevelData GetCurrentLevelData()
+	{
+		return GetLevelData(CurrentIndex);
+	}
+
 	public bool AllLevelPlayed() {
-		if (levelPlayed.Count >= this._amountOfLevelsRequired)
-			return true;
+		if (levelData.Count >= this._amountOfLevelsRequired)
+		{
+			return levelData.Values
+				.Where(data => startIndex <= data.LevelIndex && data.LevelIndex <= endIndex)
+				.Aggregate(true, (b, data) => b && data.HasBeenPlayed);
+		}
+		
 		
 		return false;
 	}
 
+	public Dictionary<int, LevelData> GetAllLevelData()
+	{
+		return levelData;
+	}
+	
 	public void RequiredLevel(int amountOfLevelsRequired)
 	{
 		this._amountOfLevelsRequired = amountOfLevelsRequired;

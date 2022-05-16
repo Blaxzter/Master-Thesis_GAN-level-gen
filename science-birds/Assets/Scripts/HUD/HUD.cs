@@ -39,11 +39,10 @@ public class HUD : ABSingleton<HUD> {
 	private bool _usedSpecialPower;
 
 	private uint _totalScore;
+	private int _usedBird;
 	private float _totalDamage;
-	private uint _totalDeath;
+	private int _totalDeath;
 	private float _simulatedDragTimer;
-	
-	private bool _levelIsStable = false;
 
 	private Vector3 _inputPos;
 	private Vector3 _dragOrigin;
@@ -268,8 +267,18 @@ public class HUD : ABSingleton<HUD> {
 		_totalDeath += 1;
 	}
 
-	public uint GetDeath() {
+	public int GetDeath() {
 
 		return _totalDeath;
+	}
+
+	public void AddBird()
+	{
+		_usedBird += 1;
+	}
+
+	public int GetBirdsUsed()
+	{
+		return _usedBird;
 	}
 }

@@ -23,6 +23,7 @@ using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
  using GameWorld;
+ using Levels;
 
 public class ABGameWorld : ABSingleton<ABGameWorld> {
 
@@ -411,7 +412,14 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 		}
 		else {
 			
-			LevelList.Instance.AddLevelPlayed(false);
+			LevelData currentLevelData = LevelList.Instance.GetCurrentLevelData();
+			if (currentLevelData != null)
+			{
+				currentLevelData.HasBeenPlayed = true;
+				currentLevelData.Score = HUD.Instance.GetScore();
+				currentLevelData.Death = HUD.Instance.GetDeath();
+				currentLevelData.BirdsUsed = HUD.Instance.GetBirdsUsed();
+			}
 			
 			// Player lost the game
 			HUD.Instance.gameObject.SetActive(false);
@@ -436,11 +444,19 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 		}
 		else {
 			// Player won the game
+			
+			LevelData currentLevelData = LevelList.Instance.GetCurrentLevelData();
+			if (currentLevelData != null)
+			{
+				currentLevelData.Won = true;
+				currentLevelData.HasBeenPlayed = true;
+				currentLevelData.Score = HUD.Instance.GetScore();
+				currentLevelData.Death = HUD.Instance.GetDeath();
+				currentLevelData.BirdsUsed = HUD.Instance.GetBirdsUsed();
+			}
+			
 			HUD.Instance.gameObject.SetActive(false);
 
-			LevelList.Instance.AddLevelPlayed(true);
-			ScoreHud.Instance.AddScore(LevelList.Instance.CurrentIndex, HUD.Instance.GetScore());
-			
 			_levelClearedBanner.SetActive(true);
 			_levelClearedBanner.GetComponentInChildren<Text>().text = "Level Cleared!";
 		}
@@ -465,6 +481,8 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 	
 	public void KillBird(ABBird bird) {
 
+		HUD.Instance.AddBird();
+		
 		if (!_birds.Contains (bird))
 			return;
 		

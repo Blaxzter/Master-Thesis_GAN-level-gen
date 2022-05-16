@@ -25,7 +25,6 @@ using System.Collections;
 public class ScoreHud : ABSingleton<ScoreHud> {
 
 	private ABParticleSystem  _scoreEmitter;
-	private Dictionary<int, uint> levelIdToScore = new Dictionary<int, uint>();
 
 	// Use this for initialization
 	void Start () {
@@ -47,21 +46,5 @@ public class ScoreHud : ABSingleton<ScoreHud> {
 		pointText.text = point.ToString();
 
 		HUD.Instance.AddScore (point);
-	}
-
-	public void AddScore(int levelId, uint score)
-	{
-		if (!this.levelIdToScore.ContainsKey(levelId))
-			levelIdToScore.Add(levelId, score);
-	}
-
-	public void ClearScores()
-	{
-		levelIdToScore.Clear();
-	}
-	
-	public Dictionary<int, uint> GetScores()
-	{
-		return levelIdToScore;
 	}
 }

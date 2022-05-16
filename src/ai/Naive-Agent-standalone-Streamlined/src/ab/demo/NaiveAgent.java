@@ -86,7 +86,7 @@ public class NaiveAgent implements Runnable {
 				}
 				
 				System.out.println("Total Score: " + totalScore);
-				aRobot.loadLevel(++currentLevel);
+				aRobot.loadLevel(-1);
 				
 				System.out.println("INCREMENTING CURRENT LEVEL: " + currentLevel);
 				

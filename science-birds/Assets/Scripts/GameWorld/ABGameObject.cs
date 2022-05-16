@@ -20,6 +20,7 @@
  using UnityEngine;
 using System;
 using System.Collections;
+ using Levels;
 
 [RequireComponent (typeof (Collider2D))]
 [RequireComponent (typeof (Rigidbody2D))]
@@ -69,7 +70,8 @@ public class ABGameObject : MonoBehaviour
 
 	public virtual void Die(bool withEffect = true)
 	{
-		HUD.Instance.AddDeath();
+		if (this.GetType().Name == "ABPig") 
+			HUD.Instance.AddDeath();
 		
 		if(!ABGameWorld.Instance._isSimulation && withEffect) {
 
@@ -96,7 +98,12 @@ public class ABGameObject : MonoBehaviour
 
 	public void DealDamage(float damage) {
 
-		HUD.Instance.AddDamage(damage);
+		LevelData currentLevelData = LevelList.Instance.GetCurrentLevelData();
+		if (currentLevelData != null)
+		{
+			currentLevelData.CumulativeDamage += damage;
+		}
+		
 		_currentLife -= damage;
 
 		if(_currentLife <= _life - (_life/(_sprites.Length + 1)) * (_spriteChangedTimes + 1))

@@ -71,7 +71,7 @@ class GameConnection(threading.Thread):
             self.ai_process.terminate()
             self.ai_process.wait()
 
-        message = [0, 'aimodus', f'{{"mode": true, "startLevel" : {start_level}, "endLevel": {end_level}}}']
+        message = [0, 'aimodus', f'{{\"mode\": true, \"startLevel\" : {start_level}, \"endLevel\": {end_level}}}']
         self.send(message)
         self.wait_for_response()
         self.ai_process = new(f"java -jar {ai_path}", shell = False, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
@@ -155,7 +155,11 @@ class GameConnection(threading.Thread):
         message = [0, 'getdata']
         self.send(message)
         self.wait_for_response()
-        return self.response[1]['data']
+        received_data = self.response[1]['data']
+        parsed = json.loads(received_data)
+        print(json.dumps(parsed, indent = 4, sort_keys = True))
+
+        return received_data
 
 
 if __name__ == '__main__':
@@ -165,7 +169,7 @@ if __name__ == '__main__':
         game_connection.start()
 
         print("Start game")
-        # game_connection.start_game()
+        game_connection.start_game()
         game_connection.wait_for_game_window()
 
         print("\nChange Level")
@@ -174,9 +178,9 @@ if __name__ == '__main__':
         print("\nGet Data")
         game_connection.get_data()
 
-        # print("Start AI")
-        # game_connection.startAi()
-        # game_connection.wait_till_all_level_played()
+        print("Start AI")
+        game_connection.startAi(start_level = 3, end_level = 4)
+        game_connection.wait_till_all_level_played()
 
         print("\nGet Data Again")
         game_connection.get_data()
