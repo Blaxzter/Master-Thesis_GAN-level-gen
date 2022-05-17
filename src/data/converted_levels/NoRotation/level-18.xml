@@ -1,0 +1,63 @@
+<?xml version="1.0" ?> <Level width="2">  
+  <Camera x="0" y="-1" minWidth="35" maxWidth="35"/>  
+  <Birds>   
+   <Bird type="BirdRed"/>   
+   <Bird type="BirdRed"/>   
+   <Bird type="BirdRed"/>   
+   <Bird type="BirdYellow"/>   
+   <Bird type="BirdYellow"/>   
+  </Birds>  
+  <Slingshot x="-9.820816326530611" y="-2.518367346938775"/>  
+  <GameObjects>   
+   <Block type="RectSmall" material="stone" x="5.35061224489796" y="-0.7357142857142858" rotation="359.955"/>   
+   <Platform type="Platform" material="" x="1.426530612244898" y="-3.855714285714286" rotation="315.0" scaleX="3.174603174603175" scaleY="3.174603174603175"/>   
+   <Platform type="Platform" material="" x="6.0806122448979565" y="-3.457551020408163" rotation="270.0" scaleX="3.174603174603175" scaleY="3.174603174603175"/>   
+   <Pig type="BasicSmall" material="" x="6.230816326530611" y="3.2444897959183674" rotation="6.793000000000006"/>   
+   <Pig type="BasicSmall" material="" x="2.0279591836734667" y="-2.239183673469388" rotation="0.0020000000000095497"/>   
+   <Pig type="BasicSmall" material="" x="5.304693877551021" y="-0.4085714285714288" rotation="354.006"/>   
+   <Pig type="BasicSmall" material="" x="5.291224489795919" y="-2.2381632653061225" rotation="0.007999999999981355"/>   
+   <Pig type="BasicSmall" material="" x="5.371836734693876" y="1.4132653061224483" rotation="349.31"/>   
+   <Pig type="BasicSmall" material="" x="6.228367346938775" y="-0.40816326530612246" rotation="9.548000000000002"/>   
+   <Pig type="BasicSmall" material="" x="6.260204081632651" y="1.4183673469387754" rotation="1.521000000000015"/>   
+   <Pig type="BasicSmall" material="" x="4.204285714285714" y="-2.239387755102041" rotation="0.002999999999985903"/>   
+   <Block type="RectMedium" material="stone" x="6.586122448979591" y="1.0993877551020406" rotation="0.7269999999999754"/>   
+   <Pig type="BasicSmall" material="" x="6.328367346938773" y="-2.2385714285714284" rotation="0.002999999999985903"/>   
+   <Pig type="BasicSmall" material="" x="3.1185714285714283" y="-2.2385714285714284" rotation="0.007999999999981355"/>   
+   <Pig type="BasicSmall" material="" x="4.363061224489794" y="-0.4097959183673474" rotation="351.284"/>   
+   <Block type="SquareSmall" material="wood" x="2.5642857142857114" y="-1.436938775510204" rotation="270.03499999999997"/>   
+   <Block type="SquareSmall" material="wood" x="6.900408163265304" y="4.852857142857143" rotation="270.185"/>   
+   <Block type="SquareSmall" material="wood" x="3.661428571428571" y="-0.4089795918367347" rotation="269.499"/>   
+   <Block type="SquareSmall" material="wood" x="4.825714285714284" y="1.4079591836734693" rotation="269.89"/>   
+   <Block type="SquareSmall" material="wood" x="5.798775510204081" y="3.233673469387754" rotation="270.604"/>   
+   <Block type="SquareSmall" material="wood" x="1.5430612244897954" y="-2.233265306122449" rotation="266.514"/>   
+   <Block type="RectMedium" material="wood" x="4.698367346938774" y="0.17816326530612203" rotation="269.845"/>   
+   <Block type="RectMedium" material="stone" x="4.095510204081631" y="-0.7324489795918367" rotation="359.766"/>   
+   <Block type="RectMedium" material="wood" x="6.753673469387753" y="-1.646530612244898" rotation="270.68899999999996"/>   
+   <Block type="RectMedium" material="wood" x="6.975510204081633" y="0.191632653061224" rotation="270.68899999999996"/>   
+   <Block type="RectMedium" material="wood" x="4.9189795918367345" y="0.17755102040816295" rotation="269.978"/>   
+   <Block type="RectMedium" material="wood" x="5.671428571428571" y="0.17673469387755025" rotation="270.012"/>   
+   <Block type="RectMedium" material="wood" x="6.7808163265306085" y="3.840408163265306" rotation="270.03499999999997"/>   
+   <Block type="RectMedium" material="wood" x="5.706326530612241" y="2.0024489795918363" rotation="270.044"/>   
+   <Block type="RectMedium" material="wood" x="6.9787755102040805" y="-1.6318367346938778" rotation="271.196"/>   
+   <Block type="RectMedium" material="wood" x="5.893265306122448" y="0.17714285714285705" rotation="270.274"/>   
+   <Block type="RectMedium" material="wood" x="6.9999999999999964" y="3.8416326530612235" rotation="270.104"/>   
+   <Block type="RectMedium" material="wood" x="3.7693877551020396" y="-1.6485714285714288" rotation="269.995"/>   
+   <Block type="RectMedium" material="stone" x="4.923673469387754" y="1.0908163265306126" rotation="359.895"/>   
+   <Block type="RectMedium" material="wood" x="4.692040816326529" y="-1.6485714285714288" rotation="269.985"/>   
+   <Block type="RectMedium" material="wood" x="6.77" y="2.0140816326530606" rotation="270.574"/>   
+   <Block type="RectMedium" material="wood" x="5.663265306122447" y="-1.6485714285714288" rotation="270.033"/>   
+   <Block type="RectMedium" material="wood" x="6.98938775510204" y="2.016530612244897" rotation="270.519"/>   
+   <Block type="RectMedium" material="wood" x="5.882653061224488" y="-1.6485714285714288" rotation="270.031"/>   
+   <Block type="RectMedium" material="wood" x="4.910816326530611" y="-1.6485714285714288" rotation="269.999"/>   
+   <Block type="RectMedium" material="wood" x="5.9263265306122435" y="2.004489795918367" rotation="270.165"/>   
+   <Block type="RectMedium" material="wood" x="6.756326530612245" y="0.18877551020408134" rotation="270.727"/>   
+   <Block type="RectMedium" material="wood" x="3.55081632653061" y="-1.6485714285714288" rotation="269.991"/>   
+   <Block type="RectSmall" material="wood" x="2.6677551020408146" y="-2.048571428571429" rotation="270.015"/>   
+   <Block type="RectMedium" material="stone" x="6.6408163265306115" y="-0.7253061224489796" rotation="0.8430000000000177"/>   
+   <Block type="RectSmall" material="wood" x="2.4491836734693866" y="-2.048571428571429" rotation="269.927"/>   
+   <Block type="RectMedium" material="stone" x="6.364285714285714" y="2.922653061224489" rotation="0.5810000000000173"/>   
+   <Platform type="Platform" material="" x="4.413061224489795" y="-3.457551020408163" rotation="270.0" scaleX="3.174603174603175" scaleY="3.174603174603175"/>   
+   <Platform type="Platform" material="" x="2.4469387755102048" y="-3.457551020408163" rotation="270.0" scaleX="3.174603174603175" scaleY="3.174603174603175"/>   
+   <Platform type="Platform" material="" x="7.026326530612245" y="-3.855714285714286" rotation="315.0" scaleX="3.174603174603175" scaleY="3.174603174603175"/>   
+  </GameObjects>  
+  <PrevLevelName name="./converted_levels\Benchmark converted levels 2 (poached eggs 2)\level-06.xml"/> </Level>

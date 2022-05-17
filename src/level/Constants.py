@@ -68,14 +68,23 @@ bird_names = {
     '5': "BirdWhite"
 }
 
+coordinate_round = 100
+
 
 def get_sizes():
     from tabulate import tabulate
     smallest_size = 0.22
 
-    data = [[block_names[block_idx], block_size[0] / smallest_size, block_size[1] / smallest_size, block_is_rotated[block_idx]] for block_idx, block_size in block_sizes.items()]
+    data = [[
+        block_names[block_idx],
+        block_size[0] / smallest_size,
+        block_size[1] / smallest_size,
+        round(block_size[0] / smallest_size),
+        round(block_size[1] / smallest_size),
+        block_is_rotated[block_idx]
+    ] for block_idx, block_size in block_sizes.items()]
 
-    print(tabulate(data, headers = ['block_name', 'x', 'y', 'Rotated']))
+    print(tabulate(data, headers = ['block_name', 'x', 'y', 'rounded x', 'rounded y', 'Rotated']))
 
 
 if __name__ == '__main__':

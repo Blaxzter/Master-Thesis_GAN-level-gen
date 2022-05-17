@@ -1,0 +1,35 @@
+<?xml version="1.0" ?> <Level width="2">  
+  <Camera x="0" y="-1" minWidth="35" maxWidth="35"/>  
+  <Birds>   
+   <Bird type="BirdRed"/>   
+   <Bird type="BirdRed"/>   
+   <Bird type="BirdRed"/>   
+   <Bird type="BirdRed"/>   
+  </Birds>  
+  <Slingshot x="-9.7893877551" y="-2.57551020408"/>  
+  <GameObjects>   
+   <Block type="RectFat" material="stone" x="3.25224489796" y="-2.77612244898" rotation="0.039"/>   
+   <Block type="SquareSmall" material="wood" x="5.73714285714" y="0.33" rotation="359.877"/>   
+   <Block type="SquareSmall" material="wood" x="3.51714285714" y="-1.12346938776" rotation="359.839"/>   
+   <Block type="SquareSmall" material="wood" x="2.84836734694" y="-1.12326530612" rotation="359.981"/>   
+   <Block type="SquareSmall" material="wood" x="5.05163265306" y="0.330408163265" rotation="0.026"/>   
+   <Block type="SquareSmall" material="wood" x="4.39897959184" y="0.329183673469" rotation="0.314"/>   
+   <Block type="SquareSmall" material="wood" x="2.19489795918" y="-1.12408163265" rotation="0.242"/>   
+   <Pig type="BasicSmall" material="" x="5.12020408163" y="-0.68693877551" rotation="354.699"/>   
+   <Pig type="BasicSmall" material="" x="2.83510204082" y="-2.13959183673" rotation="358.325"/>   
+   <Block type="RectMedium" material="ice" x="2.8706122449" y="-1.4393877551" rotation="180.035"/>   
+   <Block type="RectMedium" material="ice" x="5.08551020408" y="0.0140816326531" rotation="0.023"/>   
+   <Block type="RectFat" material="stone" x="4.65714285714" y="-1.32408163265" rotation="359.966"/>   
+   <Block type="RectFat" material="ice" x="5.76734693878" y="-0.498163265306" rotation="270.001"/>   
+   <Block type="RectFat" material="ice" x="4.44387755102" y="-0.498367346939" rotation="269.991"/>   
+   <Block type="RectFat" material="ice" x="2.21510204082" y="-1.95163265306" rotation="269.967"/>   
+   <Block type="RectFat" material="ice" x="3.52163265306" y="-1.95102040816" rotation="270.004"/>   
+   <Block type="RectFat" material="stone" x="5.49" y="-1.32408163265" rotation="0.042"/>   
+   <Block type="RectFat" material="stone" x="2.40734693878" y="-2.77612244898" rotation="359.952"/>   
+   <Block type="RectMedium" material="stone" x="2.83510204082" y="-2.46265306122" rotation="0.000999999999976"/>   
+   <Block type="RectMedium" material="stone" x="5.08081632653" y="-1.01020408163" rotation="0.00200000000001"/>   
+   <Platform type="Platform" material="" x="5.08591836735" y="-2.54510204082" rotation="360.0" scaleX="3.1746031746" scaleY="3.1746031746"/>   
+   <Platform type="Platform" material="" x="2.82653061224" y="-3.97857142857" rotation="270.0" scaleX="3.1746031746" scaleY="3.1746031746"/>   
+   <Platform type="Platform" material="" x="9.72979591837" y="-3.58857142857" rotation="135.0" scaleX="3.1746031746" scaleY="3.1746031746"/>   
+  </GameObjects>  
+  <PrevLevelName name="./converted_levels\Benchmark converted levels 1 (poached eggs 1)\level-09.xml"/> </Level>

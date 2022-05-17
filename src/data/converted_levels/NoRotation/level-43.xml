@@ -1,0 +1,60 @@
+<?xml version="1.0" ?> <Level width="2">  
+  <Camera x="0" y="-1" minWidth="35" maxWidth="35"/>  
+  <Birds>   
+   <Bird type="BirdYellow"/>   
+   <Bird type="BirdYellow"/>   
+   <Bird type="BirdYellow"/>   
+  </Birds>  
+  <Slingshot x="-10.3948979592" y="-1.94693877551"/>  
+  <GameObjects>   
+   <Block type="TriangleHole" material="ice" x="3.49367346939" y="-0.0232653061224" rotation="180.889"/>   
+   <Block type="TriangleHole" material="wood" x="2.66102040816" y="-1.57897959184" rotation="180.822"/>   
+   <Block type="TriangleHole" material="wood" x="1.81755102041" y="-0.777346938776" rotation="0.403"/>   
+   <Block type="TriangleHole" material="wood" x="2.22428571429" y="0.0248979591837" rotation="0.936"/>   
+   <Block type="TriangleHole" material="wood" x="4.7506122449" y="-1.58" rotation="359.954"/>   
+   <Block type="TriangleHole" material="wood" x="5.58224489796" y="-1.58040816327" rotation="359.897"/>   
+   <Block type="TriangleHole" material="wood" x="4.77204081633" y="0.0261224489796" rotation="359.64"/>   
+   <Block type="TriangleHole" material="wood" x="4.32653061224" y="-1.57979591837" rotation="179.357"/>   
+   <Block type="TriangleHole" material="wood" x="2.65346938776" y="0.780816326531" rotation="0.312"/>   
+   <Block type="TriangleHole" material="wood" x="3.92632653061" y="1.59653061224" rotation="359.88"/>   
+   <Block type="TriangleHole" material="wood" x="3.49081632653" y="2.38632653061" rotation="359.892"/>   
+   <Block type="TriangleHole" material="ice" x="3.08142857143" y="0.774081632653" rotation="180.011"/>   
+   <Block type="TriangleHole" material="wood" x="3.07367346939" y="1.57428571429" rotation="0.00299999999999"/>   
+   <Block type="TriangleHole" material="wood" x="3.48918367347" y="1.58489795918" rotation="179.744"/>   
+   <Block type="TriangleHole" material="wood" x="3.08653061224" y="-0.0459183673469" rotation="0.611"/>   
+   <Block type="TriangleHole" material="wood" x="3.10673469388" y="-0.849591836735" rotation="180.888"/>   
+   <Block type="TriangleHole" material="wood" x="3.90775510204" y="-0.751224489796" rotation="179.222"/>   
+   <Block type="TriangleHole" material="wood" x="3.90693877551" y="0.783673469388" rotation="179.744"/>   
+   <Block type="TriangleHole" material="wood" x="4.34387755102" y="-0.0108163265306" rotation="179.744"/>   
+   <Block type="TriangleHole" material="wood" x="2.65551020408" y="-0.0108163265306" rotation="179.744"/>   
+   <Block type="TriangleHole" material="stone" x="2.24102040816" y="-0.774489795918" rotation="180.946"/>   
+   <Block type="TriangleHole" material="stone" x="4.76714285714" y="-0.773673469388" rotation="179.668"/>   
+   <Block type="TriangleHole" material="ice" x="1.81836734694" y="-1.57734693878" rotation="180.295"/>   
+   <Block type="TriangleHole" material="stone" x="2.23857142857" y="-1.61959183673" rotation="359.979"/>   
+   <Block type="TriangleHole" material="stone" x="3.50959183673" y="0.724081632653" rotation="359.979"/>   
+   <Block type="TriangleHole" material="stone" x="2.66224489796" y="-0.817755102041" rotation="359.979"/>   
+   <Platform type="Platform" material="" x="0.290204081633" y="-3.65816326531" rotation="134.962" scaleX="1.5873015873" scaleY="1.5873015873"/>   
+   <Platform type="Platform" material="" x="6.76632653061" y="-3.7006122449" rotation="134.962" scaleX="1.5873015873" scaleY="1.5873015873"/>   
+   <Platform type="Platform" material="" x="-12.0" y="-3.58244897959" rotation="134.962" scaleX="1.5873015873" scaleY="1.5873015873"/>   
+   <Platform type="Platform" material="" x="-10.0536734694" y="-3.60244897959" rotation="134.962" scaleX="1.5873015873" scaleY="1.5873015873"/>   
+   <Platform type="Platform" material="" x="3.54673469388" y="-3.39408163265" rotation="179.962" scaleX="10.1587301587" scaleY="0.634920634921"/>   
+   <Platform type="Platform" material="" x="3.52469387755" y="-3.15204081633" rotation="179.962" scaleX="10.1587301587" scaleY="0.634920634921"/>   
+   <Platform type="Platform" material="" x="-11.0069387755" y="-3.06612244898" rotation="359.962" scaleX="3.1746031746" scaleY="0.634920634921"/>   
+   <Block type="TriangleHole" material="ice" x="5.17224489796" y="-1.56346938776" rotation="179.812"/>   
+   <Platform type="Platform" material="" x="-11.0069387755" y="-3.34428571429" rotation="359.962" scaleX="3.1746031746" scaleY="0.634920634921"/>   
+   <Platform type="Platform" material="" x="5.23612244898" y="-2.39571428571" rotation="359.979" scaleX="3.1746031746" scaleY="0.634920634921"/>   
+   <Platform type="Platform" material="" x="5.22836734694" y="-2.11510204082" rotation="359.979" scaleX="3.1746031746" scaleY="0.634920634921"/>   
+   <Platform type="Platform" material="" x="1.79959183673" y="-2.45183673469" rotation="359.979" scaleX="3.1746031746" scaleY="0.634920634921"/>   
+   <Platform type="Platform" material="" x="1.79204081633" y="-2.1712244898" rotation="359.979" scaleX="3.1746031746" scaleY="0.634920634921"/>   
+   <Platform type="Platform" material="" x="5.24551020408" y="-2.63510204082" rotation="359.979" scaleX="3.1746031746" scaleY="0.634920634921"/>   
+   <Platform type="Platform" material="" x="1.80918367347" y="-2.6912244898" rotation="359.979" scaleX="3.1746031746" scaleY="0.634920634921"/>   
+   <Platform type="Platform" material="" x="5.25326530612" y="-2.91571428571" rotation="359.979" scaleX="3.1746031746" scaleY="0.634920634921"/>   
+   <Platform type="Platform" material="" x="1.81673469388" y="-2.97183673469" rotation="359.979" scaleX="3.1746031746" scaleY="0.634920634921"/>   
+   <Pig type="BasicMedium" material="" x="3.54040816327" y="-2.66755102041" rotation="359.938"/>   
+   <Block type="TriangleHole" material="ice" x="3.93102040816" y="-0.0112244897959" rotation="359.979"/>   
+   <Block type="TriangleHole" material="ice" x="5.23040816327" y="-0.791632653061" rotation="359.979"/>   
+   <Block type="TriangleHole" material="ice" x="4.35428571429" y="-0.791632653061" rotation="359.979"/>   
+   <Block type="TriangleHole" material="ice" x="4.35408163265" y="0.791836734694" rotation="359.979"/>   
+   <Block type="TriangleHole" material="wood" x="1.3987755102" y="-1.57632653061" rotation="0.213"/>   
+  </GameObjects>  
+  <PrevLevelName name="./converted_levels\Benchmark converted levels 4 (mighty hoax 1)\level-12.xml"/> </Level>
