@@ -14,6 +14,8 @@ class Level:
         self.platform: [LevelElement] = []
         self.birds: [LevelElement] = []
 
+        self.structures = None
+
     def __getitem__(self, item):
         if item == "Block":
             return self.blocks
@@ -30,32 +32,41 @@ class Level:
     def separate_structures(self, blocks = True, pigs = True, platform = False):
         test_list = self.create_element_list(blocks, pigs, platform)
         # A structure is a list of
-        structures = []
+        self.structures = []
         for element in test_list:
 
-            if len(structures) == 0:
-                structures.append([element])
+            current_element_id = element.id
+
+            if len(self.structures) == 0:
+                self.structures.append([element])
                 continue
 
-            dist_closest_struct = 10000
-            closest_struct = None
+            closest_structures = []
 
             # Calculate distance between groups
-            for structure in structures:
+            for structure in self.structures:
+
                 for struct_element in structure:
                     dist_to_element = element.distance(struct_element)
-                    print(float(dist_to_element))
-                    if dist_to_element < dist_closest_struct:
-                        closest_struct = structure
-                        dist_closest_struct = dist_to_element
+                    print(f"Block {current_element_id} -> {struct_element.id}: {float(dist_to_element)}")
+                    if dist_to_element < 0.1:
+                        closest_structures.append(structure)
 
-            if dist_closest_struct > 10:
+            if len(closest_structures) == 0:
                 print("Create new Structure")
+                self.structures.append([element])
+            elif len(closest_structures) == 1:
+                print("Add to closest structure")
+                closest_structures[0].append(element)
             else:
-                closest_struct.append(element)
+                print("Merge all closest structures")
+                merge_into = closest_structures[0]
+                for closest_structure in closest_structures[1:]:
+                    for merge_element in closest_structure:
+                        merge_into.append(merge_element)
 
-        for structure in structures:
-            print("Structure amount: " + len(structure))
+        for structure in self.structures:
+            print(f"Structure amount: {len(structure)}")
 
     def create_img(self):
         pass
@@ -90,11 +101,10 @@ class Level:
                 element.x,
                 element.y,
                 element.rotation,
-                element.scaleX,
-                element.scaleY
+                element.size
             ] for element in self.blocks + self.pigs + self.platform]
 
-            print(tabulate(data, headers = ["type", "material", "x", "y", "rotation", "scaleX", "scaleY"]))
+            print(tabulate(data, headers = ["type", "material", "x", "y", "rotation", "sizes"]))
 
     def contains_od_rotation(self, blocks = True, pigs = False, platform = False):
 
