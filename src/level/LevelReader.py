@@ -68,14 +68,18 @@ class LevelReader:
 
             rect = patches.Rectangle(bottom_left, width, height, linewidth = 1, edgecolor = current_color, facecolor = 'none')
 
+
             # Add the patch to the Axes
             ax.add_patch(rect)
+            plt.text(element.x, element.y, str(element.id), color = current_color, fontsize = 12, ha = 'center',
+                     va = 'center')
+
         plt.axis([min_x - 0.3, max_x + 0.3, min_y - 0.3, max_y + 0.3])
         fig.show()
 
 
 if __name__ == '__main__':
-    level_reader = LevelReader(path = "../data/converted_levels/NoRotation/level-05.xml")
+    level_reader = LevelReader(path = "../data/converted_levels/NoRotation/level-06.xml")
     parse_level = level_reader.parse_level()
 
 

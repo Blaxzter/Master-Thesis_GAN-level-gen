@@ -1,5 +1,6 @@
 import itertools
 
+import numpy as np
 from sympy.geometry import *
 
 from level import Constants
@@ -21,6 +22,8 @@ class LevelElement:
         self.is_vertical = False
         if round(self.rotation / 90) in [1, 3]:
             self.is_vertical = True
+
+        self.coordinates = np.array([self.x, self.y])
 
         if self.type == "Platform":
             self.size = round_cord(float(scaleX),  float(scaleY))
@@ -56,7 +59,8 @@ class LevelElement:
         return self.polygon.distance(o.polygon)
 
     def __str__(self):
-        return f"type: {self.type} " \
+        return f"id: {self.id} " \
+               f"type: {self.type} " \
                f"material: {self.material} " \
                f"x: {self.x} " \
                f"y: {self.y} " \

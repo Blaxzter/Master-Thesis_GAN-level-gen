@@ -76,7 +76,7 @@ bird_names = {
     '5': "BirdWhite"
 }
 
-coordinate_round = 100
+coordinate_round = 100000
 
 
 def get_sizes():

@@ -1,5 +1,7 @@
 import math
 
+import numpy as np
+
 from level.LevelElement import LevelElement
 
 
@@ -30,7 +32,7 @@ class Level:
         return f"Blocks: {len(self.blocks)} Pigs: {len(self.pigs)} Platform: {len(self.platform)} Bird: {len(self.birds)}"
 
     def separate_structures(self, blocks = True, pigs = True, platform = False):
-        test_list = self.create_element_list(blocks, pigs, platform)
+        test_list = self.create_element_list(blocks, pigs, platform, sorted = True)
         # A structure is a list of
         self.structures = []
         for element in test_list:
@@ -51,6 +53,7 @@ class Level:
                     print(f"Block {current_element_id} -> {struct_element.id}: {float(dist_to_element)}")
                     if dist_to_element < 0.1:
                         closest_structures.append(structure)
+                        break
 
             if len(closest_structures) == 0:
                 print("Create new Structure")
@@ -64,6 +67,8 @@ class Level:
                 for closest_structure in closest_structures[1:]:
                     for merge_element in closest_structure:
                         merge_into.append(merge_element)
+                    self.structures.remove(closest_structure)
+                merge_into.append(element)
 
         for structure in self.structures:
             print(f"Structure amount: {len(structure)}")
@@ -73,7 +78,7 @@ class Level:
 
     def normalize(self, blocks = True, pigs = True, platform = False):
 
-        test_list = self.create_element_list(blocks, pigs, platform)
+        test_list: [LevelElement] = self.create_element_list(blocks, pigs, platform)
 
         smallest_x = 100000
         smallest_y = 100000
@@ -87,6 +92,9 @@ class Level:
         for element in test_list:
             element.x += abs(smallest_x)
             element.y += abs(smallest_y)
+
+            element.coordinates[0] += abs(smallest_x)
+            element.coordinates[1] += abs(smallest_y)
 
     def print_elements(self, as_table = False):
         if not as_table:
@@ -125,9 +133,16 @@ class Level:
         for element in test_list:
             element.polygon = element.create_geometry()
 
-    def create_element_list(self, blocks, pigs, platform):
+    def create_element_list(self, blocks, pigs, platform, sorted = False):
         test_list = []
         if blocks:   test_list += self.blocks
         if pigs:     test_list += self.pigs
         if platform: test_list += self.platform
+
+        if sorted:
+            norm_list = np.linalg.norm(list(map(lambda x: x.coordinates, test_list)), axis = 1)
+            index_list = np.argsort(norm_list)
+
+            return list(np.array(test_list)[index_list])
+
         return test_list
