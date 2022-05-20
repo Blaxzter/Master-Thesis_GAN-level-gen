@@ -73,7 +73,7 @@ class Level:
         for structure in self.structures:
             print(f"Structure amount: {len(structure)}")
 
-    def create_img(self):
+    def create_img(self, for_structures = True):
         pass
 
     def normalize(self, blocks = True, pigs = True, platform = False):
@@ -131,7 +131,7 @@ class Level:
     def create_polygons(self, blocks = True, pigs = True, platform = False):
         test_list = self.create_element_list(blocks, pigs, platform)
         for element in test_list:
-            element.polygon = element.create_geometry()
+            element.shape_polygon = element.create_geometry()
 
     def create_element_list(self, blocks, pigs, platform, sorted = False):
         test_list = []

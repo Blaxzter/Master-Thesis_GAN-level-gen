@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import itertools
+from typing import Optional
 
 import numpy as np
-from sympy.geometry import *
+from shapely.geometry import Polygon
 
 from level import Constants
 from util.Utils import round_cord
@@ -35,7 +38,7 @@ class LevelElement:
                 self.index += 1
             self.size = Constants.block_sizes[str(self.index)]
 
-        self.polygon = None
+        self.shape_polygon: Optional[Polygon] = None
 
     def get_bottom_left(self):
         horizontal_offset = self.size[0] / 2
@@ -50,13 +53,13 @@ class LevelElement:
         p3 = round_cord(self.x - horizontal_offset, self.y - vertical_offset)
         p4 = round_cord(self.x - horizontal_offset, self.y + vertical_offset)
 
-        return Polygon(p1, p2, p3, p4)
+        return Polygon([p1, p2, p3, p4])
 
-    def distance(self, o: Polygon):
-        if self.polygon.intersect(o.polygon):
+    def distance(self, o: LevelElement):
+        if not self.shape_polygon.disjoint(o.shape_polygon):
             return 0
 
-        return self.polygon.distance(o.polygon)
+        return self.shape_polygon.distance(o.shape_polygon)
 
     def __str__(self):
         return f"id: {self.id} " \
