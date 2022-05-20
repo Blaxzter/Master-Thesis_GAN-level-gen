@@ -68,6 +68,12 @@ pig_types = {
 
 pig_size = (0.5, 0.5)
 
+# additional objects number and name
+additional_objects = {'1': "TriangleHole", '2': "Triangle", '3': "Circle", '4': "CircleSmall"}
+
+# additional objects number and size
+additional_object_sizes = {'1': [0.82, 0.82], '2': [0.82, 0.82], '3': [0.8, 0.8], '4': [0.45, 0.45]}
+
 bird_names = {
     '1': "BirdRed",
     '2': "BirdBlue",

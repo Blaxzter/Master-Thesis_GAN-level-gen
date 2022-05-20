@@ -32,6 +32,9 @@ class LevelElement:
             self.size = round_cord(float(scaleX),  float(scaleY))
         elif self.type in Constants.pig_types.values():
             self.size = Constants.pig_size
+        elif self.type in Constants.additional_objects.values():
+            self.index = list(Constants.additional_objects.values()).index(self.type) + 1
+            self.size = Constants.additional_object_sizes[str(self.index)]
         else:
             self.index = list(Constants.block_names.values()).index(self.type) + 1
             if self.is_vertical:

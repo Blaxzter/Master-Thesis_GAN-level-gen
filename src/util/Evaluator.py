@@ -1,52 +1,27 @@
-import os
-import shutil
-import time
-from pathlib import Path
-
 from util.Config import Config
-from util.GameConnection import GameConnection
+from GameManagement.GameConnection import GameConnection
 
 
 class Evaluator:
 
-    def __init__(self, conf: Config):
-        self.conf = conf
-        self.rescue_level = conf.rescue_level
-        self.rescue_level_path = conf.rescue_level_path
-        self.game_connection = GameConnection()
+    def __init__(self, conf: Config, game_connection: GameConnection):
+        self.start_level = 4
+        self.end_level = 4
+        self.game_connection = game_connection
         self.data = {}
 
-    def start_game(self):
-        self.game_connection.start()
-        self.game_connection.start_game(self.conf.game_path)
-        self.game_connection.wait_for_game_window()
+    def evaluate_level(self):
+        print("\nChange Level")
+        self.game_connection.change_level(index = 3)
 
-    def stop_game(self):
-        self.game_connection.stop()
+        print("\nGet Data")
+        self.game_connection.get_data()
 
-    def copy_game_levels(self):
-        if self.rescue_level:
-            current_rescue_level_pat = self.rescue_level_path
-            timestr = time.strftime("%Y%m%d-%H%M%S")
-            current_rescue_level_path = current_rescue_level_pat.replace("{timestamp}", timestr)
-            os.mkdir(current_rescue_level_path)
-            for src_file in Path(self.conf.get_game_level_path()).glob('*.*'):
-                shutil.move(str(src_file), current_rescue_level_path)
-        else:
-            shutil.rmtree(os.path.join(self.conf.get_game_level_path(), '*'))
+        print("Start AI")
+        self.game_connection.startAi(start_level = 3, end_level = 4)
+        self.game_connection.wait_till_all_level_played()
 
-        ret_copied_levels = []
-
-        for src_file in Path(self.conf.level_path).glob('*.*'):
-            ret_copied_levels.append(src_file)
-            shutil.move(str(src_file), self.conf.get_game_level_path())
-
-        return ret_copied_levels
-
-    def evaluate_level(self, index = 4):
-        self.game_connection.change_level(index = index)
-        time.sleep(2)
-        ret_dat = self.game_connection.get_data()
-        self.data[index] = ret_dat
+        print("\nGet Data Again")
+        self.game_connection.get_data()
 
 

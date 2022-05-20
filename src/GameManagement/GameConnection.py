@@ -7,7 +7,6 @@ from subprocess import Popen as new
 import platform
 import subprocess
 
-import keyboard
 from websocket_server import WebsocketServer
 
 
@@ -162,9 +161,7 @@ class GameConnection(threading.Thread):
         return received_data
 
 
-if __name__ == '__main__':
-    game_connection = GameConnection()
-
+def run_ai_on_level():
     try:
         game_connection.start()
 
@@ -188,3 +185,8 @@ if __name__ == '__main__':
         game_connection.stop()
     except KeyboardInterrupt:
         game_connection.stop()
+
+
+if __name__ == '__main__':
+    game_connection = GameConnection()
+    run_ai_on_level()

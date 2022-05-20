@@ -3,18 +3,26 @@ import math
 import numpy as np
 
 from level.LevelElement import LevelElement
+from util import RunConfig
 
 
 class Level:
 
-    def __init__(self, original_doc = None):
+    def __init__(self, path: str, original_doc = None):
 
+        self.path = path
         self.original_doc = original_doc
 
         self.blocks: [LevelElement] = []
         self.pigs: [LevelElement] = []
         self.platform: [LevelElement] = []
         self.birds: [LevelElement] = []
+
+        # Level meta data
+        self.min_x = None
+        self.min_y = None
+        self.max_x = None
+        self.max_y = None
 
         self.structures = None
 
@@ -33,6 +41,7 @@ class Level:
 
     def separate_structures(self, blocks = True, pigs = True, platform = False):
         test_list = self.create_element_list(blocks, pigs, platform, sorted = True)
+
         # A structure is a list of
         self.structures = []
         for element in test_list:
@@ -50,19 +59,27 @@ class Level:
 
                 for struct_element in structure:
                     dist_to_element = element.distance(struct_element)
-                    print(f"Block {current_element_id} -> {struct_element.id}: {float(dist_to_element)}")
+                    if RunConfig.verbose:
+                        print(f"Block {current_element_id} -> {struct_element.id}: {float(dist_to_element)}")
                     if dist_to_element < 0.1:
                         closest_structures.append(structure)
                         break
 
+            # Go over the structures closest to the element
             if len(closest_structures) == 0:
-                print("Create new Structure")
+                # If there is no structure close means that it could be a new structure
+                if RunConfig.verbose:
+                    print("Create new Structure")
                 self.structures.append([element])
             elif len(closest_structures) == 1:
-                print("Add to closest structure")
+                # Just one structure means it belongs to it
+                if RunConfig.verbose:
+                    print("Add to closest structure")
                 closest_structures[0].append(element)
             else:
-                print("Merge all closest structures")
+                # More than one structure means it adds all structures together
+                if RunConfig.verbose:
+                    print("Merge all closest structures")
                 merge_into = closest_structures[0]
                 for closest_structure in closest_structures[1:]:
                     for merge_element in closest_structure:
@@ -70,8 +87,9 @@ class Level:
                     self.structures.remove(closest_structure)
                 merge_into.append(element)
 
-        for structure in self.structures:
-            print(f"Structure amount: {len(structure)}")
+        if RunConfig.verbose:
+            for structure in self.structures:
+                print(f"Structure amount: {len(structure)}")
 
     def create_img(self, for_structures = True):
         pass
@@ -80,21 +98,25 @@ class Level:
 
         test_list: [LevelElement] = self.create_element_list(blocks, pigs, platform)
 
-        smallest_x = 100000
-        smallest_y = 100000
+        self.calc_level_metadata(test_list)
 
         for element in test_list:
-            if element.x < smallest_x:
-                smallest_x = element.x
-            if element.y < smallest_y:
-                smallest_y = element.y
+            element.x -= self.min_x
+            element.y -= self.min_y
+            element.coordinates[0] -= self.min_x
+            element.coordinates[1] -= self.min_y
 
+    def calc_level_metadata(self, test_list: [LevelElement]):
+        """
+        Calculates with the given elements the metadata wanted
+        :param test_list: The list of level elements which are included in the calculation
+        """
+        self.min_x, self.min_y, self.max_x, self.max_y = 10000, 10000, -10000, -10000
         for element in test_list:
-            element.x += abs(smallest_x)
-            element.y += abs(smallest_y)
-
-            element.coordinates[0] += abs(smallest_x)
-            element.coordinates[1] += abs(smallest_y)
+            self.min_x = min(self.min_x, element.x)
+            self.min_y = min(self.min_y, element.y)
+            self.max_x = max(self.max_x, element.x)
+            self.max_y = max(self.max_y, element.y)
 
     def print_elements(self, as_table = False):
         if not as_table:

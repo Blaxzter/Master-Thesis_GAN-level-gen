@@ -7,8 +7,8 @@ from level.LevelReader import LevelReader
 
 def read_all_files():
     files = glob.glob('./converted_levels/**/*.xml', recursive = True)
-    print(files)
-    return files
+
+    return sorted(files)
 
 
 def utf16_to_utf8():
@@ -42,7 +42,7 @@ def filter_for_rotation():
 
     for idx, file_name in enumerate(files):
         level_reader = LevelReader(file_name)
-        level = level_reader.parse_level()
+        level = level_reader.parse_level(file_name)
         if not level.contains_od_rotation():
 
             node = level_reader.level_doc.getElementsByTagName("Level")
@@ -58,4 +58,5 @@ def filter_for_rotation():
         print(f"Level contains od rotation: {file_name} \n")
 
 
-filter_for_rotation()
+if __name__ == '__main__':
+    filter_for_rotation()

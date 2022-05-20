@@ -1,8 +1,0 @@
-<?xml version="1.0" ?> <Level width="2">  
-  <Camera x="0" y="-1" minWidth="35" maxWidth="35"/>  
-  <Birds>
-</Birds>  
-  <Slingshot x="-12.0" y="-2.7"/>  
-  <GameObjects>
-</GameObjects>  
-  <PrevLevelName name="./converted_levels\Benchmark converted levels 5 (mighty hoax 2)\level-17.xml"/> </Level>
