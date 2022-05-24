@@ -47,8 +47,11 @@ class GameManager:
         return ret_copied_levels
 
     def change_level(self, path):
+        for level in Path(self.conf.get_game_level_path()).glob('*.*'):
+            os.remove(level)
         shutil.copy(str(path), self.conf.get_game_level_path())
-        self.game_connection.change_level(path.split("/")[-1][:-4])
+        self.game_connection.load_level_menu()
+        self.game_connection.change_level(index = 4)
         pass
 
 
@@ -57,5 +60,9 @@ if __name__ == '__main__':
     config = parser.parse_args()
     config.game_folder_path = os.path.normpath('../science_birds/{os}')
     game_manager = GameManager(Config(config))
-    game_manager.start_game()
-    game_manager.change_level(path = "../data/converted_levels/NoRotation/level-08.xml")
+    try:
+        game_manager.start_game()
+        #game_manager.change_level(path = "../data/converted_levels/NoRotation/level-05.xml")
+        game_manager.change_level(path = "../data/converted_levels/NoRotation/level-34.xml")
+    except KeyboardInterrupt:
+        game_manager.stop_game()

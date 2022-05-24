@@ -109,11 +109,13 @@ class GameConnection(threading.Thread):
             print(f"Waiting for client window: {counter}")
             self.condition_object.wait()
 
+        self.load_level_menu()
+
+    def load_level_menu(self):
         print("Load level scene")
         message = [0, 'loadscene', {'scene': 'LevelSelectMenu'}]
         self.send(message)
         self.wait_for_response()
-
         while True:
             if self.response is not None and 'data' in self.response[1] and self.response[1]['data'] == "True":
                 break

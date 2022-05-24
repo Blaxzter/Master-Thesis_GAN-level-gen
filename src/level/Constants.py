@@ -82,19 +82,21 @@ bird_names = {
     '5': "BirdWhite"
 }
 
-coordinate_round = 100000
+materials = ["wood", "stone", "ice"]
+materials_color = ["brown", "grey", "blue"]
 
+coordinate_round = 100000
+smallest_grid_size = 0.11
 
 def get_sizes():
     from tabulate import tabulate
-    smallest_size = 0.22
 
     data = [[
         block_names[block_idx],
-        block_size[0] / smallest_size,
-        block_size[1] / smallest_size,
-        round(block_size[0] / smallest_size),
-        round(block_size[1] / smallest_size),
+        block_size[0] / smallest_grid_size,
+        block_size[1] / smallest_grid_size,
+        round(block_size[0] / smallest_grid_size),
+        round(block_size[1] / smallest_grid_size),
         block_is_rotated[block_idx]
     ] for block_idx, block_size in block_sizes.items()]
 
