@@ -1,3 +1,4 @@
+from loguru import logger
 from shapely import affinity
 from shapely.geometry import Polygon, Point
 
@@ -10,4 +11,4 @@ p3 = (2, 1)
 poly = Polygon([p1, p2, p3])
 rot_poly = affinity.rotate(poly, 180, 'center')
 
-print(ref_point.distance(rot_poly))
+logger.debug(ref_point.distance(rot_poly))

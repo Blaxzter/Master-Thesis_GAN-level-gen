@@ -1,4 +1,6 @@
-from generator.baseline.baseline import BaselineGenerator
+from GameManagement.GameConnection import GameConnection
+from GameManagement.GameManager import GameManager
+from generator.baseline.Baseline import BaselineGenerator
 from util.Config import Config
 from util.Evaluator import Evaluator
 
@@ -7,14 +9,17 @@ class GeneratorFramework:
     def __init__(self, conf: Config):
         self.generated_level_path = conf.level_path
         self.generator = conf.get_generator()
-        self.evaluator = Evaluator(conf)
+
+        self.game_connection = GameConnection(conf = conf)
+        self.game_manager = GameManager(conf = conf, game_connection = self.game_connection)
+        self.evaluator = Evaluator(conf = conf, game_connection = self.game_connection)
 
     def run(self):
         self.generate()
         self.evaluate()
 
     def stop(self):
-        self.evaluator.stop_game()
+        self.game_manager.stop_game()
 
     def generate(self):
         self.generator.generate_level_init(
@@ -22,10 +27,10 @@ class GeneratorFramework:
         )
 
     def evaluate(self):
-        copied_levels = self.evaluator.copy_game_levels()
-        self.evaluator.start_game()
+        self.game_manager.start_game()
+        copied_levels = self.game_manager.copy_game_levels()
         for copied_level in copied_levels:
             level_index = int(copied_level.name[6:8])
-            self.evaluator.evaluate_level(index = level_index)
+            self.evaluator.evaluate_levels(start_level = level_index)
 
 

@@ -1,7 +1,9 @@
+from loguru import logger
 from shapely.geometry import Polygon, Point
 import numpy as np
 
 from level import Constants
+from level.Constants import resolution, ObjectType, LevelMetaData
 from level.LevelElement import LevelElement
 from util import RunConfig
 
@@ -25,12 +27,6 @@ class Level:
         self.use_platform = platform
 
         self.is_normalized = False
-
-        # Level meta data
-        self.min_x = None
-        self.min_y = None
-        self.max_x = None
-        self.max_y = None
 
         self.structures = None
 
@@ -70,7 +66,7 @@ class Level:
                 for struct_element in structure:
                     dist_to_element = element.distance(struct_element)
                     if RunConfig.verbose:
-                        print(f"Block {current_element_id} -> {struct_element.id}: {float(dist_to_element)}")
+                        logger.debug(f"Block {current_element_id} -> {struct_element.id}: {float(dist_to_element)}")
                     if dist_to_element < 0.2:
                         closest_structures.append(structure)
                         break
@@ -79,17 +75,17 @@ class Level:
             if len(closest_structures) == 0:
                 # If there is no structure close means that it could be a new structure
                 if RunConfig.verbose:
-                    print("Create new Structure")
+                    logger.debug("Create new Structure")
                 self.structures.append([element])
             elif len(closest_structures) == 1:
                 # Just one structure means it belongs to it
                 if RunConfig.verbose:
-                    print("Add to closest structure")
+                    logger.debug("Add to closest structure")
                 closest_structures[0].append(element)
             else:
                 # More than one structure means it adds all structures together
                 if RunConfig.verbose:
-                    print("Merge all closest structures")
+                    logger.debug("Merge all closest structures")
                 merge_into = closest_structures[0]
                 for closest_structure in closest_structures[1:]:
                     for merge_element in closest_structure:
@@ -99,43 +95,74 @@ class Level:
 
         if RunConfig.verbose:
             for structure in self.structures:
-                print(f"Structure amount: {len(structure)}")
+                logger.debug(f"Structure amount: {len(structure)}")
 
-    def create_img(self, per_structure = False):
+        return self.structures
+
+    def create_img(self, per_structure = True, dot_version = False):
 
         if not per_structure:
             element_lists: [[LevelElement]] = [self.create_element_list(self.use_blocks, self.use_pigs, self.use_platform)]
         else:
-            if self.structures is not None:
-                element_lists: [[LevelElement]] = self.structures
-            else:
-                print("No Structures")
-                return
+            # Check if the level has been structurised
+            if self.structures is None:
+                self.separate_structures()
+
+            element_lists: [[LevelElement]] = self.structures
 
         ret_pictures = []
 
-        for element_list in element_lists:
-            min_x, min_y, max_x, max_y = self.calc_level_metadata(element_list)
+        if not dot_version:
 
-            x_cords = np.arange(min_x + Constants.smallest_grid_size / 2, max_x - Constants.smallest_grid_size, Constants.smallest_grid_size)
-            y_cords = np.arange(min_y + Constants.smallest_grid_size / 2, max_y - Constants.smallest_grid_size, Constants.smallest_grid_size)
+            for element_list in element_lists:
+                min_x, min_y, max_x, max_y = self.calc_structure_dimensions(element_list)
+                x_len = round((max_x - min_x) / resolution)
+                y_len = round((max_y - min_y) / resolution)
+                picture = np.zeros((y_len + 1, x_len + 1))
 
-            picture = np.zeros((len(y_cords), len(x_cords)))
+                # logger.debug(f"New Structure {(round((max_x - min_x) / resolution), round((max_y - min_y) / resolution))}")
+                for element in element_list:
 
-            for i, y_cord in enumerate(y_cords):
-                for j, x_cord in enumerate(x_cords):
-                    in_location = []
+                    left_block_pos = element.x - element.width / 2 - min_x
+                    right_block_pos = element.x + element.width / 2 - min_x
+                    bottom_block_pos = element.y - element.height / 2 - min_y
+                    top_block_pos = element.y + element.height / 2 - min_y
+                    for x_pos in np.arange(left_block_pos, right_block_pos - resolution / 2, resolution):
+                        for y_pos in np.arange(bottom_block_pos, top_block_pos - resolution / 2, resolution):
 
-                    for element in element_list:
-                        if element.shape_polygon.intersects(Point(x_cord, y_cord)):
-                            in_location.append(element)
+                            x_cord = round(x_pos / resolution)
+                            y_cord = round(y_pos / resolution)
+                            # print(f"picture[{x_cord}, {y_cord}] = {element.get_identifier()} of element {element.id}"
+                            #       f"{f'x {x_cord} out of bounds {x_len}' if x_cord > x_len - 1 else ''} "
+                            #       f"{f'y {y_cord} out of bounds {y_len}' if y_cord > y_len - 1 else ''}")
+                            picture[y_len - y_cord - 1, x_cord] = element.get_identifier()
 
-                    if len(in_location) == 0:
-                        continue
-                    elif len(in_location) >= 1:
-                        picture[len(y_cords) - i - 1, j] = in_location[0].get_identifier()
+                ret_pictures.append(picture)
 
-            ret_pictures.append(picture)
+        else:
+            for element_list in element_lists:
+                min_x, min_y, max_x, max_y = self.calc_structure_dimensions(element_list)
+
+                x_cords = np.arange(min_x + resolution / 2, max_x - resolution, resolution)
+                y_cords = np.arange(min_y + resolution / 2, max_y - resolution, resolution)
+
+                picture = np.zeros((len(y_cords), len(x_cords)))
+
+                for i, y_cord in enumerate(y_cords):
+                    for j, x_cord in enumerate(x_cords):
+                        in_location = []
+
+                        for element in element_list:
+                            if element.shape_polygon.intersects(Point(x_cord, y_cord)):
+                                in_location.append(element)
+                                break
+
+                        if len(in_location) == 0:
+                            continue
+                        elif len(in_location) >= 1:
+                            picture[len(y_cords) - i - 1, j] = in_location[0].get_identifier()
+
+                ret_pictures.append(picture)
 
         return ret_pictures
 
@@ -143,7 +170,7 @@ class Level:
 
         test_list: [LevelElement] = self.create_element_list(self.use_blocks, self.use_pigs, self.use_platform)
 
-        min_x, min_y, max_x, max_y = self.calc_level_metadata(test_list)
+        min_x, min_y, max_x, max_y = self.calc_structure_dimensions(test_list)
 
         for element in test_list:
             element.x -= min_x
@@ -156,7 +183,7 @@ class Level:
     def print_elements(self, as_table = False):
         if not as_table:
             for element in self.blocks + self.pigs + self.platform:
-                print(element)
+                logger.debug(element)
         else:
             from tabulate import tabulate
 
@@ -169,7 +196,7 @@ class Level:
                 element.size
             ] for element in self.blocks + self.pigs + self.platform]
 
-            print(tabulate(data, headers = ["type", "material", "x", "y", "rotation", "sizes"]))
+            logger.debug(tabulate(data, headers = ["type", "material", "x", "y", "rotation", "sizes"]))
 
     def contains_od_rotation(self):
 
@@ -180,7 +207,7 @@ class Level:
             next_integer = round(orientation)
             dist_to_next_int = abs(next_integer - orientation)
             if dist_to_next_int > 0.1:
-                print(str(element))
+                logger.debug(str(element))
                 return True
 
         return False
@@ -209,7 +236,7 @@ class Level:
 
     def filter_slingshot_platform(self):
         if len(self.platform) == 0:
-            print("No Platform")
+            logger.debug("No Platform")
             return
 
         platform_coords = np.asarray(list(map(lambda p: p.coordinates, self.platform)))
@@ -225,17 +252,39 @@ class Level:
         for remove_platform in remove_platforms:
             self.platform.remove(remove_platform)
 
+    def get_level_metadata(self):
+        current_elements = self.get_used_elements()
+        return Level.calc_structure_meta_data(current_elements)
+
     @staticmethod
-    def calc_level_metadata(test_list: [LevelElement]):
+    def calc_structure_meta_data(element_list: [LevelElement]) -> LevelMetaData:
+        min_x, min_y, max_x, max_y = Level.calc_structure_dimensions(element_list)
+        block_amount = len([x for x in element_list if x.object_type == ObjectType.Block])
+        pig_amount = len([x for x in element_list if x.object_type == ObjectType.Pig])
+        platform_amount = len([x for x in element_list if x.object_type == ObjectType.Platform])
+        special_block_amount = len([x for x in element_list if x.object_type == ObjectType.SpecialBlock])
+        return LevelMetaData(
+            height = max_y - min_y,
+            width = max_x - min_x,
+            block_amount = block_amount,
+            pig_amount = pig_amount,
+            platform_amount = platform_amount,
+            special_block_amount = special_block_amount,
+            total = block_amount + pig_amount + platform_amount + special_block_amount,
+            stable = None,
+        )
+
+    @staticmethod
+    def calc_structure_dimensions(element_list: [LevelElement], use_original = False):
         """
         Calculates with the given elements the metadata wanted
-        :param test_list: The list of level elements which are included in the calculation
+        :param element_list: The list of level elements which are included in the calculation
         """
         min_x, min_y, max_x, max_y = 10000, 10000, -10000, -10000
-        for element in test_list:
-            min_x = min(min_x, element.x - element.width / 2)
-            min_y = min(min_y, element.y - element.height / 2)
-            max_x = max(max_x, element.x + element.width / 2)
-            max_y = max(max_y, element.y + element.height / 2)
+        for element in element_list:
+            min_x = min(min_x, (element.x if not use_original else element.original_x) - element.width / 2)
+            min_y = min(min_y, (element.y if not use_original else element.original_y) - element.height / 2)
+            max_x = max(max_x, (element.x if not use_original else element.original_x) + element.width / 2)
+            max_y = max(max_y, (element.y if not use_original else element.original_y) + element.height / 2)
 
         return min_x, min_y, max_x, max_y

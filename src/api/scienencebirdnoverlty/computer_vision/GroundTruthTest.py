@@ -100,7 +100,7 @@ class GroundTruthTest:
         self.test_traj()
         self.test_slingshot()
         self.test_other_objects()
-        print("ground truth passed validity check")
+        log.debug("ground truth passed validity check")
 
 
         

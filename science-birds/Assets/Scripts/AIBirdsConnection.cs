@@ -136,6 +136,8 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		string json = JsonUtility.ToJson (msg);
 		string message = "[" + id + "," + json + "]";
 
+		Debug.Log(message.Length);
+		
 	#if UNITY_WEBGL && !UNITY_EDITOR
 		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
 	#else
@@ -177,8 +179,13 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		currentLevelData.InitialDamage = currentLevelData.CumulativeDamage;
 		print("Stable: " + currentLevelData.InitialDamage);
 		
+		Message msg = new Message ();
+		msg.data = currentLevelData.GetJson();
+		msg.time = DateTime.Now.ToString ();
+		
 		string id = data [0];
-		string message = "[" + id + "," + "{}" + "]";
+		string json = JsonUtility.ToJson (msg);
+		string message = "[" + id + "," + json + "]";
 
 	#if UNITY_WEBGL && !UNITY_EDITOR
 		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
@@ -321,7 +328,10 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 			startLevel = LevelList.Instance.CurrentIndex;
 		}
 
-		if (endLevel > 0 && endLevel >= startLevel)
+		if (endLevel == -1)
+		{
+			endLevel = LevelList.Instance.AmountOfLoadedLevels();
+		} else if (endLevel > 0 && endLevel >= startLevel)
 		{
 			LevelList.Instance.RequiredLevel(endLevel - startLevel);
 		}

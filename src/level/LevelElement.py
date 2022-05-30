@@ -8,19 +8,26 @@ from shapely import affinity
 from shapely.geometry import Polygon, Point
 
 from level import Constants
+from level.Constants import ObjectType
 from util.Utils import round_cord
 
 
 class LevelElement:
 
-    id_iter = itertools.count(1)
-
-    def __init__(self, type, material, x, y, rotation, scaleX = None, scaleY = None):
-        self.id = next(LevelElement.id_iter)
+    def __init__(self, id, type, material = None, x = None, y = None, rotation = 0, scaleX = 1, scaleY = 1):
+        self.id = id
         self.type = type
+
+        if x is None:
+            self.object_type = ObjectType.Bird
+            return
+
         self.material = material
         self.x = round(float(x) * Constants.coordinate_round) / Constants.coordinate_round
         self.y = round(float(y) * Constants.coordinate_round) / Constants.coordinate_round
+
+        self.original_x = self.x
+        self.original_y = self.y
 
         if rotation is not None:
             self.rotation = float(rotation)
@@ -30,20 +37,30 @@ class LevelElement:
 
         self.coordinates = np.array([self.x, self.y])
 
+        self.object_type: Optional[ObjectType] = None
+
         if self.type == "Platform":
-            self.size = round_cord(float(scaleX) * 0.65,  float(scaleY) * 0.65)
+            self.size = round_cord(float(scaleX) * 0.62,  float(scaleY) * 0.62)
+            self.object_type = ObjectType.Platform
+
         elif self.type in Constants.pig_types.values():
             self.size = Constants.pig_size
+            self.object_type = ObjectType.Pig
+
         elif self.type in Constants.additional_objects.values():
             self.index = list(Constants.additional_objects.values()).index(self.type) + 1
             self.size = Constants.additional_object_sizes[str(self.index)]
+            self.object_type = ObjectType.SpecialBlock
+
         elif self.type == "Slingshot":
             self.size = (0.25, 0.75)
+            self.object_type = ObjectType.Slingshot
         else:
             self.index = list(Constants.block_names.values()).index(self.type) + 1
             if self.is_vertical:
                 self.index += 1
             self.size = Constants.block_sizes[str(self.index)]
+            self.object_type = ObjectType.Block
 
         self.width = self.size[0]
         self.height = self.size[1]
@@ -87,12 +104,11 @@ class LevelElement:
         return self.shape_polygon.distance(o.shape_polygon)
 
     def get_identifier(self):
-        return self.id
-
         if "Basic" in self.type:
             return 5
         if "Platform" in self.type:
             return 6
+
         return Constants.materials.index(self.material) + 1
 
     def __str__(self):
@@ -103,3 +119,5 @@ class LevelElement:
                f"y: {self.y} " \
                f"rotation: {self.rotation} " \
                f"size: {self.size} "
+
+

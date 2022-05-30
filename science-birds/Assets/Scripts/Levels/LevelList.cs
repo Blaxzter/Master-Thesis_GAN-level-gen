@@ -132,4 +132,9 @@ public class LevelList : ABSingleton<LevelList> {
 	{
 		this._amountOfLevelsRequired = amountOfLevelsRequired;
 	}
+
+	public int AmountOfLoadedLevels()
+	{
+		return _levels.Length;
+	}
 }

@@ -2,7 +2,7 @@ import os
 import platform
 
 from exceptions.Exceptions import ParameterException, OSNotSupported
-from generator.baseline.baseline import BaselineGenerator
+from generator.baseline.Baseline import BaselineGenerator
 
 GeneratorOptions = [
     'baseline'
@@ -34,6 +34,7 @@ class Config:
         self.evaluate = args.evaluate
         self.rescue_level = args.rescue_level
         self.rescue_level_path = os.path.normpath('./data/level_archive/{timestamp}/')
+        self.ai_path = args.ai_path
 
     def get_generator(self):
         if self.generator == 'baseline':
@@ -50,3 +51,6 @@ class Config:
 
     def get_game_level_path(self):
         return os.path.join(self.game_folder_path, self.copy_dest)
+
+    def get_ai_path(self):
+        return self.ai_path

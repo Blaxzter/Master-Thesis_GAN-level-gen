@@ -12,12 +12,11 @@ from util.Evaluator import Evaluator
 
 class GameManager:
 
-    def __init__(self, conf: Config):
+    def __init__(self, conf: Config, game_connection: GameConnection):
         self.conf = conf
         self.rescue_level = conf.rescue_level
         self.rescue_level_path = conf.rescue_level_path
-        self.game_connection = GameConnection()
-        self.evaluator = Evaluator(conf, self.game_connection)
+        self.game_connection = game_connection
 
     def start_game(self):
         self.game_connection.start()
@@ -25,10 +24,16 @@ class GameManager:
         self.game_connection.wait_for_game_window()
 
     def stop_game(self):
-        self.game_connection.stop()
+        self.game_connection.stop_components()
 
-    def copy_game_levels(self):
-        if self.rescue_level:
+    def copy_game_levels(self, level_path = None, rescue_level = None):
+        if rescue_level is None:
+            rescue_level = self.rescue_level
+
+        if level_path is None:
+            level_path = self.conf.level_path
+
+        if rescue_level:
             current_rescue_level_pat = self.rescue_level_path
             timestr = time.strftime("%Y%m%d-%H%M%S")
             current_rescue_level_path = current_rescue_level_pat.replace("{timestamp}", timestr)
@@ -40,9 +45,11 @@ class GameManager:
 
         ret_copied_levels = []
 
-        for src_file in Path(self.conf.level_path).glob('*.*'):
+        for src_file in Path(level_path).glob('*.*'):
             ret_copied_levels.append(src_file)
             shutil.move(str(src_file), self.conf.get_game_level_path())
+
+        self.game_connection.load_level_menu()
 
         return ret_copied_levels
 
@@ -54,15 +61,25 @@ class GameManager:
         self.game_connection.change_level(index = 4)
         pass
 
+    def create_img_of_level(self, index = 4):
+        self.game_connection.load_level_menu()
+        self.game_connection.change_level(index = index)
+        img = self.game_connection.create_img_of_level()
+        return img
+
 
 if __name__ == '__main__':
     parser = ProgramArguments.get_program_arguments()
     config = parser.parse_args()
     config.game_folder_path = os.path.normpath('../science_birds/{os}')
-    game_manager = GameManager(Config(config))
+
+    config = Config(config)
+    game_connection = GameConnection(conf = config)
+    game_manager = GameManager(conf = config, game_connection = game_connection)
     try:
         game_manager.start_game()
-        #game_manager.change_level(path = "../data/converted_levels/NoRotation/level-05.xml")
-        game_manager.change_level(path = "../data/converted_levels/NoRotation/level-34.xml")
+        for level in sorted(Path("../data/train/structures/").glob('*.xml')):
+            game_manager.change_level(path = str(level))
+            img = game_connection.create_img_of_level()
     except KeyboardInterrupt:
         game_manager.stop_game()

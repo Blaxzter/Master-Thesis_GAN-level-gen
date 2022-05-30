@@ -1,3 +1,20 @@
+from dataclasses import dataclass
+from enum import Enum
+from typing import Optional
+
+
+@dataclass
+class LevelMetaData:
+    """ Class that represents a levels / structures meta data """
+    height: float = None
+    width: float = None
+    block_amount: int = None
+    platform_amount: int = None
+    pig_amount: int = None
+    special_block_amount: int = None
+    total: int = None
+    stable: Optional[bool] = None
+
 # blocks number and size
 block_sizes = {
     '1': (0.84, 0.84),
@@ -14,6 +31,8 @@ block_sizes = {
     '12': (2.06, 0.22),
     '13': (0.22, 2.06)
 }
+
+absolute_ground = -3.5
 
 additional_object_sizes = {
     '1': (0.82, 0.82),
@@ -86,17 +105,27 @@ materials = ["wood", "stone", "ice"]
 materials_color = ["brown", "grey", "blue"]
 
 coordinate_round = 100000
-smallest_grid_size = 0.11
+resolution = 0.11 / 2
+
+
+class ObjectType(Enum):
+    Block = 1
+    Platform = 2
+    Pig = 3
+    Slingshot = 4
+    SpecialBlock = 5
+    Bird = 5
+
 
 def get_sizes():
     from tabulate import tabulate
 
     data = [[
         block_names[block_idx],
-        block_size[0] / smallest_grid_size,
-        block_size[1] / smallest_grid_size,
-        round(block_size[0] / smallest_grid_size),
-        round(block_size[1] / smallest_grid_size),
+        block_size[0] / resolution,
+        block_size[1] / resolution,
+        round(block_size[0] / resolution),
+        round(block_size[1] / resolution),
         block_is_rotated[block_idx]
     ] for block_idx, block_size in block_sizes.items()]
 

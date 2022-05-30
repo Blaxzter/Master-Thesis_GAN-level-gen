@@ -1,0 +1,37 @@
+<?xml version="1.0" ?>
+ <Level width="2">
+  <Camera x="0" y="2" minWidth="20" maxWidth="30"/>
+  <Birds>
+   <Bird type="BirdWhite"/>
+   <Bird type="BirdBlack"/>
+   <Bird type="BirdBlack"/>
+   <Bird type="BirdRed"/>
+   <Bird type="BirdRed"/>
+   <Bird type="BirdBlue"/>
+   <Bird type="BirdRed"/>
+  </Birds>
+  <Slingshot x="-8" y="-2.5"/>
+  <GameObjects>
+   <Platform type="Platform" material="" x="0.21822" y="2.27034" rotation="0.0"/>
+   <Platform type="Platform" material="" x="0.83822" y="2.27034" rotation="0.0"/>
+   <Platform type="Platform" material="" x="1.45822" y="2.27034" rotation="0.0"/>
+   <Block type="RectFat" material="ice" x="0.36822" y="3.00534" rotation="90.0"/>
+   <Platform type="Platform" material="" x="2.07822" y="2.27034" rotation="0.0"/>
+   <Block type="RectFat" material="wood" x="1.06822" y="3.00534" rotation="90.0"/>
+   <Platform type="Platform" material="" x="2.69822" y="2.27034" rotation="0.0"/>
+   <Block type="RectFat" material="ice" x="1.76822" y="3.00534" rotation="90.0"/>
+   <Block type="RectFat" material="ice" x="0.36822" y="3.85534" rotation="90.0"/>
+   <Block type="RectFat" material="ice" x="1.06822" y="3.85534" rotation="90.0"/>
+   <Block type="RectFat" material="ice" x="2.46822" y="3.00534" rotation="90.0"/>
+   <Platform type="Platform" material="" x="3.31822" y="2.27034" rotation="0.0"/>
+   <Block type="SquareSmall" material="ice" x="0.36822" y="4.49534" rotation="0.0"/>
+   <Block type="RectFat" material="stone" x="1.76822" y="3.85534" rotation="90.0"/>
+   <Block type="RectFat" material="ice" x="3.16822" y="3.00534" rotation="90.0"/>
+   <Block type="SquareSmall" material="stone" x="1.06822" y="4.49534" rotation="0.0"/>
+   <Block type="RectFat" material="stone" x="2.46822" y="3.85534" rotation="90.0"/>
+   <Block type="SquareSmall" material="wood" x="1.76822" y="4.49534" rotation="0.0"/>
+   <Block type="RectFat" material="wood" x="3.16822" y="3.85534" rotation="90.0"/>
+   <Block type="SquareSmall" material="stone" x="2.46822" y="4.49534" rotation="0.0"/>
+   <Block type="SquareSmall" material="stone" x="3.16822" y="4.49534" rotation="0.0"/>
+  </GameObjects>
+ </Level>

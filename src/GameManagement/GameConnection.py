@@ -1,54 +1,81 @@
+from loguru import logger
 import json
 import logging
 import os
+import platform
+import subprocess
 import threading
 import time
 from subprocess import Popen as new
-import platform
-import subprocess
-
 from websocket_server import WebsocketServer
+from util.Config import Config
+
+from wsocket import WSocketApp, WebSocketError, logger, run
 
 
 class GameConnection(threading.Thread):
-    def __init__(self, host = 'localhost', port = 9001):
+    def __init__(self, conf: Config, host = 'localhost', port = 9001, stop_if_game_windows_close = True):
         super().__init__()
 
+        if conf:
+            self.ai_path = conf.get_ai_path()
         self.condition_object = threading.Condition()
 
-        self.server: WebsocketServer = WebsocketServer(host = host, port = port, loglevel = logging.INFO)
-        self.server.set_fn_new_client(self.new_client)
-        self.server.set_fn_message_received(self.game_response)
-        self.server.set_fn_client_left(self.game_window_closed)
+        # self.server: WebsocketServer = WebsocketServer(host = host, port = port, loglevel = logging.INFO)
+        # self.server.set_fn_new_client(self.new_client)
+        # self.server.set_fn_message_received(self.game_response)
+        # self.server.set_fn_client_left(self.game_window_closed)
+
+        self.host = host
+        self.port = port
+
+        self.server = WSocketApp()
+        self.server.onconnect += self.new_client
+        self.server.onmessage += self.game_response
+        self.server.onclose += self.game_window_closed
+
+        self._stop_event = threading.Event()
+        self.stop_if_game_windows_close = stop_if_game_windows_close
 
         self.response = None
 
         self.client = None
         self.game_process: subprocess.Popen[str] = None
         self.ai_process: subprocess.Popen[str] = None
+        self.counter = 0
 
     def run(self):
-        self.server.run_forever()
+        run(self.server, host=self.host, port=self.port)
 
     def wait_for_response(self):
         # Wait for game response
         if self.response is None:
-            print("Wait for message")
+            logger.debug("Wait for message")
             self.condition_object.acquire()
             self.condition_object.wait()
             self.condition_object.release()
+            msg = self.response
+            self.response = None
         else:
+            msg = self.response
             self.response = None
 
-    def game_response(self, client, server, message: str):
-        print(f"Game Response: {message}")
+        return msg
+
+
+
+    def game_response(self, message: str, client):
+        if len(message) > 200:
+            logger.debug(f"Game Response: {message[:200]}")
+        else:
+            logger.debug(f"Game Response: {message[:200]}")
         self.response = json.loads(message)
         self.condition_object.acquire()
         self.condition_object.notify()
         self.condition_object.release()
 
-    def game_window_closed(self, client, server):
-        print(f"Game Window Closed")
+    def game_window_closed(self, message, client):
+        logger.debug(f"Game Window Closed")
         self.stop_game()
 
         if self.ai_process:
@@ -57,23 +84,37 @@ class GameConnection(threading.Thread):
 
         self.client = None
 
+        if self.stop_if_game_windows_close:
+            logger.debug("Stop server")
+            self.server.shutdown()
+
     def start_game(self, game_path = '../science_birds/win-new/ScienceBirds.exe'):
         os_name = platform.system()
         if os_name == 'Windows':
-            self.game_process = new(game_path, shell = False, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            self.game_process = new(game_path, shell = False, stdout = subprocess.DEVNULL, stderr = subprocess.STDOUT)
         elif os_name == 'Darwin':
             os.system(f"open {game_path}")
 
-    def startAi(self, start_level = -1, end_level = -1, ai_path = '../ai/Naive-Agent-standalone-Streamlined.jar'):
+    def startAi(self, start_level = -1, end_level = -1, print_ai_log = True, ai_path = None):
 
         if self.ai_process:
             self.ai_process.terminate()
             self.ai_process.wait()
+            self.ai_process = None
 
-        message = [0, 'aimodus', f'{{\"mode\": true, \"startLevel\" : {start_level}, \"endLevel\": {end_level}}}']
+        # Set the game into ai modus and define which level to be played
+        message = [0, 'aimodus', f'{{"mode": true, "startLevel" : {start_level}, "endLevel": {end_level}}}']
+        logger.debug(message)
         self.send(message)
         self.wait_for_response()
-        self.ai_process = new(f"java -jar {ai_path}", shell = False, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+        if ai_path is None:
+            ai_path = self.ai_path
+
+        if print_ai_log:
+            self.ai_process = new(f"java -jar {ai_path}", shell = False)
+        else:
+            self.ai_process = new(f"java -jar {ai_path}", shell = False, stdout = subprocess.DEVNULL, stderr = subprocess.STDOUT)
 
     def stopAI(self):
 
@@ -85,14 +126,14 @@ class GameConnection(threading.Thread):
             self.ai_process.terminate()
             self.ai_process.wait()
 
-    def stop(self):
-        self.server.shutdown_gracefully()
+    def stop_components(self):
         self.stop_game()
         if self.ai_process:
             self.ai_process.terminate()
+        self._stop_event.set()
 
-    def new_client(self, client, server: WebsocketServer):
-        print(f"New game window connected {client}")
+    def new_client(self, client):
+        logger.debug(f"New game window connected {client}")
         self.client = client
         self.condition_object.acquire()
         self.condition_object.notify()
@@ -100,44 +141,43 @@ class GameConnection(threading.Thread):
 
     def send(self, msg):
         self.response = None
-        self.server.send_message(self.client, json.dumps(msg))
+        self.client.send(json.dumps(msg))
 
     def wait_for_game_window(self):
         counter = 0
         self.condition_object.acquire()
         while self.client is None:
-            print(f"Waiting for client window: {counter}")
+            logger.debug(f"Waiting for client window: {counter}")
             self.condition_object.wait()
 
-        self.load_level_menu()
-
     def load_level_menu(self):
-        print("Load level scene")
+        logger.debug("Load level scene")
         message = [0, 'loadscene', {'scene': 'LevelSelectMenu'}]
         self.send(message)
         self.wait_for_response()
+        response = None
         while True:
-            if self.response is not None and 'data' in self.response[1] and self.response[1]['data'] == "True":
+            if response is not None and 'data' in response[1] and response[1]['data'] == "True":
                 break
 
-            print(f"In loop: {self.response}")
-            print("Is level loaded")
+            logger.debug(f"In loop: {response}")
+            logger.debug("Level Menu is loaded")
             message = [0, 'levelsloaded']
             self.send(message)
-            self.wait_for_response()
+            response = self.wait_for_response()
             time.sleep(0.2)
 
     def wait_till_all_level_played(self):
-        self.response = None
+        response = None
         while True:
-            if self.response is not None and 'data' in self.response[1] and self.response[1]['data'] == "True":
+            if response is not None and 'data' in response[1] and response[1]['data'] == "True":
                 break
 
-            print("Wait for level played")
+            logger.debug("Wait for level played")
             message = [0, 'alllevelsplayed']
             self.send(message)
-            self.wait_for_response()
-            time.sleep(1)
+            response = self.wait_for_response()
+            time.sleep(2)
 
     def change_level(self, index = 0):
         message = [0, 'selectlevel', {'levelIndex': index}]
@@ -155,40 +195,15 @@ class GameConnection(threading.Thread):
     def get_data(self):
         message = [0, 'getdata']
         self.send(message)
-        self.wait_for_response()
-        received_data = self.response[1]['data']
-        parsed = json.loads(received_data)
-        print(json.dumps(parsed, indent = 4, sort_keys = True))
+        received_data = self.wait_for_response()
+        parsed = json.loads(received_data[1]['data'])
+        logger.debug(json.dumps(parsed, indent = 4, sort_keys = True))
 
         return received_data
 
+    def create_img_of_level(self):
+        message = [0, 'screenshot']
+        self.send(message)
+        received_data = self.wait_for_response()
+        return received_data[1]['data']
 
-def run_ai_on_level():
-    try:
-        game_connection.start()
-
-        print("Start game")
-        game_connection.start_game()
-        game_connection.wait_for_game_window()
-
-        print("\nChange Level")
-        game_connection.change_level(index = 3)
-
-        print("\nGet Data")
-        game_connection.get_data()
-
-        print("Start AI")
-        game_connection.startAi(start_level = 3, end_level = 4)
-        game_connection.wait_till_all_level_played()
-
-        print("\nGet Data Again")
-        game_connection.get_data()
-
-        game_connection.stop()
-    except KeyboardInterrupt:
-        game_connection.stop()
-
-
-if __name__ == '__main__':
-    game_connection = GameConnection()
-    run_ai_on_level()

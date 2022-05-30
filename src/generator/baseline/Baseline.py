@@ -1,11 +1,13 @@
+from loguru import logger
 from copy import deepcopy
 from math import ceil
 from pathlib import Path
 from random import randint
 from random import uniform
-
+from tqdm import tqdm
 
 class BaselineGenerator:
+
     def __init__(self):
         # blocks number and size
         self.blocks = {'1': [0.84, 0.84], '2': [0.85, 0.43], '3': [0.43, 0.85], '4': [0.43, 0.43], '5': [0.22, 0.22],
@@ -81,6 +83,20 @@ class BaselineGenerator:
 
         self.final_TNT_positions = []
         self.final_platforms = []
+
+        # Level Generation settings
+        self.number_levels = 1
+        self.pig_range = [2, 3]
+        self.restricted_combination = ""
+        self.use_triangles = False
+        self.use_circles = False
+
+    def settings(self, number_levels = 1, pig_range = "8,10", use_triangles = False, use_circles = False, restricted_combination = ""):
+        self.use_triangles = use_triangles
+        self.use_circles = use_circles
+        self.number_levels = number_levels
+        self.pig_range = pig_range.split(",")
+        self.restricted_combination = restricted_combination
 
     def generate_subsets(self, current_tree_bottom):
         """
@@ -422,9 +438,9 @@ class BaselineGenerator:
                     [item[0], item[1], round((((self.blocks[str(item[0])][1]) / 2) + ground), 10)])
             ground = ground + (self.blocks[str(item[0])][1])
 
-        print("Width:", self.find_structure_width(complete_locations))
-        print("Height:", self.find_structure_height(complete_locations))
-        print("Block number:", len(complete_locations))  # number self.blocks present in the structure
+        logger.debug(f"Width: {self.find_structure_width(complete_locations)}")
+        logger.debug(f"Height: {self.find_structure_height(complete_locations)}")
+        logger.debug(f"Block number: {len(complete_locations)}")  # number self.blocks present in the structure
 
         # identify all possible pig positions on top of self.blocks (maximum 2 pigs per block, checks center before sides)
         possible_pig_positions = []
@@ -496,8 +512,7 @@ class BaselineGenerator:
                     new_pig_positions.append(i)
             possible_pig_positions = new_pig_positions
 
-        print("Pig number:", len(final_pig_positions))  # number of pigs present in the structure
-        print("")
+        logger.debug(f"Pig number:  {len(final_pig_positions)}")
 
         return complete_locations, final_pig_positions
 
@@ -525,8 +540,7 @@ class BaselineGenerator:
             ground_positions.append(ground_divides[j] + ((ground_divides[j + 1] - ground_divides[j]) / 2))
             ground_widths.append(ground_divides[j + 1] - ground_divides[j])
 
-        print("number ground structures:", len(ground_positions))
-        print("")
+        logger.debug(f"number ground structures: {len(ground_positions)}")
 
         # creates a ground structure for each defined area
         self.complete_locations = []
@@ -656,8 +670,7 @@ class BaselineGenerator:
                 attempts = 0
                 number_platforms = number_platforms - 1
 
-        print("number platforms:", number_platforms)
-        print("")
+        logger.debug(f"number platforms: {number_platforms}")
 
         return number_platforms, self.final_platforms, platform_centers
 
@@ -1091,14 +1104,14 @@ class BaselineGenerator:
         Path(folder_path).mkdir(parents = True, exist_ok = True)
         f = open(f"{folder_path}level-{current_level}.xml", "w")
 
-        f.write('<?xml version="1.0" encoding="utf-16"?>\n')
+        f.write('<?xml version="1.0" encoding="utf-8"?>\n')
         f.write('<Level width ="2">\n')
-        f.write('<Camera x="0" y="2" minWidth="20" maxWidth="30">\n')
+        f.write('<Camera x="0" y="2" minWidth="20" maxWidth="30"/>\n')
         f.write('<Birds>\n')
         for i in range(number_birds):  # bird type is chosen using probability table
             f.write('<Bird type="%s"/>\n' % self.bird_names[str(self.choose_item(self.bird_probabilities))])
         f.write('</Birds>\n')
-        f.write('<Slingshot x="-8" y="-2.5">\n')
+        f.write('<Slingshot x="-8" y="-2.5"/>\n')
         f.write('<GameObjects>\n')
 
         for i in complete_locations:
@@ -1140,90 +1153,75 @@ class BaselineGenerator:
 
         f.close()
 
-    def generate_level_init(self, folder_path = "./", parameter_path = "./generator/baseline/parameters.txt"):
+    def generate_level_init(self, folder_path = "./", start_level_index = 4):
         # generate levels using input parameters
 
         backup_probability_table_blocks = deepcopy(self.probability_table_blocks)
         backup_materials = deepcopy(self.materials)
 
-        FILE = open(parameter_path, 'r')
-        checker = FILE.readline()
-        finished_levels = 0
-        while checker != "":
-            if checker == "\n":
-                checker = FILE.readline()
+        restricted_combinations = self.restricted_combination.split(',')
+        for i in range(len(restricted_combinations)):
+            # if all materials are baned for a block type then do not use that block type
+            restricted_combinations[i] = restricted_combinations[i].split()
+
+        self.restricted_blocks = []  # block types that cannot be used with any materials
+        for key, value in self.block_names.items():
+            completely_restricted = True
+            for material in self.materials:
+                if [material, value] not in restricted_combinations:
+                    completely_restricted = False
+            if completely_restricted == True:
+                self.restricted_blocks.append(value)
+
+        self.probability_table_blocks = deepcopy(backup_probability_table_blocks)
+        self.trihole_allowed = self.use_triangles
+        self.tri_allowed = self.use_triangles
+        self.cir_allowed = self.use_circles
+        self.cirsmall_allowed = self.use_circles
+        self.TNT_allowed = True
+
+        # remove restricted block types from the structure generation process
+        self.probability_table_blocks = self.remove_blocks(self.restricted_blocks)
+        if "TriangleHole" in self.restricted_blocks:
+            self.trihole_allowed = False
+        if "Triangle" in self.restricted_blocks:
+            self.tri_allowed = False
+        if "Circle" in self.restricted_blocks:
+            self.cir_allowed = False
+        if "CircleSmall" in self.restricted_blocks:
+            self.cirsmall_allowed = False
+
+        for current_level in tqdm(range(self.number_levels)):
+            logger.debug(f"Create Level {current_level}")
+
+            self.number_ground_structures = randint(2, 4)  # number of ground structures
+            number_platforms = randint(1, 3)  # number of platforms (reduced automatically if not enough space)
+            # number of pigs (if set too large then can cause program to infinitely loop)
+            number_pigs = randint(int(self.pig_range[0]), int(self.pig_range[1]))
+
+            if (current_level + start_level_index) < 10:
+                level_name = "0" + str(current_level + start_level_index)
             else:
-                number_levels = int(deepcopy(checker))  # the number of levels to generate
-                # block type and material combination that are banned from the level
-                restricted_combinations = FILE.readline().split(',')
-                for i in range(len(restricted_combinations)):
-                    # if all materials are baned for a block type then do not use that block type
-                    restricted_combinations[i] = restricted_combinations[i].split()
+                level_name = str(current_level + start_level_index)
 
-                pig_range = FILE.readline().split(',')
-                # time limit to create the levels, shouldn't be an issue for most generators (approximately an hour for 10 levels)
-                time_limit = int(FILE.readline())
-                checker = FILE.readline()
+            number_ground_structures, complete_locations, final_pig_positions = self.create_ground_structures()
+            number_platforms, final_platforms, platform_centers \
+                = self.create_platforms(number_platforms, complete_locations, final_pig_positions)
+            complete_locations, final_pig_positions \
+                = self.create_platform_structures(final_platforms, platform_centers, complete_locations, final_pig_positions)
 
-                self.restricted_blocks = []  # block types that cannot be used with any materials
-                for key, value in self.block_names.items():
-                    completely_restricted = True
-                    for material in self.materials:
-                        if [material, value] not in restricted_combinations:
-                            completely_restricted = False
-                    if completely_restricted == True:
-                        self.restricted_blocks.append(value)
-
-                self.probability_table_blocks = deepcopy(backup_probability_table_blocks)
-                self.trihole_allowed = True
-                self.tri_allowed = True
-                self.cir_allowed = True
-                self.cirsmall_allowed = True
-                self.TNT_allowed = True
-
-                # remove restricted block types from the structure generation process
-                self.probability_table_blocks = self.remove_blocks(self.restricted_blocks)
-                if "TriangleHole" in self.restricted_blocks:
-                    self.trihole_allowed = False
-                if "Triangle" in self.restricted_blocks:
-                    self.tri_allowed = False
-                if "Circle" in self.restricted_blocks:
-                    self.cir_allowed = False
-                if "CircleSmall" in self.restricted_blocks:
-                    self.cirsmall_allowed = False
-
-                for current_level in range(number_levels):
-
-                    self.number_ground_structures = randint(2, 4)  # number of ground structures
-                    number_platforms = randint(1, 3)  # number of platforms (reduced automatically if not enough space)
-                    # number of pigs (if set too large then can cause program to infinitely loop)
-                    number_pigs = randint(int(pig_range[0]), int(pig_range[1]))
-
-                    if (current_level + finished_levels + 4) < 10:
-                        level_name = "0" + str(current_level + finished_levels + 4)
-                    else:
-                        level_name = str(current_level + finished_levels + 4)
-
-                    number_ground_structures, complete_locations, final_pig_positions = self.create_ground_structures()
-                    number_platforms, final_platforms, platform_centers = self.create_platforms(number_platforms,
-                                                                                                complete_locations,
-                                                                                                final_pig_positions)
-                    complete_locations, final_pig_positions = self.create_platform_structures(final_platforms,
-                                                                                              platform_centers,
-                                                                                              complete_locations,
-                                                                                              final_pig_positions)
-                    final_pig_positions, removed_pigs = self.remove_unnecessary_pigs(number_pigs)
-                    final_pig_positions = self.add_necessary_pigs(number_pigs)
-                    self.final_TNT_positions = self.add_TNT(removed_pigs)
-                    number_birds = self.choose_number_birds(final_pig_positions, number_ground_structures,
-                                                            number_platforms)
-                    possible_trihole_positions, possible_tri_positions, possible_cir_positions, possible_cirsmall_positions = self.find_additional_block_positions(
-                        complete_locations)
-                    selected_other = self.add_additional_blocks(possible_trihole_positions, possible_tri_positions,
-                                                                possible_cir_positions, possible_cirsmall_positions)
-                    self.write_level_xml(complete_locations, selected_other, final_pig_positions, self.final_TNT_positions,
-                                         final_platforms, number_birds, level_name, restricted_combinations, folder_path)
-                finished_levels = finished_levels + number_levels
+            final_pig_positions, removed_pigs = self.remove_unnecessary_pigs(number_pigs)
+            final_pig_positions = self.add_necessary_pigs(number_pigs)
+            self.final_TNT_positions = self.add_TNT(removed_pigs)
+            number_birds = self.choose_number_birds(final_pig_positions, number_ground_structures,
+                                                    number_platforms)
+            possible_trihole_positions, possible_tri_positions, possible_cir_positions, possible_cirsmall_positions = self.find_additional_block_positions(
+                complete_locations)
+            selected_other = self.add_additional_blocks(possible_trihole_positions, possible_tri_positions,
+                                                        possible_cir_positions, possible_cirsmall_positions)
+            self.write_level_xml(complete_locations, selected_other, final_pig_positions, self.final_TNT_positions,
+                                 final_platforms, number_birds, level_name, restricted_combinations, folder_path)
+            logger.debug(f"Level Created{current_level} \n")
 
 
 if __name__ == '__main__':
