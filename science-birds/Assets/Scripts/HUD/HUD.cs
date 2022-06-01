@@ -38,10 +38,10 @@ public class HUD : ABSingleton<HUD> {
 	private bool _isZoomingOut;
 	private bool _usedSpecialPower;
 
-	private uint _totalScore;
-	private int _usedBird;
-	private float _totalDamage;
-	private int _totalDeath;
+	private uint _totalScore = 0;
+	private int _usedBird = 0;
+	private float _totalDamage = 0;
+	private int _totalDeath = 0;
 	private float _simulatedDragTimer;
 
 	private Vector3 _inputPos;
@@ -120,6 +120,8 @@ public class HUD : ABSingleton<HUD> {
 
 			ClickDown (_inputPos);
 
+			this.AddBird();
+			
 			if(!isMouseControlling)
 				SimulateInputEvent++;
         }
@@ -251,6 +253,11 @@ public class HUD : ABSingleton<HUD> {
 
 		return _totalScore;
 	}
+	
+	public void SetScore(uint score) {
+
+		_totalScore = score;
+	}
 
 	public void AddDamage(float damage) {
 		
@@ -267,6 +274,11 @@ public class HUD : ABSingleton<HUD> {
 		_totalDeath += 1;
 	}
 
+	public void SetDeath(int death) {
+		
+		_totalDeath = death;
+	}
+
 	public int GetDeath() {
 
 		return _totalDeath;
@@ -275,10 +287,16 @@ public class HUD : ABSingleton<HUD> {
 	public void AddBird()
 	{
 		_usedBird += 1;
+		print(_usedBird);
 	}
 
 	public int GetBirdsUsed()
 	{
 		return _usedBird;
+	}
+	
+	public void SetBirdsUsed(int bird)
+	{
+		_usedBird = bird;
 	}
 }

@@ -1,16 +1,19 @@
-from loguru import logger
+import base64
+import io
 import json
-import logging
 import os
 import platform
 import subprocess
 import threading
 import time
 from subprocess import Popen as new
-from websocket_server import WebsocketServer
-from util.Config import Config
+from wsgiref.simple_server import make_server
 
-from wsocket import WSocketApp, WebSocketError, logger, run
+import matplotlib.image as mpimg
+from loguru import logger
+from wsocket import WSocketApp, logger, FixedHandler, ThreadingWSGIServer
+
+from util.Config import Config
 
 
 class GameConnection(threading.Thread):
@@ -21,18 +24,14 @@ class GameConnection(threading.Thread):
             self.ai_path = conf.get_ai_path()
         self.condition_object = threading.Condition()
 
-        # self.server: WebsocketServer = WebsocketServer(host = host, port = port, loglevel = logging.INFO)
-        # self.server.set_fn_new_client(self.new_client)
-        # self.server.set_fn_message_received(self.game_response)
-        # self.server.set_fn_client_left(self.game_window_closed)
-
         self.host = host
         self.port = port
 
-        self.server = WSocketApp()
-        self.server.onconnect += self.new_client
-        self.server.onmessage += self.game_response
-        self.server.onclose += self.game_window_closed
+        self.wsocket_app = WSocketApp()
+        self.wsocket_app.onconnect += self.new_client
+        self.wsocket_app.onmessage += self.game_response
+        self.wsocket_app.onclose += self.game_window_closed
+        self.server = None
 
         self._stop_event = threading.Event()
         self.stop_if_game_windows_close = stop_if_game_windows_close
@@ -44,8 +43,15 @@ class GameConnection(threading.Thread):
         self.ai_process: subprocess.Popen[str] = None
         self.counter = 0
 
+        self.wait_for_all_levels_played_tries = 10
+
     def run(self):
-        run(self.server, host=self.host, port=self.port)
+        self.server = make_server(self.host, self.port, self.wsocket_app, ThreadingWSGIServer, FixedHandler)
+        try:
+            self.server.serve_forever()
+        except Exception:
+            logger.debug("\nServer stopped.")
+            self.server.server_close()
 
     def wait_for_response(self):
         # Wait for game response
@@ -61,8 +67,6 @@ class GameConnection(threading.Thread):
             self.response = None
 
         return msg
-
-
 
     def game_response(self, message: str, client):
         if len(message) > 200:
@@ -114,11 +118,12 @@ class GameConnection(threading.Thread):
         if print_ai_log:
             self.ai_process = new(f"java -jar {ai_path}", shell = False)
         else:
-            self.ai_process = new(f"java -jar {ai_path}", shell = False, stdout = subprocess.DEVNULL, stderr = subprocess.STDOUT)
+            self.ai_process = new(f"java -jar {ai_path}", shell = False, stdout = subprocess.DEVNULL,
+                                  stderr = subprocess.STDOUT)
 
     def stopAI(self):
 
-        message = [0, 'aimodus', 'true']
+        message = [0, 'aimodus', f'{{"mode": false }}']
         self.send(message)
         self.wait_for_response()
 
@@ -130,6 +135,8 @@ class GameConnection(threading.Thread):
         self.stop_game()
         if self.ai_process:
             self.ai_process.terminate()
+        if self.server:
+            self.server.server_close()
         self._stop_event.set()
 
     def new_client(self, client):
@@ -168,16 +175,23 @@ class GameConnection(threading.Thread):
             time.sleep(0.2)
 
     def wait_till_all_level_played(self):
-        response = None
+        logger.debug("Wait for level played")
+        request_try = 0
         while True:
-            if response is not None and 'data' in response[1] and response[1]['data'] == "True":
-                break
-
             logger.debug("Wait for level played")
             message = [0, 'alllevelsplayed']
             self.send(message)
             response = self.wait_for_response()
-            time.sleep(2)
+
+            if response is not None and 'data' in response[1] and response[1]['data'] == "True":
+                logger.debug("All level Played")
+                break
+            else:
+                if request_try >= self.wait_for_all_levels_played_tries:
+                    break
+                time.sleep(2)
+                request_try += 1
+        return response[1]['data']
 
     def change_level(self, index = 0):
         message = [0, 'selectlevel', {'levelIndex': index}]
@@ -201,9 +215,14 @@ class GameConnection(threading.Thread):
 
         return received_data
 
-    def create_img_of_level(self):
-        message = [0, 'screenshot']
+    def get_img_data(self, structure = True):
+        message = [0, 'screenshotstructure' if structure else 'screenshot']
         self.send(message)
         received_data = self.wait_for_response()
         return received_data[1]['data']
 
+    def create_level_img(self, structure = True):
+        img_data = self.get_img_data(structure = structure)
+        i = base64.b64decode(img_data.strip('data:image/png;base64'))
+        i = io.BytesIO(i)
+        return mpimg.imread(i, format = 'png')

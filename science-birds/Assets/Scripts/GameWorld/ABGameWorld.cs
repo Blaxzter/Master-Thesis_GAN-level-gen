@@ -416,6 +416,7 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 			if (currentLevelData != null)
 			{
 				currentLevelData.HasBeenPlayed = true;
+				currentLevelData.Won = false;
 				currentLevelData.Score = HUD.Instance.GetScore();
 				currentLevelData.Death = HUD.Instance.GetDeath();
 				currentLevelData.BirdsUsed = HUD.Instance.GetBirdsUsed();
@@ -481,13 +482,11 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 	
 	public void KillBird(ABBird bird) {
 
-		HUD.Instance.AddBird();
-		
 		if (!_birds.Contains (bird))
 			return;
 		
 		_birds.Remove(bird);
-		
+
 		if(_birds.Count == 0) {
 			
 			// Check if player lost the game
@@ -607,7 +606,11 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 		foreach(Transform b in _birdsTransform)
 			Destroy(b.gameObject);
 
-		_birds.Clear();		
+		_birds.Clear();
+
+		HUD.Instance.SetScore(0);
+		HUD.Instance.SetDeath(0);
+		HUD.Instance.SetBirdsUsed(0);
 	}
 
 	private void AdaptCameraWidthToLevel() {

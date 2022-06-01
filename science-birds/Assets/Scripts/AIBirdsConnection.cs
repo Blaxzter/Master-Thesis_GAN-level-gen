@@ -103,7 +103,7 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 
 		float delta = data[2]["delta"].AsFloat;
 
-		HUDInstance.CameraZoom (-delta);
+		// HUDInstance.CameraZoom (-delta);
 
 		string id = data [0];
 		string message = "[" + id + "," + "{}" + "]";
@@ -123,6 +123,52 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 
 		Texture2D screenshot = new Texture2D (Screen.width, Screen.height, TextureFormat.ARGB32, true);
 		screenshot.ReadPixels (new Rect (0, 0, Screen.width, Screen.height), 0, 0, true);
+		screenshot.Apply();
+
+		string image = System.Convert.ToBase64String (screenshot.EncodeToPNG ());
+	
+		string id = data [0];
+
+		Message msg = new Message ();
+		msg.data = "data:image/png;base64," + image;
+		msg.time = DateTime.Now.ToString ();
+
+		string json = JsonUtility.ToJson (msg);
+		string message = "[" + id + "," + json + "]";
+
+		Debug.Log(message.Length);
+		
+	#if UNITY_WEBGL && !UNITY_EDITOR
+		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
+	#else
+		serverSocket.Send(message);	
+	#endif
+
+	}
+	
+	IEnumerator ScreenshotStructure(JSONNode data, WebSocket serverSocket) {
+
+		yield return new WaitForEndOfFrame ();
+
+		var level_elements = LevelList.Instance.GetCurrentLevel().GetLevelElements();
+		var min_x = 10000;
+		var min_y = 10000;
+		var max_x = -10000;
+		var max_y = -10000;
+
+		foreach (var levelElement in level_elements)
+		{
+			var levelElementX = levelElement.x;
+			var levelElementY = levelElement.y;
+			var screen_point = Camera.main.WorldToScreenPoint(new Vector2(levelElementX, levelElementY));
+			min_x = (int)Math.Min(min_x, screen_point.x - 25);
+			min_y = (int)Math.Min(min_y, screen_point.y - 25);
+			max_x = (int)Math.Max(max_x, screen_point.x + 25);
+			max_y = (int)Math.Max(max_y, screen_point.y + 25);
+		}
+		
+		Texture2D screenshot = new Texture2D (max_x - min_x, max_y - min_y, TextureFormat.ARGB32, true);
+		screenshot.ReadPixels (new Rect (min_x, min_y, max_x - min_x + 25, max_y - min_y + 25), 0, 0, true);
 		screenshot.Apply();
 
 		string image = System.Convert.ToBase64String (screenshot.EncodeToPNG ());
@@ -200,6 +246,11 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		yield return new WaitForEndOfFrame ();
 
 		string scene = data[2]["scene"];
+		if (scene.Equals("LevelSelectMenu"))
+		{
+			LevelList.Instance.ClearLevelData();
+		}
+		
 		ABSceneManager.Instance.LoadScene (scene);
 
 		string id = data [0];
@@ -317,33 +368,37 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		int startLevel = request["startLevel"].AsInt;
 		int endLevel = request["endLevel"].AsInt;
 
-		if (startLevel > 0 && startLevel - 1 != LevelList.Instance.CurrentIndex)
-		{
-			LevelList.Instance.SetLevel(startLevel - 1);
-			ABSceneManager.Instance.LoadScene ("GameWorld");
-			yield return new WaitForEndOfFrame ();
-		}
-		else
-		{
-			startLevel = LevelList.Instance.CurrentIndex;
-		}
-
-		if (endLevel == -1)
-		{
-			endLevel = LevelList.Instance.AmountOfLoadedLevels();
-		} else if (endLevel > 0 && endLevel >= startLevel)
-		{
-			LevelList.Instance.RequiredLevel(endLevel - startLevel);
-		}
-		else
-		{
-			Debug.LogError("End level lower then start level.");
-		}
-
-		LevelList.Instance.startIndex = startLevel;
-		LevelList.Instance.endIndex = endLevel;
-		
 		this.listenToAI = aiMode;
+
+		if (aiMode)
+		{
+			if (startLevel > 0 && startLevel - 1 != LevelList.Instance.CurrentIndex)
+			{
+				LevelList.Instance.SetLevel(startLevel - 1);
+				ABSceneManager.Instance.LoadScene ("GameWorld");
+				yield return new WaitForEndOfFrame ();
+			}
+			else
+			{
+				startLevel = LevelList.Instance.CurrentIndex;
+			}
+
+			if (endLevel == -1)
+			{
+				endLevel = LevelList.Instance.AmountOfLoadedLevels();
+			} else if (endLevel > 0 && endLevel >= startLevel)
+			{
+				LevelList.Instance.RequiredLevel(endLevel - startLevel);
+			}
+			else
+			{
+				Debug.LogError("End level lower then start level.");
+			}
+
+			LevelList.Instance.startIndex = startLevel;
+			LevelList.Instance.endIndex = endLevel;
+		}
+
 
 		Message msg = new Message ();
 		msg.data = this.listenToAI.ToString();
@@ -399,6 +454,12 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 			}
 		}
 
+		if (this.listenToAI)
+		{
+			if (LevelList.Instance.AllLevelPlayed())
+				this.listenToAI = false;
+		}
+
 		Message msg = new Message ();
 	
 		msg.data = currentScence;
@@ -442,6 +503,7 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		handlers ["drag"]         = Drag;
 		handlers ["mousewheel"]   = MouseWheel;
 		handlers ["screenshot"]   = Screenshot;
+		handlers ["screenshotstructure"]   = ScreenshotStructure;
 		handlers ["gamestate"]    = GameState;
 		handlers ["loadscene"]    = LoadScene;
 		handlers ["selectlevel"]  = SelectLevel;

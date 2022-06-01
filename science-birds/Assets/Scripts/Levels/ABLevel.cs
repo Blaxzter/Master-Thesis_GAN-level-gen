@@ -131,4 +131,27 @@ public class ABLevel
 		birds     = new List<BirdData>();
 		platforms = new List<PlatData>();
 	}
+
+	public List<OBjData> GetLevelElements()
+	{
+		List<OBjData> element_list = new List<OBjData>();
+		foreach (var obj in pigs)
+		{
+			element_list.Add(obj);	
+		}
+		foreach (var obj in tnts)
+		{
+			element_list.Add(obj);	
+		}
+		foreach (var obj in blocks)
+		{
+			element_list.Add(obj);	
+		}
+		foreach (var obj in platforms)
+		{
+			element_list.Add(obj);	
+		}
+
+		return element_list;
+	}
 }

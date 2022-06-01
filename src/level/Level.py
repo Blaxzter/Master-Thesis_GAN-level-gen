@@ -2,10 +2,10 @@ from loguru import logger
 from shapely.geometry import Polygon, Point
 import numpy as np
 
-from level import Constants
 from level.Constants import resolution, ObjectType, LevelMetaData
 from level.LevelElement import LevelElement
 from util import RunConfig
+from util.Utils import round_to_cord
 
 
 class Level:
@@ -67,7 +67,7 @@ class Level:
                     dist_to_element = element.distance(struct_element)
                     if RunConfig.verbose:
                         logger.debug(f"Block {current_element_id} -> {struct_element.id}: {float(dist_to_element)}")
-                    if dist_to_element < 0.2:
+                    if dist_to_element < 0.3:
                         closest_structures.append(structure)
                         break
 
@@ -100,7 +100,7 @@ class Level:
         return self.structures
 
     def create_img(self, per_structure = True, dot_version = False):
-
+        logger.debug("Create level img")
         if not per_structure:
             element_lists: [[LevelElement]] = [self.create_element_list(self.use_blocks, self.use_pigs, self.use_platform)]
         else:
@@ -143,8 +143,8 @@ class Level:
             for element_list in element_lists:
                 min_x, min_y, max_x, max_y = self.calc_structure_dimensions(element_list)
 
-                x_cords = np.arange(min_x + resolution / 2, max_x - resolution, resolution)
-                y_cords = np.arange(min_y + resolution / 2, max_y - resolution, resolution)
+                x_cords = np.arange(min_x + resolution / 2, max_x - resolution / 2, resolution)
+                y_cords = np.arange(min_y + resolution / 2, max_y - resolution / 2, resolution)
 
                 picture = np.zeros((len(y_cords), len(x_cords)))
 
@@ -287,4 +287,4 @@ class Level:
             max_x = max(max_x, (element.x if not use_original else element.original_x) + element.width / 2)
             max_y = max(max_y, (element.y if not use_original else element.original_y) + element.height / 2)
 
-        return min_x, min_y, max_x, max_y
+        return round_to_cord(min_x), round_to_cord(min_y), round_to_cord(max_x), round_to_cord(max_y)

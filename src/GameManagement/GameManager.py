@@ -1,13 +1,12 @@
-from GameManagement.GameConnection import GameConnection
-from util import ProgramArguments
-from util.Config import Config
-
 import os
 import shutil
 import time
 from pathlib import Path
 
-from util.Evaluator import Evaluator
+from loguru import logger
+
+from GameManagement.GameConnection import GameConnection
+from util.Config import Config
 
 
 class GameManager:
@@ -18,12 +17,15 @@ class GameManager:
         self.rescue_level_path = conf.rescue_level_path
         self.game_connection = game_connection
 
-    def start_game(self):
+    def start_game(self, is_running = False):
+        logger.debug("Start Game and Game Connection Server")
         self.game_connection.start()
-        self.game_connection.start_game(self.conf.game_path)
+        if not is_running:
+            self.game_connection.start_game(self.conf.game_path)
         self.game_connection.wait_for_game_window()
 
     def stop_game(self):
+        logger.debug("Stop Game Components")
         self.game_connection.stop_components()
 
     def copy_game_levels(self, level_path = None, rescue_level = None):
@@ -41,7 +43,8 @@ class GameManager:
             for src_file in Path(self.conf.get_game_level_path()).glob('*.*'):
                 shutil.move(str(src_file), current_rescue_level_path)
         else:
-            shutil.rmtree(os.path.join(self.conf.get_game_level_path(), '*'))
+            for level in Path(self.conf.get_game_level_path()).glob('*.*'):
+                os.remove(level)
 
         ret_copied_levels = []
 
@@ -53,9 +56,10 @@ class GameManager:
 
         return ret_copied_levels
 
-    def change_level(self, path):
-        for level in Path(self.conf.get_game_level_path()).glob('*.*'):
-            os.remove(level)
+    def change_level(self, path, delete_level = True):
+        if delete_level:
+            for level in Path(self.conf.get_game_level_path()).glob('*.*'):
+                os.remove(level)
         shutil.copy(str(path), self.conf.get_game_level_path())
         self.game_connection.load_level_menu()
         self.game_connection.change_level(index = 4)
@@ -64,22 +68,9 @@ class GameManager:
     def create_img_of_level(self, index = 4):
         self.game_connection.load_level_menu()
         self.game_connection.change_level(index = index)
-        img = self.game_connection.create_img_of_level()
+        img = self.game_connection.get_img_data()
         return img
 
-
-if __name__ == '__main__':
-    parser = ProgramArguments.get_program_arguments()
-    config = parser.parse_args()
-    config.game_folder_path = os.path.normpath('../science_birds/{os}')
-
-    config = Config(config)
-    game_connection = GameConnection(conf = config)
-    game_manager = GameManager(conf = config, game_connection = game_connection)
-    try:
-        game_manager.start_game()
-        for level in sorted(Path("../data/train/structures/").glob('*.xml')):
-            game_manager.change_level(path = str(level))
-            img = game_connection.create_img_of_level()
-    except KeyboardInterrupt:
-        game_manager.stop_game()
+    def remove_game_levels(self):
+        for level in Path(self.conf.get_game_level_path()).glob('*.*'):
+            os.remove(level)

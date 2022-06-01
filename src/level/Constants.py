@@ -107,6 +107,7 @@ materials_color = ["brown", "grey", "blue"]
 coordinate_round = 100000
 resolution = 0.11 / 2
 
+min_distance_to_slingshot = 2
 
 class ObjectType(Enum):
     Block = 1

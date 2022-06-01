@@ -9,3 +9,7 @@ def round_cord(*args):
         x = args[0]
         y = args[1]
         return round(x * coordinate_round) / coordinate_round, round(y * coordinate_round) / coordinate_round
+
+
+def round_to_cord(value):
+    return round(value * coordinate_round) / coordinate_round
