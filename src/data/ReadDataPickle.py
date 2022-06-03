@@ -17,6 +17,21 @@ def strip_screenshot_from_data():
             pickle.dump(data, handle, protocol = pickle.HIGHEST_PROTOCOL)
 
 
+def strip():
+    with open('level_data.pickle', 'rb') as f:
+        data = pickle.load(f)
+
+    print(len(data.keys()))
+    for key in data.keys():
+        level_data = data[key]
+
+        level_img = level_data['img_data'][0]
+        level_data['img_data'] = level_data['img_data'][0].reshape(level_img.shape[0], level_img.shape[1], 1)
+
+    with open('level_data.pickle', 'wb') as handle:
+            pickle.dump(data, handle, protocol = pickle.HIGHEST_PROTOCOL)
+
+
 def visualize_data(start_index = 0, end_index = -1):
     with open('level_data_with_screenshot.pickle', 'rb') as f:
         data = pickle.load(f)
@@ -33,12 +48,11 @@ def visualize_data(start_index = 0, end_index = -1):
         plt.imshow(level_data['img_data'][0])
         plt.show()
 
-
-
 if __name__ == '__main__':
-    # strip_screenshot_from_data()
+    strip_screenshot_from_data()
+    strip()
 
-    with open('level_data.pickle', 'rb') as f:
-        data = pickle.load(f)
+    #with open('level_data.pickle', 'rb') as f:
+    #    data = pickle.load(f)
 
-        print(len(data))
+    #    print(len(data))

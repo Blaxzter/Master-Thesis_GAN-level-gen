@@ -1,5 +1,3 @@
-from loguru import logger
-from pathlib import Path
 from xml.dom.minidom import parse, Document, Element
 
 from level import Constants
@@ -7,7 +5,6 @@ from level.Constants import ObjectType, min_distance_to_slingshot
 from level.Level import Level
 from level.LevelCreator import create_basis_level_node
 from level.LevelElement import LevelElement
-from level.LevelVisualizer import LevelVisualizer
 
 
 class LevelReader:
