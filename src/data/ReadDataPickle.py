@@ -107,14 +107,14 @@ if __name__ == '__main__':
     # data_dict = load_data("level_data")
     # get_max_shape_size(data_dict)
     #
+    data_dict = load_data("level_data_with_screenshot")
+    visualize_data(data_dict, start_index = 0, end_index = -1, width_filter = 150)
+    #
+    data_dict = load_data("level_data")
+    visualize_shape(data_dict)
+
     # data_dict = load_data("level_data_with_screenshot")
-    # visualize_data(data_dict, start_index = 0, end_index = -1, width_filter = 150)
+    # strip_screenshot_from_data(data_dict)
     #
     # data_dict = load_data("level_data")
-    # visualize_shape(data_dict)
-
-    data_dict = load_data("level_data_with_screenshot")
-    strip_screenshot_from_data(data_dict)
-
-    data_dict = load_data("level_data")
-    parse_data(data_dict)
+    # parse_data(data_dict)
