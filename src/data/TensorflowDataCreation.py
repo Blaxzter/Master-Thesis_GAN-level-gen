@@ -42,7 +42,7 @@ def pad_image_to_size(image_data):
     # plt.imshow(padded_img)
     # plt.show()
 
-    return padded_img.reshape((padded_img.shape[0], padded_img.shape[1], 1))
+    return padded_img.reshape((padded_img.shape[0], padded_img.shape[1], 1)).astype(dtype = np.int16)
 
 
 def parse_single_data_example(data_example):
@@ -56,8 +56,8 @@ def parse_single_data_example(data_example):
 
     data = {
         # Img data
-        'height': _int64_feature(img_data.shape[0]),
-        'width': _int64_feature(img_data.shape[1]),
+        'height': _int64_feature(padded_img_data.shape[0]),
+        'width': _int64_feature(padded_img_data.shape[1]),
         'depth': _int64_feature(padded_img_data.shape[2]),
         'raw_image': _bytes_feature(serialize_array(padded_img_data)),
 
@@ -73,6 +73,8 @@ def parse_single_data_example(data_example):
         # Meta data
         'level_height': _float_feature(meta_data.height),
         'level_width': _float_feature(meta_data.width),
+        'pixel_height': _int64_feature(img_data.shape[0]),
+        'pixel_width': _int64_feature(img_data.shape[1]),
         'block_amount': _int64_feature(meta_data.block_amount),
         'pig_amount': _int64_feature(meta_data.pig_amount),
         'platform_amount': _int64_feature(meta_data.platform_amount),
