@@ -2,6 +2,8 @@ import tensorflow as tf
 
 
 # https://colab.research.google.com/drive/1xU_MJ3R8oj8YYYi-VI_WJTU3hD1OpAB7#scrollTo=rmTv61HFAv57
+from generator.Gan.GanNetwork import GanNetwork
+
 
 def parse_tfr_element(element):
     # use the same structure as above; it's kinda an outline of the structure we now want to create
@@ -67,3 +69,12 @@ if __name__ == '__main__':
     dataset = get_dataset('../data/data.tfrecords')
     for sample in dataset.take(1):
         print(sample[0].shape)
+
+    train_dataset = dataset.shuffle(buffer_size = 60000).batch(256)
+
+    gan = GanNetwork()
+    random_vec = gan.create_random_vector()
+    output = gan.generator(random_vec)
+    prescion = gan.discriminator(output)
+
+    print(prescion)

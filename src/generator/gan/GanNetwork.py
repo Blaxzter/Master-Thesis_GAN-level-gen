@@ -19,16 +19,19 @@ class GanNetwork:
         self.create_generator_model()
         self.create_discriminator_model()
 
+    def create_random_vector(self):
+        return tf.random.normal([1, self.input_array_size])
+
     def create_generator_model(self):
         model = tf.keras.Sequential()
-        model.add(layers.Dense(7 * 7 * 256, use_bias = False, input_shape = (100,)))
+        model.add(layers.Dense(7 * 7 * 256, use_bias = False, input_shape = (self.input_array_size,)))
         model.add(layers.BatchNormalization())
         model.add(layers.LeakyReLU())
 
         model.add(layers.Reshape((7, 7, 256)))
         assert model.output_shape == (None, 7, 7, 256)
 
-        model.add(layers.Conv2DTranspose(128, (5, 5), strides = (1, 1), padding = 'same', use_bias = False))
+        model.add(layers.Conv2DTranspose(filters = 128, kernel_size = (5, 5), strides = (1, 1), padding = 'same', use_bias = False))
         assert model.output_shape == (None, 7, 7, 128)
         model.add(layers.BatchNormalization())
         model.add(layers.LeakyReLU())
