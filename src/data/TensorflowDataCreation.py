@@ -37,6 +37,9 @@ def pad_image_to_size(image_data):
     pad_right = int((max_width - image_data.shape[1]) / 2)
     pad_top = max_height - image_data.shape[0]
 
+    if pad_left + image_data.shape[1] + pad_right < max_width:
+        pad_right += 1
+
     padded_img = np.pad(image_data, ((pad_top, 0), (pad_left, pad_right)), 'constant')
 
     # plt.imshow(padded_img)
