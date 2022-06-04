@@ -3,6 +3,7 @@ import tensorflow as tf
 
 # https://colab.research.google.com/drive/1xU_MJ3R8oj8YYYi-VI_WJTU3hD1OpAB7#scrollTo=rmTv61HFAv57
 from generator.Gan.GanNetwork import GanNetwork
+from util.NetworkTrainer import NetworkTrainer
 
 
 def parse_tfr_element(element):
@@ -45,16 +46,12 @@ def parse_tfr_element(element):
     # get our 'feature'-- our image -- and reshape it appropriately
     image = tf.io.parse_tensor(raw_image, out_type = tf.int16)
     image = tf.reshape(image, shape = [height, width, depth])
-    return (image, score)
+    return image
 
 
 def get_dataset(filename):
     # create the dataset
     dataset = tf.data.TFRecordDataset(filename)
-
-    it = iter(dataset)
-    for element in it:
-        image, score = parse_tfr_element(element)
 
     # pass every single feature through our mapping function
     dataset = dataset.map(
@@ -76,5 +73,8 @@ if __name__ == '__main__':
     random_vec = gan.create_random_vector()
     output = gan.generator(random_vec)
     prescion = gan.discriminator(output)
+
+    trainer = NetworkTrainer(dataset = train_dataset, model = gan)
+    trainer.train()
 
     print(prescion)
