@@ -60,14 +60,23 @@ def get_max_shape_size(data: dict):
     max_height = -10000
     max_width = -10000
 
+    max_value = -10000
+    min_value = 10000
+
     for key in data.keys():
         level_data = data[key]
 
-        level_img_shape = level_data['img_data'].shape
+        img_data = level_data['img_data']
+        level_img_shape = img_data.shape
+
         max_height = max(max_height, level_img_shape[0])
         max_width = max(max_width, level_img_shape[1])
 
+        max_value = max(max_value, img_data.max())
+        min_value = min(min_value, img_data.min())
+
     print(f'Height {max_height} Width: {max_width}')
+    print(f'MaxVal {max_value} MinVal: {min_value}')
 
 
 def visualize_shape(data: dict):
@@ -104,14 +113,13 @@ def visualize_shape(data: dict):
 
 if __name__ == '__main__':
 
-    # data_dict = load_data("level_data")
-    # get_max_shape_size(data_dict)
-    #
-    data_dict = load_data("level_data_with_screenshot")
-    visualize_data(data_dict, start_index = 0, end_index = -1, width_filter = 150)
-    #
     data_dict = load_data("level_data")
-    visualize_shape(data_dict)
+    get_max_shape_size(data_dict)
+
+    # data_dict = load_data("level_data_with_screenshot")
+    # visualize_data(data_dict, start_index = 0, end_index = -1, width_filter = 150)
+    # data_dict = load_data("level_data")
+    # visualize_shape(data_dict)
 
     # data_dict = load_data("level_data_with_screenshot")
     # strip_screenshot_from_data(data_dict)

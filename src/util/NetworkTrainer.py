@@ -2,25 +2,30 @@ import os
 import time
 
 import tensorflow as tf
-from matplotlib import pyplot as plt
 
-from generator.Gan.GanNetwork import GanNetwork
+from data.LevelDataset import LevelDataset
+from generator.gan.GanNetwork import GanNetwork
+from util.TrainVisualizer import TensorBoardViz
 
 
 class NetworkTrainer:
 
-    def __init__(self, dataset, model, epochs = 50):
+    def __init__(self, dataset: LevelDataset, model, epochs = 50, checkpoint_dir = "../models/training_checkpoints/"):
         # This method returns a helper function to compute cross entropy loss
         self.cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits = True)
         self.generator_optimizer = tf.keras.optimizers.Adam(1e-4)
         self.discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
 
         self.model: GanNetwork = model
-        self.dataset = dataset
+        self.dataset: LevelDataset = dataset
+        self.visualizer: TensorBoardViz = TensorBoardViz(model = model, dataset = dataset)
+        self.trainer_dataset = dataset.get_dataset()
 
         self.checkpoint = None
-        self.checkpoint_dir = './training_checkpoints'
-        self.checkpoint_prefix = os.path.join(self.checkpoint_dir, "ckpt")
+        strftime = time.strftime("%Y%m%d-%H%M%S")
+        self.checkpoint_dir = f'{checkpoint_dir}{{timestamp}}/'
+        self.current_checkpoint_dir = self.checkpoint_dir.replace("{timestamp}", strftime)
+        self.checkpoint_prefix = os.path.join(self.current_checkpoint_dir, "ckpt")
         self.checkpoint = tf.train.Checkpoint(
             generator_optimizer = self.generator_optimizer,
             discriminator_optimizer = self.discriminator_optimizer,
@@ -28,25 +33,19 @@ class NetworkTrainer:
             discriminator = self.model.discriminator
         )
 
-        self.image_store = "../imgs/generated/{timestamp}/"
-        self.image_store = self.image_store.replace("{timestamp}", time.strftime("%Y%m%d-%H%M%S"))
-        os.mkdir(self.image_store)
-
-        self.batch_size = 50
+        self.batch_size = dataset.batch_size
         self.epochs = epochs
-        self.noise_dim = self.model.input_array_size
-        self.num_examples_to_generate = 16
-        self.seed = tf.random.normal([self.num_examples_to_generate, self.noise_dim])
 
     def train(self):
         for epoch in range(self.epochs):
             start = time.time()
 
-            for image_batch in self.dataset:
-                self.train_step(image_batch)
+            for image_batch, data in self.trainer_dataset:
+                gen_loss, disc_loss = self.train_step(image_batch)
+                self.visualizer.losses(gen_loss, disc_loss)
 
             # Produce images for the GIF as you go
-            self.generate_and_save_images(self.seed, epoch + 1)
+            self.visualizer.visualize(epoch + 1)
 
             # Save the model every 15 epochs
             if (epoch + 1) % 15 == 0:
@@ -55,12 +54,12 @@ class NetworkTrainer:
             print('Time for epoch {} is {} sec'.format(epoch + 1, time.time() - start))
 
         # Generate after the final epoch
-        self.generate_and_save_images(self.seed, epoch + 1)
+        self.visualizer.visualize(epoch + 1)
         self.checkpoint.save(file_prefix = self.checkpoint_prefix)
 
     @tf.function
     def train_step(self, images):
-        noise = tf.random.normal([self.batch_size, self.noise_dim])
+        noise = tf.random.normal([self.batch_size, self.model.input_array_size])
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             generated_images = self.model.generator(noise, training = True)
@@ -79,6 +78,8 @@ class NetworkTrainer:
         self.discriminator_optimizer.apply_gradients(
             zip(gradients_of_discriminator, self.model.discriminator.trainable_variables))
 
+        return gen_loss, disc_loss
+
     def discriminator_loss(self, real_output, fake_output):
         real_loss = self.cross_entropy(tf.ones_like(real_output), real_output)
         fake_loss = self.cross_entropy(tf.zeros_like(fake_output), fake_output)
@@ -88,17 +89,12 @@ class NetworkTrainer:
     def generator_loss(self, fake_output):
         return self.cross_entropy(tf.ones_like(fake_output), fake_output)
 
-    def generate_and_save_images(self, test_input, epoch):
-        # Notice `training` is set to False.
-        # This is so all layers run in inference mode (batchnorm).
-        predictions = self.model.generator.model(test_input, training = False)
+    def save(self):
+        # Generate after the final epoch
+        self.checkpoint.save(file_prefix = self.checkpoint_prefix)
 
-        fig = plt.figure(figsize = (4, 4))
+    def load(self, checkpoint_date = None):
+        if checkpoint_date is None:
+            raise Exception("Pls define the checkpoint folder")
+        latest = tf.train.latest_checkpoint(self.checkpoint_dir.replace("{timestamp}", checkpoint_date))
 
-        for i in range(predictions.shape[0]):
-            plt.subplot(4, 4, i + 1)
-            plt.imshow(predictions[i, :, :, 0] * 127.5 + 127.5, cmap = 'gray')
-            plt.axis('off')
-
-        plt.savefig(f'{self.image_store}image_at_epoch_{epoch}.png')
-        plt.show()
