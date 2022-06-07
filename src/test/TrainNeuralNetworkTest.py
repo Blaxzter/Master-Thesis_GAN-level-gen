@@ -6,7 +6,7 @@ from tensorflow.keras import layers
 from matplotlib import pyplot as plt
 
 from data.LevelDataset import LevelDataset
-from generator.gan.GanNetwork import GanNetwork
+from generator.Gan.GanNetwork import GanNetwork
 from util.NetworkTrainer import NetworkTrainer
 
 
