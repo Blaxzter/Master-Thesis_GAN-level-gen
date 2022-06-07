@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from matplotlib import pyplot as plt
 
-max_height = 86
+max_height = 86 + 2
 max_width = 212
 
 

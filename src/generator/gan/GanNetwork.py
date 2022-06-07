@@ -1,18 +1,17 @@
 import tensorflow as tf
 
-import glob
-import numpy as np
-import os
-import PIL
+from matplotlib import pyplot as plt
 from tensorflow.keras import layers
-import time
-
 
 
 class GanNetwork:
 
-    def __init__(self):
+    def __init__(self, data_augmentation = None):
         self.input_array_size = 256
+
+        self.output_shape = (88, 212)
+
+        self.data_augmentation = data_augmentation
 
         self.generator = None
         self.discriminator = None
@@ -24,32 +23,39 @@ class GanNetwork:
 
     def create_generator_model(self):
         model = tf.keras.Sequential()
-        model.add(layers.Dense(7 * 7 * 256, use_bias = False, input_shape = (self.input_array_size,)))
+        model.add(
+            layers.Dense(22 * 53 * self.input_array_size, use_bias = False, input_shape = (self.input_array_size,)))
         model.add(layers.BatchNormalization())
         model.add(layers.LeakyReLU())
 
-        model.add(layers.Reshape((7, 7, 256)))
-        assert model.output_shape == (None, 7, 7, 256)
+        model.add(layers.Reshape((22, 53, self.input_array_size)))
+        assert model.output_shape == (None, 22, 53, self.input_array_size)
 
-        model.add(layers.Conv2DTranspose(filters = 128, kernel_size = (5, 5), strides = (1, 1), padding = 'same', use_bias = False))
-        assert model.output_shape == (None, 7, 7, 128)
+        model.add(layers.Conv2DTranspose(filters = 128, kernel_size = (5, 5), strides = (1, 1), padding = 'same',
+                                         use_bias = False))
+        assert model.output_shape == (None, 22, 53, 128)
         model.add(layers.BatchNormalization())
         model.add(layers.LeakyReLU())
 
-        model.add(layers.Conv2DTranspose(64, (5, 5), strides = (2, 2), padding = 'same', use_bias = False))
-        assert model.output_shape == (None, 14, 14, 64)
+        model.add(layers.Conv2DTranspose(filters = 64, kernel_size = (5, 5), strides = (2, 2), padding = 'same',
+                                         use_bias = False))
+        assert model.output_shape == (None, 44, 106, 64)
         model.add(layers.BatchNormalization())
         model.add(layers.LeakyReLU())
 
         model.add(layers.Conv2DTranspose(1, (5, 5), strides = (2, 2), padding = 'same', use_bias = False,
                                          activation = 'tanh'))
-        assert model.output_shape == (None, 28, 28, 1)
+        assert model.output_shape == (None, self.output_shape[0], self.output_shape[1], 1)
 
         self.generator = model
 
     def create_discriminator_model(self):
         model = tf.keras.Sequential()
-        model.add(layers.Conv2D(64, (5, 5), strides = (2, 2), padding = 'same', input_shape = [28, 28, 1]))
+        if self.data_augmentation:
+            model.add(self.data_augmentation)
+
+        model.add(layers.Conv2D(64, (5, 5), strides = (2, 2), padding = 'same',
+                                input_shape = [self.output_shape[0], self.output_shape[1], 1]))
         model.add(layers.LeakyReLU())
         model.add(layers.Dropout(0.3))
 
@@ -61,3 +67,18 @@ class GanNetwork:
         model.add(layers.Dense(1))
 
         self.discriminator = model
+
+
+if __name__ == '__main__':
+    data_augmentation = tf.keras.Sequential([
+        layers.RandomFlip("horizontal")
+    ])
+
+    gan = GanNetwork(
+        data_augmentation = data_augmentation
+    )
+
+    random_vec = gan.create_random_vector()
+    generated_img = gan.generator(random_vec)
+    plt.imshow(generated_img[0, :, :, 0])
+    plt.show()
