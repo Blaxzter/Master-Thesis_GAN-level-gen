@@ -3,8 +3,8 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-from GameManagement.GameConnection import GameConnection
-from GameManagement.GameManager import GameManager
+from game_management.GameConnection import GameConnection
+from game_management.GameManager import GameManager
 from level.Level import Level
 from level.LevelReader import LevelReader
 from level.LevelVisualizer import LevelVisualizer
@@ -13,7 +13,7 @@ from util.Config import Config
 
 
 def leve_visualisation():
-    for level_path in sorted(Path("../data/train/generated/").glob('*.xml')):
+    for level_path in sorted(Path("../resources/data/train/generated/").glob('*.xml')):
         parser = ProgramArguments.get_program_arguments()
         config = parser.parse_args()
         config.game_folder_path = os.path.normpath('../science_birds/{os}')
@@ -49,7 +49,7 @@ def leve_visualisation():
                 level = parse_level,
                 move_to_ground = True
             )
-            new_level_path = f'../data/train/structures/level-0{level_counter + 4}.xml'
+            new_level_path = f'../resources/data/train/structures/level-0{level_counter + 4}.xml'
             level_reader.write_xml_file(struct_doc, new_level_path)
             game_manager.change_level(path = new_level_path)
 

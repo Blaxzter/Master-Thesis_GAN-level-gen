@@ -1,5 +1,5 @@
-from GameManagement.GameConnection import GameConnection
-from GameManagement.GameManager import GameManager
+from game_management.GameConnection import GameConnection
+from game_management.GameManager import GameManager
 from generator.baseline.Baseline import BaselineGenerator
 from util.Config import Config
 from util.Evaluator import Evaluator

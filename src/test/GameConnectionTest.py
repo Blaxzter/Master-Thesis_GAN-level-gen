@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from loguru import logger
 from matplotlib import pyplot as plt
 
-from GameManagement.GameConnection import GameConnection
+from game_management.GameConnection import GameConnection
 
 
 def run_ai_on_level():

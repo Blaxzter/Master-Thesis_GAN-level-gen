@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
 
-from GameManagement.GameConnection import GameConnection
-from GameManagement.GameManager import GameManager
+from game_management.GameConnection import GameConnection
+from game_management.GameManager import GameManager
 from level.LevelReader import LevelReader
 from level.LevelVisualizer import LevelVisualizer
 from util import ProgramArguments
@@ -21,7 +21,7 @@ def screen_shot_test():
     game_manager = GameManager(conf = config, game_connection = game_connection)
     try:
         game_manager.start_game()
-        for level_path in sorted(Path("../data/train/structures/").glob('*.xml')):
+        for level_path in sorted(Path("../resources/data/train/structures/").glob('*.xml')):
             level = level_reader.parse_level(path = str(level_path), use_blocks = True, use_pigs = True, use_platform = True)
             game_manager.change_level(path = str(level_path))
             img = game_connection.create_level_img(structure = True)

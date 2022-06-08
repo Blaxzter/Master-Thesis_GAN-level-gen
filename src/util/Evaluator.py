@@ -1,5 +1,5 @@
 from loguru import logger
-from GameManagement.GameConnection import GameConnection
+from game_management.GameConnection import GameConnection
 from util.Config import Config
 
 
