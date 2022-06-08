@@ -42,8 +42,6 @@ class NetworkTrainer:
 
     def train(self):
         for epoch in range(self.epochs):
-            start = time.time()
-
             for image_batch, data in self.trainer_dataset:
                 gen_loss, disc_loss = self.train_step(image_batch)
                 self.visualizer.losses(gen_loss, disc_loss)
@@ -54,8 +52,6 @@ class NetworkTrainer:
             # Save the model every 15 epochs
             if (epoch + 1) % 15 == 0:
                 self.checkpoint.save(file_prefix = self.checkpoint_prefix)
-
-            print('Time for epoch {} is {} sec'.format(epoch + 1, time.time() - start))
 
         # Generate after the final epoch
         self.visualizer.visualize(epoch + 1)
