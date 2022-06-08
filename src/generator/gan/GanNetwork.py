@@ -68,6 +68,10 @@ class GanNetwork:
 
         self.discriminator = model
 
+    def create_img(self):
+        random_input = self.create_random_vector()
+        return self.generator(random_input)[0, :, :, :]
+
 
 if __name__ == '__main__':
     data_augmentation = tf.keras.Sequential([

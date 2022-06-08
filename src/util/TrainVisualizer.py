@@ -25,8 +25,7 @@ class TensorBoardViz:
             Path(self.config.get_generated_image_store()).mkdir(parents=True, exist_ok=True)
 
         self.noise_dim = self.model.input_array_size
-        self.num_examples_to_generate = 16
-        self.seed = tf.random.normal([self.num_examples_to_generate, self.noise_dim])
+        self.seed = tf.random.normal([1, self.noise_dim])
 
         # Define our metrics
         self.gen_loss = tf.keras.metrics.Mean('generator_loss', dtype = tf.float32)
@@ -73,14 +72,10 @@ class TensorBoardViz:
         # This is so all layers run in inference mode (batchnorm).
         predictions = self.model.generator(test_input, training = False)
 
-        fig = plt.figure(figsize = (4, 4))
-
-        for i in range(predictions.shape[0]):
-            plt.subplot(4, 4, i + 1)
-            normal_img = self.dataset.reverse_norm_layer(predictions[i, :, :, 0])
-            plt.imshow(normal_img, cmap = 'gray')
-            plt.axis('off')
-
+        fig = plt.figure()
+        normal_img = self.dataset.reverse_norm_layer(predictions[0, :, :, 0])
+        plt.imshow(normal_img, cmap = 'gray')
+        plt.axis('off')
         plt.tight_layout()
 
         if self.to_file:

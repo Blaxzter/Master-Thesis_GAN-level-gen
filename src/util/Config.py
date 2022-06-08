@@ -15,7 +15,6 @@ class GeneratorOptions(Enum):
 
 
 class Config:
-
     instance = None
 
     def __init__(self, args):
@@ -38,8 +37,10 @@ class Config:
         self.current_path = str(self.current_path)[:-2]
 
         self.level_amount: int = args.level_amount if args.level_amount else 1
-        self.level_path: str = args.level_path + os.sep if args.level_path else os.path.normpath(f'{self.current_path}/resources/data/generated_level/')
-        self.game_folder_path: str = args.game_folder_path if args.game_folder_path else os.path.normpath(f'{self.current_path}/resources/science_birds/{{os}}')
+        self.level_path: str = args.level_path + os.sep if args.level_path else os.path.normpath(
+            f'{self.current_path}/resources/data/generated_level/')
+        self.game_folder_path: str = args.game_folder_path if args.game_folder_path else os.path.normpath(
+            f'{self.current_path}/resources/science_birds/{{os}}')
         if '{os}' in self.game_folder_path:
             os_name = platform.system()
             if os_name == 'Windows':
@@ -53,20 +54,35 @@ class Config:
             else:
                 raise OSNotSupported("OS is not support atm")
 
-        self.ai_path = args.ai_path if args.ai_path else os.path.normpath(f'{self.current_path}/ai/Naive-Agent-standalone-Streamlined.jar')
+        self.ai_path = args.ai_path if args.ai_path else os.path.normpath(
+            f'{self.current_path}/ai/Naive-Agent-standalone-Streamlined.jar')
         self.rescue_level_path = os.path.normpath(f'{self.current_path}/data/level_archive/{{timestamp}}/')
 
         self.evaluate = args.evaluate if args.evaluate else False
         self.rescue_level = args.rescue_level if args.rescue_level else True
 
         # Ml stuff
-        self.tf_records_name = f'{self.current_path}/resources/data/{{dataset_name}}.tfrecords'
-        self.train_log_dir = f'{self.current_path}/resources/logs/{{current_run}}/{{timestamp}}/train'
-        self.image_store = f"{self.current_path}/resources/imgs/generated/{{timestamp}}/"
-        self.checkpoint_dir = f'{self.current_path}/resources/models/{{current_run}}/{{timestamp}}/'
+        self.tf_records_name = os.path.normpath(f'{self.current_path}/resources/data/tfrecords/{{dataset_name}}.tfrecords')
+        self.train_log_dir = os.path.normpath(f'{self.current_path}/resources/logs/{{current_run}}/{{timestamp}}/train')
+        self.image_store = os.path.normpath(f"{self.current_path}/resources/imgs/generated/{{timestamp}}/")
+        self.checkpoint_dir = os.path.normpath(f'{self.current_path}/resources/models/{{current_run}}/{{timestamp}}/')
 
     def __str__(self):
-        return f''
+        return f'Config:' \
+               f'\tstrftime = {self.strftime} \n' \
+               f'\tgenerator = {self.generator} \n' \
+               f'\tcurrent_path = {self.current_path} \n' \
+               f'\tlevel_amount = {self.level_amount} \n' \
+               f'\tlevel_path = {self.level_path} \n' \
+               f'\tgame_folder_path = {self.game_folder_path} \n' \
+               f'\tai_path = {self.ai_path} \n' \
+               f'\trescue_level_path = {self.rescue_level_path} \n' \
+               f'\tevaluate = {self.evaluate} \n' \
+               f'\trescue_level = {self.rescue_level} \n' \
+               f'\ttf_records_name = {self.tf_records_name} \n' \
+               f'\ttrain_log_dir = {self.train_log_dir} \n' \
+               f'\timage_store = {self.image_store} \n' \
+               f'\tcheckpoint_dir = {self.checkpoint_dir} \n'
 
     @staticmethod
     def get_instance(args = None):
@@ -83,8 +99,11 @@ class Config:
     def get_log_dir(self, run_name):
         return self.train_log_dir.replace("{timestamp}", self.strftime).replace("{current_run}", run_name)
 
-    def get_checkpoint_dir(self, run_name):
+    def get_current_checkpoint_dir(self, run_name):
         return self.checkpoint_dir.replace("{timestamp}", self.strftime).replace("{current_run}", run_name)
+
+    def get_checkpoint_dir(self, run_name, strftime):
+        return self.checkpoint_dir.replace("{timestamp}", strftime).replace("{current_run}", run_name)
 
     def get_generator(self):
         if self.generator == GeneratorOptions.baseline:

@@ -14,6 +14,7 @@ class NetworkTrainer:
     def __init__(self, run_name, dataset: LevelDataset, model, epochs = 50):
 
         self.config: Config = Config.get_instance()
+        self.run_name = run_name
 
         # This method returns a helper function to compute cross entropy loss
         self.cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits = True)
@@ -27,7 +28,7 @@ class NetworkTrainer:
 
         self.checkpoint = None
 
-        self.checkpoint_dir = self.config.get_checkpoint_dir(run_name)
+        self.checkpoint_dir = self.config.get_current_checkpoint_dir(run_name)
         self.checkpoint_prefix = os.path.join(self.checkpoint_dir, "ckpt")
         self.checkpoint = tf.train.Checkpoint(
             generator_optimizer = self.generator_optimizer,
@@ -96,8 +97,11 @@ class NetworkTrainer:
         # Generate after the final epoch
         self.checkpoint.save(file_prefix = self.checkpoint_prefix)
 
-    def load(self, checkpoint_date = None):
+    def load(self, run_name = None, checkpoint_date = None):
         if checkpoint_date is None:
             raise Exception("Pls define the checkpoint folder")
-        latest = tf.train.latest_checkpoint(self.checkpoint_dir.replace("{timestamp}", checkpoint_date))
+
+        checkpoint_dir = self.config.get_checkpoint_dir(run_name, checkpoint_date)
+        last_checkpoint = tf.train.latest_checkpoint(checkpoint_dir)
+        self.checkpoint.restore(last_checkpoint)
 
