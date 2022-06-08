@@ -1,0 +1,29 @@
+<?xml version="1.0" ?> <Level width="2">  
+  <Camera x="0" y="-1" minWidth="35" maxWidth="35"/>  
+  <Birds>   
+   <Bird type="BirdRed"/>   
+   <Bird type="BirdRed"/>   
+   <Bird type="BirdRed"/>   
+  </Birds>  
+  <Slingshot x="-12.0" y="-2.50204081633"/>  
+  <GameObjects>   
+   <Pig type="BasicSmall" material="" x="-0.945102040816" y="-0.667346938776" rotation="359.173"/>   
+   <Block type="RectTiny" material="wood" x="-0.918163265306" y="1.31734693878" rotation="270.0"/>   
+   <Block type="RectMedium" material="wood" x="-1.73387755102" y="-2.12285714286" rotation="89.916"/>   
+   <Block type="RectMedium" material="wood" x="-0.272857142857" y="-2.12265306122" rotation="90.14"/>   
+   <Block type="RectMedium" material="wood" x="-0.991632653061" y="-1.20979591837" rotation="0.014"/>   
+   <Block type="RectMedium" material="wood" x="-1.3506122449" y="-0.296734693878" rotation="269.982"/>   
+   <Block type="RectMedium" material="wood" x="-0.572244897959" y="-0.296734693878" rotation="270.006"/>   
+   <Block type="RectSmall" material="wood" x="-0.947346938776" y="0.616326530612" rotation="180.017"/>   
+   <Block type="RectSmall" material="wood" x="-0.995714285714" y="-2.82306122449" rotation="0.253"/>   
+   <Block type="RectSmall" material="wood" x="-0.993265306122" y="-1.79755102041" rotation="0.188"/>   
+   <Block type="RectSmall" material="ice" x="-1.2693877551" y="-2.31183673469" rotation="270.439"/>   
+   <Block type="RectSmall" material="ice" x="-0.704081632653" y="-2.31020408163" rotation="269.779"/>   
+   <Platform type="Platform" material="" x="-1.89612244898" y="-3.23469387755" rotation="360.0" scaleX="2.85714285714" scaleY="0.952380952381"/>   
+   <Platform type="Platform" material="" x="-0.120816326531" y="-3.23142857143" rotation="360.0" scaleX="2.85714285714" scaleY="0.952380952381"/>   
+   <Block type="SquareSmall" material="stone" x="-0.926530612245" y="0.908571428571" rotation="180.0"/>   
+   <Block type="RectTiny" material="wood" x="-0.974897959184" y="-0.991632653061" rotation="0.015"/>   
+   <Block type="RectTiny" material="wood" x="-2.65714285714" y="-2.75346938776" rotation="270.0"/>   
+   <Block type="RectTiny" material="wood" x="0.622857142857" y="-2.75346938776" rotation="270.0"/>   
+  </GameObjects>  
+  <PrevLevelName name="./converted_levels/Benchmark converted levels 5 (mighty hoax 2)/level-11.xml"/> </Level>
