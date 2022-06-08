@@ -37,10 +37,10 @@ class Config:
         self.current_path = str(self.current_path)[:-2]
 
         self.level_amount: int = args.level_amount if args.level_amount else 1
-        self.level_path: str = args.level_path + os.sep if args.level_path else os.path.normpath(
-            f'{self.current_path}/resources/data/generated_level/')
-        self.game_folder_path: str = args.game_folder_path if args.game_folder_path else os.path.normpath(
-            f'{self.current_path}/resources/science_birds/{{os}}')
+        self.level_path: str = args.level_path + os.sep if args.level_path else \
+            os.path.normpath(os.path.join(self.current_path, 'resources/data/generated_level/'))
+        self.game_folder_path: str = args.game_folder_path if args.game_folder_path else \
+            os.path.normpath(os.path.join(self.current_path, 'resources/science_birds/{os}'))
         if '{os}' in self.game_folder_path:
             os_name = platform.system()
             if os_name == 'Windows':
@@ -51,21 +51,30 @@ class Config:
                 self.game_folder_path = self.game_folder_path.replace('{os}', 'osx-new')
                 self.game_path = os.path.join(self.game_folder_path, "ScienceBirds.app")
                 self.copy_dest = os.path.normpath('Sciencebirds.app/Contents/Resources/Data/StreamingAssets/Levels')
-            else:
-                raise OSNotSupported("OS is not support atm")
 
         self.ai_path = args.ai_path if args.ai_path else os.path.normpath(
-            f'{self.current_path}/ai/Naive-Agent-standalone-Streamlined.jar')
-        self.rescue_level_path = os.path.normpath(f'{self.current_path}/data/level_archive/{{timestamp}}/')
+            os.path.join(self.current_path, 'ai/Naive-Agent-standalone-Streamlined.jar')
+        )
+        self.rescue_level_path = os.path.normpath(
+            os.path.join(self.current_path, 'data/level_archive/{timestamp}/')
+        )
 
         self.evaluate = args.evaluate if args.evaluate else False
         self.rescue_level = args.rescue_level if args.rescue_level else True
 
         # Ml stuff
-        self.tf_records_name = os.path.normpath(f'{self.current_path}/resources/data/tfrecords/{{dataset_name}}.tfrecords')
-        self.train_log_dir = os.path.normpath(f'{self.current_path}/resources/logs/{{current_run}}/{{timestamp}}/train')
-        self.image_store = os.path.normpath(f"{self.current_path}/resources/imgs/generated/{{timestamp}}/")
-        self.checkpoint_dir = os.path.normpath(f'{self.current_path}/resources/models/{{current_run}}/{{timestamp}}/')
+        self.tf_records_name = os.path.normpath(
+            os.path.join(self.current_path, 'resources/data/tfrecords/{dataset_name}.tfrecords')
+        )
+        self.train_log_dir = os.path.normpath(
+            os.path.join(self.current_path, 'resources/logs/{{current_run}}/{timestamp}/train')
+        )
+        self.image_store = os.path.normpath(
+            os.path.join(self.current_path, 'resources/imgs/generated/{timestamp}/')
+        )
+        self.checkpoint_dir = os.path.normpath(
+            os.path.join(self.current_path, 'resources/models/{current_run}/{timestamp}/')
+        )
 
     def __str__(self):
         return f'Config:' \

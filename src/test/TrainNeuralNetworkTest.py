@@ -29,10 +29,10 @@ if __name__ == '__main__':
         ])
 
         gan = GanNetwork(data_augmentation = data_augmentation)
-        trainer = NetworkTrainer(run_name = "simple_gan", dataset = dataset, model = gan, epochs = 100)
-        trainer.load(run_name = "simple_gan", checkpoint_date = "20220607-153444")
-        img = gan.create_img()
-        plt.imshow(img)
-        plt.show()
+        trainer = NetworkTrainer(run_name = "simple_gan", dataset = dataset, model = gan, epochs = 500)
+        # trainer.load(run_name = "simple_gan", checkpoint_date = "20220607-153444")
+        # img = gan.create_img()
+        # plt.imshow(img)
+        # plt.show()
 
-        # trainer.train()
+        trainer.train()
