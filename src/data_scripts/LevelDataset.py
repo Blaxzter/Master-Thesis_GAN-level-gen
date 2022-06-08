@@ -1,11 +1,17 @@
 import numpy as np
 import tensorflow as tf
 
+# https://colab.research.google.com/drive/1xU_MJ3R8oj8YYYi-VI_WJTU3hD1OpAB7#scrollTo=rmTv61HFAv57
+from util.Config import Config
+
 
 class LevelDataset:
 
-    def __init__(self, filename = './data.tfrecords', batch_size = 265, buffer_size = 60000):
-        self.filename = filename
+    def __init__(self, dataset_name: str, batch_size = 265, buffer_size = 60000):
+        self.config = Config.get_instance()
+
+        self.filename = self.config.get_tf_records(dataset_name)
+
         self.dataset = None
         self.batch_size = batch_size
         self.buffer_size = buffer_size

@@ -94,7 +94,7 @@ def create_tensorflow_data():
     with open('pickles/level_data.pickle', 'rb') as f:
         data_dict = pickle.load(f)
 
-    record_file = 'tfrecords/data.tfrecords'
+    record_file = 'tfrecords/raster_single_layer.tfrecords'
     with tf.io.TFRecordWriter(record_file) as writer:
         for date_name, data_example in data_dict.items():
             tf_example = parse_single_data_example(data_example)

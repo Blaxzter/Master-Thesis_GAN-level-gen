@@ -3,14 +3,18 @@ import time
 
 import tensorflow as tf
 
-from data.LevelDataset import LevelDataset
+from data_scripts.LevelDataset import LevelDataset
 from generator.gan.GanNetwork import GanNetwork
+from util.Config import Config
 from util.TrainVisualizer import TensorBoardViz
 
 
 class NetworkTrainer:
 
-    def __init__(self, dataset: LevelDataset, model, epochs = 50, checkpoint_dir = "../models/training_checkpoints/"):
+    def __init__(self, run_name, dataset: LevelDataset, model, epochs = 50):
+
+        self.config: Config = Config.get_instance()
+
         # This method returns a helper function to compute cross entropy loss
         self.cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits = True)
         self.generator_optimizer = tf.keras.optimizers.Adam(1e-4)
@@ -22,10 +26,9 @@ class NetworkTrainer:
         self.trainer_dataset = dataset.get_dataset()
 
         self.checkpoint = None
-        strftime = time.strftime("%Y%m%d-%H%M%S")
-        self.checkpoint_dir = f'{checkpoint_dir}{{timestamp}}/'
-        self.current_checkpoint_dir = self.checkpoint_dir.replace("{timestamp}", strftime)
-        self.checkpoint_prefix = os.path.join(self.current_checkpoint_dir, "ckpt")
+
+        self.checkpoint_dir = self.config.get_checkpoint_dir(run_name)
+        self.checkpoint_prefix = os.path.join(self.checkpoint_dir, "ckpt")
         self.checkpoint = tf.train.Checkpoint(
             generator_optimizer = self.generator_optimizer,
             discriminator_optimizer = self.discriminator_optimizer,
