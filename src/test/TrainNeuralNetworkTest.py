@@ -1,5 +1,7 @@
 import os
 import sys
+
+import numpy as np
 import tensorflow as tf
 from matplotlib import pyplot as plt
 from tensorflow.keras import layers
@@ -19,20 +21,30 @@ if __name__ == '__main__':
         config = Config.get_instance()
         print(str(config))
 
-        dataset = LevelDataset(dataset_name = "raster_single_layer")
+        dataset = LevelDataset(dataset_name = "raster_single_layer", batch_size = 128)
         dataset.load_dataset()
-
-        train_dataset = dataset.get_dataset()
 
         data_augmentation = tf.keras.Sequential([
             layers.RandomFlip("horizontal")
         ])
 
         gan = GanNetwork(data_augmentation = data_augmentation)
-        trainer = NetworkTrainer(run_name = "simple_gan", dataset = dataset, model = gan, epochs = 500)
-        # trainer.load(run_name = "simple_gan", checkpoint_date = "20220607-153444")
-        # img = gan.create_img()
-        # plt.imshow(img)
+        trainer = NetworkTrainer(run_name = "simple_gan", dataset = dataset, model = gan, epochs = 5000)
+        # trainer.continue_training(run_name = "simple_gan", checkpoint_date = "20220607-215307")
+
+        # trainer.load(run_name = "simple_gan", checkpoint_date = "20220607-215307")
+        # img, pred = gan.create_img()
+        #
+        # fig, axs = plt.subplots(1, 2, figsize=(12, 4))
+        # normal_img = dataset.reverse_norm_layer(img)
+        # plt.suptitle(f'Epoch {0} Probability {pred}', fontsize = 16)
+        # axs[0].imshow(normal_img)
+        # axs[0].axis('off')
+        #
+        # axs[1].imshow(np.rint(normal_img))
+        # axs[1].axis('off')
+        # plt.tight_layout()
         # plt.show()
 
         trainer.train()
+

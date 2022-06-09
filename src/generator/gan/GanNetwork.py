@@ -68,9 +68,14 @@ class GanNetwork:
 
         self.discriminator = model
 
-    def create_img(self):
-        random_input = self.create_random_vector()
-        return self.generator(random_input)[0, :, :, :]
+    def create_img(self, seed = None):
+        if seed is None:
+            random_input = self.create_random_vector()
+        else:
+            random_input = seed
+        generated_img = self.generator(random_input, training = False)
+        probability = self.discriminator(generated_img, training = False)
+        return generated_img[0, :, :, :], round(probability.numpy().item() * 1000) / 1000
 
 
 if __name__ == '__main__':

@@ -19,6 +19,9 @@ class LevelDataset:
         self.norm_layer = None
         self.reverse_norm_layer = None
 
+    def get_data_amount(self):
+        return len(list(self.dataset))
+
     def get_dataset(self):
         return self.dataset.shuffle(buffer_size = self.buffer_size).batch(self.batch_size)
 
@@ -83,3 +86,17 @@ class LevelDataset:
         image = tf.reshape(image, shape = [height, width, depth])
         tf.cast(image, tf.float32)
         return image, data_dict
+
+
+if __name__ == '__main__':
+
+    dataset = LevelDataset(dataset_name = "raster_single_layer")
+    dataset.load_dataset()
+
+    print(len(list(dataset.get_dataset())))
+
+    data_set_size = []
+    for image_batch, data in dataset.get_dataset():
+        data_set_size.append(len(list(image_batch)))
+
+    print(data_set_size)

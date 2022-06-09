@@ -3,6 +3,7 @@ resources/data/tfrecords
 resources/data/pickles/level_data_with_screenshot.pickle
 resources/science_birds/win-new/ScienceBirds_Data/StreamingAssets/Levels
 resources/models
+resources/logs
 
 .idea/
 

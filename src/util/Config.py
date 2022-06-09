@@ -67,7 +67,7 @@ class Config:
             os.path.join(self.current_path, 'resources/data/tfrecords/{dataset_name}.tfrecords')
         )
         self.train_log_dir = os.path.normpath(
-            os.path.join(self.current_path, 'resources/logs/{{current_run}}/{timestamp}/train')
+            os.path.join(self.current_path, 'resources/logs/{current_run}/{timestamp}/train')
         )
         self.image_store = os.path.normpath(
             os.path.join(self.current_path, 'resources/imgs/generated/{timestamp}/')
@@ -75,6 +75,9 @@ class Config:
         self.checkpoint_dir = os.path.normpath(
             os.path.join(self.current_path, 'resources/models/{current_run}/{timestamp}/')
         )
+
+        self.save_checkpoint_every = 15
+        self.keep_checkpoints = 2
 
     def __str__(self):
         return f'Config:' \
@@ -91,6 +94,7 @@ class Config:
                f'\ttf_records_name = {self.tf_records_name} \n' \
                f'\ttrain_log_dir = {self.train_log_dir} \n' \
                f'\timage_store = {self.image_store} \n' \
+               f'\tsave_checkpoint_every = {self.save_checkpoint_every} \n' \
                f'\tcheckpoint_dir = {self.checkpoint_dir} \n'
 
     @staticmethod
@@ -105,7 +109,10 @@ class Config:
     def get_generated_image_store(self):
         return self.image_store.replace("{timestamp}", self.strftime)
 
-    def get_log_dir(self, run_name):
+    def get_log_dir(self, run_name, strftime):
+        return self.train_log_dir.replace("{timestamp}", strftime).replace("{current_run}", run_name)
+
+    def get_current_log_dir(self, run_name):
         return self.train_log_dir.replace("{timestamp}", self.strftime).replace("{current_run}", run_name)
 
     def get_current_checkpoint_dir(self, run_name):

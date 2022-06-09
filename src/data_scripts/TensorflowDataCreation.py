@@ -9,7 +9,7 @@ max_height = 86 + 2
 max_width = 212
 
 
-# Take from tensorflow gan tutorial
+# Take from tensorflow simple_gan tutorial
 def _bytes_feature(value):
     """Returns a bytes_list from a string / byte."""
     if isinstance(value, type(tf.constant(0))):  # if value ist tensor
