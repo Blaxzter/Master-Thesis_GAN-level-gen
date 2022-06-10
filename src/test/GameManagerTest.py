@@ -21,7 +21,7 @@ def screen_shot_test():
     game_manager = GameManager(conf = config, game_connection = game_connection)
     try:
         game_manager.start_game()
-        for level_path in sorted(Path("../resources/data/train/structures/").glob('*.xml')):
+        for level_path in sorted(Path("../resources/data/source_files/structures/").glob('*.xml')):
             level = level_reader.parse_level(path = str(level_path), use_blocks = True, use_pigs = True, use_platform = True)
             game_manager.change_level(path = str(level_path))
             img = game_connection.create_level_img(structure = True)
@@ -43,7 +43,7 @@ def level_split_test():
 
     data_dict = dict()
 
-    for level in sorted(Path("train/generated/").glob('*.xml')):
+    for level in sorted(Path("source_files/generated/").glob('*.xml')):
         level_reader = LevelReader()
         parsed_level = level_reader.parse_level(str(level), blocks = True, pigs = True, platform = True)
         parsed_level.filter_slingshot_platform()

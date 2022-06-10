@@ -22,15 +22,15 @@ class NetworkTrainer:
         # This method returns a helper function to compute cross entropy loss
         self.cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits = True)
 
-        self.final_learning_rate = 1e-4
-        self.initial_learning_rate = 1e-2
-        learning_rate_decay_factor = (self.final_learning_rate / self.initial_learning_rate) ** (1 / epochs)
-        steps_per_epoch = int(dataset.get_data_amount() / dataset.batch_size)
+        # self.final_learning_rate = 1e-4
+        # self.initial_learning_rate = 1e-2
+        # learning_rate_decay_factor = (self.final_learning_rate / self.initial_learning_rate) ** (1 / epochs)
+        # steps_per_epoch = int(dataset.get_data_amount() / dataset.batch_size)
+        # lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+        #     initial_learning_rate = self.initial_learning_rate, decay_steps = steps_per_epoch, decay_rate = learning_rate_decay_factor)
 
-        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-            initial_learning_rate = self.initial_learning_rate, decay_steps = steps_per_epoch, decay_rate = learning_rate_decay_factor)
-        self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate = lr_schedule)
-        self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate = lr_schedule)
+        self.generator_optimizer = tf.keras.optimizers.Adam(1e-4)
+        self.discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
 
         self.model: GanNetwork = model
         self.dataset: LevelDataset = dataset
@@ -66,7 +66,6 @@ class NetworkTrainer:
         self.visualizer.visualize(epoch + 1)
         self.manager.save()
 
-    @tf.function
     def train_step(self, content):
         noise = tf.random.normal([self.batch_size, self.model.input_array_size])
 

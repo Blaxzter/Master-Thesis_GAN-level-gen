@@ -7,14 +7,13 @@ from util.Config import Config
 
 class LevelDataset:
 
-    def __init__(self, dataset_name: str, batch_size = 265, buffer_size = 60000):
+    def __init__(self, dataset_name: str, batch_size = 265):
         self.config = Config.get_instance()
 
         self.filename = self.config.get_tf_records(dataset_name)
 
         self.dataset = None
         self.batch_size = batch_size
-        self.buffer_size = buffer_size
 
         self.norm_layer = None
         self.reverse_norm_layer = None
@@ -23,7 +22,7 @@ class LevelDataset:
         return len(list(self.dataset))
 
     def get_dataset(self):
-        return self.dataset.shuffle(buffer_size = self.buffer_size).batch(self.batch_size)
+        return self.dataset.shuffle(buffer_size = 60000).batch(self.batch_size)
 
     def load_dataset(self):
         # Load the dataset from the tf record file

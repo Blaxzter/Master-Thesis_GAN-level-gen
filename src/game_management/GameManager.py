@@ -33,7 +33,7 @@ class GameManager:
             rescue_level = self.rescue_level
 
         if level_path is None:
-            level_path = self.conf.level_path
+            level_path = self.conf.generated_level_path
 
         if rescue_level:
             current_rescue_level_pat = self.rescue_level_path

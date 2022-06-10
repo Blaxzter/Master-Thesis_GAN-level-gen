@@ -36,7 +36,7 @@ if __name__ == '__main__':
             with open('pickles/level_data_with_screenshot.pickle', 'rb') as f:
                 data_dict = pickle.load(f)
 
-        levels = sorted(Path("train/generated/").glob('*.xml'))
+        levels = sorted(Path("source_files/generated/").glob('*.xml'))
         for level_idx, original_data_level in tqdm(enumerate(levels), total = len(levels)):
             if level_idx <= continue_at_level:
                 continue
@@ -62,7 +62,7 @@ if __name__ == '__main__':
                     level = parsed_level,
                     move_to_ground = True
                 )
-                new_level_path = f'../data/train/structures/level-04.xml'
+                new_level_path = f'../data/source_files/structures/level-04.xml'
                 level_reader.write_xml_file(struct_doc, new_level_path)
                 game_manager.change_level(path = new_level_path, delete_level = True)
 

@@ -21,7 +21,7 @@ if __name__ == '__main__':
         config = Config.get_instance()
         print(str(config))
 
-        dataset = LevelDataset(dataset_name = "raster_single_layer", batch_size = 128)
+        dataset = LevelDataset(dataset_name = "raster_single_layer", batch_size = 32)
         dataset.load_dataset()
 
         data_augmentation = tf.keras.Sequential([

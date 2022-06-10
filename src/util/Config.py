@@ -37,7 +37,8 @@ class Config:
         self.current_path = str(self.current_path)[:-2]
 
         self.level_amount: int = args.level_amount if args.level_amount else 1
-        self.level_path: str = args.level_path + os.sep if args.level_path else \
+        self.data_train_path = os.path.normpath(os.path.join(self.current_path, 'resources/data/source_files/'))
+        self.generated_level_path: str = args.generated_level_path + os.sep if args.generated_level_path else \
             os.path.normpath(os.path.join(self.current_path, 'resources/data/generated_level/'))
         self.game_folder_path: str = args.game_folder_path if args.game_folder_path else \
             os.path.normpath(os.path.join(self.current_path, 'resources/science_birds/{os}'))
@@ -63,6 +64,8 @@ class Config:
         self.rescue_level = args.rescue_level if args.rescue_level else True
 
         # Ml stuff
+        self.create_tensorflow_writer = True
+
         self.tf_records_name = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/tfrecords/{dataset_name}.tfrecords')
         )
@@ -85,12 +88,13 @@ class Config:
                f'\tgenerator = {self.generator} \n' \
                f'\tcurrent_path = {self.current_path} \n' \
                f'\tlevel_amount = {self.level_amount} \n' \
-               f'\tlevel_path = {self.level_path} \n' \
+               f'\tlevel_path = {self.generated_level_path} \n' \
                f'\tgame_folder_path = {self.game_folder_path} \n' \
                f'\tai_path = {self.ai_path} \n' \
                f'\trescue_level_path = {self.rescue_level_path} \n' \
                f'\tevaluate = {self.evaluate} \n' \
                f'\trescue_level = {self.rescue_level} \n' \
+               f'\tcreate_tensorflow_writer = {self.create_tensorflow_writer} \n' \
                f'\ttf_records_name = {self.tf_records_name} \n' \
                f'\ttrain_log_dir = {self.train_log_dir} \n' \
                f'\timage_store = {self.image_store} \n' \
@@ -129,7 +133,7 @@ class Config:
         return self.tf_records_name.replace("{dataset_name}", dataset_name)
 
     def get_leve_path(self):
-        return self.level_path
+        return self.generated_level_path
 
     def get_game_path(self):
         return self.game_path
@@ -142,6 +146,14 @@ class Config:
 
     def get_ai_path(self):
         return self.ai_path
+
+    def get_data_train_path(self, folder = None):
+
+        if folder is None:
+            return self.data_train_path
+        else:
+            return os.path.join(self.data_train_path, folder)
+
 
 
 if __name__ == '__main__':

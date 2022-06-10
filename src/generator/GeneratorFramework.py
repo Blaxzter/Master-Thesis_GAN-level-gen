@@ -7,7 +7,7 @@ from util.Evaluator import Evaluator
 
 class GeneratorFramework:
     def __init__(self, conf: Config):
-        self.generated_level_path = conf.level_path
+        self.generated_level_path = conf.generated_level_path
         self.generator = conf.get_generator()
 
         self.game_connection = GameConnection(conf = conf)
