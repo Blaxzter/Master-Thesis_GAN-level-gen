@@ -15,7 +15,7 @@ from util.Config import Config
 def leve_visualisation():
     config = Config.get_instance()
     # config.game_folder_path = os.path.normpath('../science_birds/{os}')
-    for level_path in sorted(Path(config.get_data_train_path(folder = 'generated')).glob('*.xml')):
+    for level_path in sorted(Path(config.get_data_train_path(folder = 'generated/single_structure')).glob('*.xml')):
 
         game_connection = GameConnection(conf = config)
         game_manager = GameManager(conf = config, game_connection = game_connection)
@@ -47,7 +47,8 @@ def leve_visualisation():
                 level = parse_level,
                 move_to_ground = True
             )
-            new_level_path = f'../resources/data/train/structures/level-0{level_counter + 4}.xml'
+            new_level_path = config.get_data_train_path(folder = 'structures')
+            new_level_path = f'{new_level_path}/level-0{level_counter + 4}.xml'
             level_reader.write_xml_file(struct_doc, new_level_path)
             game_manager.change_level(path = new_level_path)
 

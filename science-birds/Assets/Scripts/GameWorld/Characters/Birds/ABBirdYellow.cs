@@ -3,11 +3,11 @@ using System.Collections;
 
 public class ABBirdYellow : ABBird {
 
-	public float _specialAttackForce = 2f;
+    public float _specialAttackForce = 2f;
 
-	void SpecialAttack() {
+    void SpecialAttack() {
 
-		Vector2 force = _rigidBody.velocity.normalized * _specialAttackForce;
-		_rigidBody.AddForce(force, ForceMode2D.Impulse);
-	}
+        Vector2 force = _rigidBody.velocity.normalized * _specialAttackForce;
+        _rigidBody.AddForce(force, ForceMode2D.Impulse);
+    }
 }

@@ -17,34 +17,34 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>
 //
 
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
- using System.Collections.Generic;
- using UnityEngine.UI;
+using System.Collections.Generic;
+using UnityEngine.UI;
 
 public class ScoreHud : ABSingleton<ScoreHud> {
 
-	private ABParticleSystem  _scoreEmitter;
+    private ABParticleSystem  _scoreEmitter;
 
-	// Use this for initialization
-	void Start () {
+    // Use this for initialization
+    void Start () {
 	
-		_scoreEmitter = GetComponent<ABParticleSystem> ();
-		_scoreEmitter.SetParticlesParent (transform);
-	}
+        _scoreEmitter = GetComponent<ABParticleSystem> ();
+        _scoreEmitter.SetParticlesParent (transform);
+    }
 
-	public void SpawnScorePoint(uint point, Vector3 position) {
+    public void SpawnScorePoint(uint point, Vector3 position) {
 
-		ABParticle scoreParticle = _scoreEmitter.ShootParticle ();
-		if (!scoreParticle)
-			return;
+        ABParticle scoreParticle = _scoreEmitter.ShootParticle ();
+        if (!scoreParticle)
+            return;
 
-		scoreParticle.transform.rotation = Quaternion.identity;
-		scoreParticle.transform.position = position;
+        scoreParticle.transform.rotation = Quaternion.identity;
+        scoreParticle.transform.position = position;
 
-		Text pointText = scoreParticle.GetComponent<Text>();
-		pointText.text = point.ToString();
+        Text pointText = scoreParticle.GetComponent<Text>();
+        pointText.text = point.ToString();
 
-		HUD.Instance.AddScore (point);
-	}
+        HUD.Instance.AddScore (point);
+    }
 }

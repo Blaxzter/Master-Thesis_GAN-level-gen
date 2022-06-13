@@ -17,18 +17,18 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>
 //
 
- using UnityEngine;
+using UnityEngine;
 using System.Collections;
 
 public class ABMenu : MonoBehaviour {
 
-	public void LoadNextScene(string sceneName) {
+    public void LoadNextScene(string sceneName) {
 
-		ABSceneManager.Instance.LoadScene(sceneName);
-	}
+        ABSceneManager.Instance.LoadScene(sceneName);
+    }
 
-	public void LoadNextScene(string sceneName, bool loadTransition, ABSceneManager.ActionBetweenScenes action) {
+    public void LoadNextScene(string sceneName, bool loadTransition, ABSceneManager.ActionBetweenScenes action) {
 
-		ABSceneManager.Instance.LoadScene(sceneName, loadTransition, action);
-	}
+        ABSceneManager.Instance.LoadScene(sceneName, loadTransition, action);
+    }
 }

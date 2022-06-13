@@ -193,7 +193,7 @@ class LevelVisualizer:
         if len(level_representations) == 1:
             import sys
             np.set_printoptions(threshold = sys.maxsize, linewidth = sys.maxsize)
-            print(np.where(level_representations[0] == 0, " ", level_representations[0].astype(int)))
+            # print(np.where(level_representations[0] == 0, " ", level_representations[0].astype(int)))
             ax.matshow(level_representations[0])
         else:
             for level_img, cax in zip(level_representations, ax.flatten()):

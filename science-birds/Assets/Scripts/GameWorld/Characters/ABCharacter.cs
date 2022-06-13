@@ -1,4 +1,4 @@
-	// SCIENCE BIRDS: A clone version of the Angry Birds game used for 
+// SCIENCE BIRDS: A clone version of the Angry Birds game used for 
 // research purposes
 // 
 // Copyright (C) 2016 - Lucas N. Ferreira - lucasnfe@gmail.com
@@ -17,36 +17,36 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>
 //
 
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 
 public class ABCharacter : ABGameObject {
 
-	protected Animator _animator;
-	public float _maxTimeToBlink;
+    protected Animator _animator;
+    public float _maxTimeToBlink;
 
-	// Use this for initialization
-	protected override void Awake () {
+    // Use this for initialization
+    protected override void Awake () {
 
-		base.Awake ();
+        base.Awake ();
 
-		_animator = GetComponent<Animator>();
+        _animator = GetComponent<Animator>();
 	
-		float nextBlinkDelay = Random.Range(0.0f, _maxTimeToBlink);
-		Invoke("Blink", nextBlinkDelay + 1.0f);
-	}
+        float nextBlinkDelay = Random.Range(0.0f, _maxTimeToBlink);
+        Invoke("Blink", nextBlinkDelay + 1.0f);
+    }
 
-	public bool IsIdle() {
+    public bool IsIdle() {
 		
-		return _animator.GetCurrentAnimatorStateInfo(0).IsName("idle");
-	}
+        return _animator.GetCurrentAnimatorStateInfo(0).IsName("idle");
+    }
 
-	void Blink() {
+    void Blink() {
 		
-		if(IsIdle())
-			_animator.Play("blink", 0, 0f);
+        if(IsIdle())
+            _animator.Play("blink", 0, 0f);
 		
-		float nextBlinkDelay = Random.Range(0.0f, _maxTimeToBlink);
-		Invoke("Blink", nextBlinkDelay + 1.0f);
-	}
+        float nextBlinkDelay = Random.Range(0.0f, _maxTimeToBlink);
+        Invoke("Blink", nextBlinkDelay + 1.0f);
+    }
 }

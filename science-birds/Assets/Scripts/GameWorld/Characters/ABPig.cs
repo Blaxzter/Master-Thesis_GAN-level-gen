@@ -17,16 +17,16 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>
 //
 
- using UnityEngine;
+using UnityEngine;
 using System.Collections;
 
 public class ABPig : ABCharacter {
 
-	public override void Die(bool withEffect = true)
-	{
-		ScoreHud.Instance.SpawnScorePoint(50, transform.position);
-		ABGameWorld.Instance.KillPig(this);
+    public override void Die(bool withEffect = true)
+    {
+        ScoreHud.Instance.SpawnScorePoint(50, transform.position);
+        ABGameWorld.Instance.KillPig(this);
 
-		base.Die(withEffect);
-	}
+        base.Die(withEffect);
+    }
 }
