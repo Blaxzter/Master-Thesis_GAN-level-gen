@@ -5,9 +5,12 @@ import numpy as np
 import tensorflow as tf
 from matplotlib import pyplot as plt
 
-max_height = 86 + 2
-max_width = 212
+# max_height = 86 + 2
+# max_width = 212
+from util.Config import Config
 
+max_height = 99 + 1
+max_width = 110 + 2
 
 # Take from tensorflow simple_gan tutorial
 def _bytes_feature(value):
@@ -52,8 +55,8 @@ def parse_single_data_example(data_example):
     # define the dictionary -- the structure -- of our single example
 
     meta_data = data_example['meta_data']
-    game_data = data_example['game_data']
     img_data = data_example['img_data']
+    game_data = data_example['game_data'] if 'game_data' in data_example else None
 
     padded_img_data = pad_image_to_size(img_data)
 
@@ -63,15 +66,6 @@ def parse_single_data_example(data_example):
         'width': _int64_feature(padded_img_data.shape[1]),
         'depth': _int64_feature(padded_img_data.shape[2]),
         'raw_image': _bytes_feature(serialize_array(padded_img_data)),
-
-        # level data from playing
-        'cumulative_damage': _float_feature(game_data['cumulative_damage']),
-        'initial_damage': _float_feature(game_data['initial_damage']),
-        'is_stable': _int64_feature(game_data['is_stable']),
-        'death': _int64_feature(game_data['death']),
-        'birds_used': _int64_feature(game_data['birds_used']),
-        'won': _int64_feature(game_data['won']),
-        'score': _int64_feature(game_data['score']),
 
         # Meta data
         'level_height': _float_feature(meta_data.height),
@@ -84,6 +78,16 @@ def parse_single_data_example(data_example):
         'special_block_amount': _int64_feature(meta_data.special_block_amount),
     }
 
+    if game_data is not None:
+        # level data from playing
+        data['cumulative_damage'] = _float_feature(game_data['cumulative_damage'])
+        data['initial_damage'] = _float_feature(game_data['initial_damage'])
+        data['is_stable'] = _int64_feature(game_data['is_stable'])
+        data['death'] = _int64_feature(game_data['death'])
+        data['birds_used'] = _int64_feature(game_data['birds_used'])
+        data['won'] = _int64_feature(game_data['won'])
+        data['score'] = _int64_feature(game_data['score'])
+
     # create an Example, wrapping the single features
     out = tf.train.Example(features = tf.train.Features(feature = data))
 
@@ -91,10 +95,13 @@ def parse_single_data_example(data_example):
 
 
 def create_tensorflow_data():
-    with open('pickles/level_data.pickle', 'rb') as f:
+    config = Config.get_instance()
+
+    data_pickle = config.get_pickle_file(f"single_structure_filtered")
+    with open(data_pickle, 'rb') as f:
         data_dict = pickle.load(f)
 
-    record_file = 'tfrecords/raster_single_layer.tfrecords'
+    record_file = config.get_tf_records(dataset_name = f'filtered_single_structure_{max_width}_{max_height}')
     with tf.io.TFRecordWriter(record_file) as writer:
         for date_name, data_example in data_dict.items():
             tf_example = parse_single_data_example(data_example)

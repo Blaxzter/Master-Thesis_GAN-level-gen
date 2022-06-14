@@ -1,10 +1,15 @@
-from loguru import logger
+import multiprocessing
+import threading
+import time
 from copy import deepcopy
 from math import ceil
 from pathlib import Path
 from random import randint
 from random import uniform
+
+from loguru import logger
 from tqdm import tqdm
+
 
 class BaselineGenerator:
 
@@ -53,20 +58,21 @@ class BaselineGenerator:
         self.min_peak_split = 10  # minimum distance between two peak blocks of structure
         self.max_peak_split = 50  # maximum distance between two peak blocks of structure
 
-        self.minimum_height_gap = 3.5  # y distance min between platforms
+        self.minimum_height_gap = 0  # y distance min between platforms
         self.platform_distance_buffer = 0.4  # x_distance min between platforms / y_distance min between platforms and ground structures
 
         # defines the levels area (ie. space within which structures/platforms can be placed)
         self.level_width_min = -3.0
-        self.level_width_max = 9.0
+        self.level_width_max = 3.0
         self.level_height_min = -2.0  # only used by platforms, ground structures use absolute_ground to determine their lowest point
-        self.level_height_max = 6.0
+        self.level_height_max = 4.0
 
         self.pig_precision = 0.01  # how precise to check for possible pig positions on ground
 
-        self.min_ground_width = 2.5  # minimum amount of space allocated to ground structure
+        self.min_ground_width = 4.5  # minimum amount of space allocated to ground structure
         # desired height limit of ground structures
-        self.ground_structure_height_limit = ((self.level_height_max - self.minimum_height_gap) - self.absolute_ground) / 1.5
+        self.ground_structure_height_limit = ((
+                                                          self.level_height_max - self.minimum_height_gap) - self.absolute_ground) / 1.5
 
         self.max_attempts = 100  # number of times to attempt to place a platform before abandoning it
 
@@ -94,7 +100,8 @@ class BaselineGenerator:
         self.use_triangles = False
         self.use_circles = False
 
-    def settings(self, number_levels = 1, pig_range = "8,10", use_triangles = False, use_circles = False, restricted_combination = "", ground_structure_range = (1, 1), air_structure_range=(1, 1)):
+    def settings(self, number_levels = 1, pig_range = "1,5", use_triangles = False, use_circles = False,
+                 restricted_combination = "", ground_structure_range = (1, 1), air_structure_range = (1, 1)):
         self.use_triangles = use_triangles
         self.use_circles = use_circles
         self.number_levels = number_levels
@@ -141,37 +148,64 @@ class BaselineGenerator:
         if "CircleSmall" in self.restricted_blocks:
             self.cirsmall_allowed = False
 
-        for current_level in tqdm(range(self.number_levels)):
-            logger.debug(f"Create Level {current_level}")
+        for current_level in (pbar := tqdm(range(self.number_levels))):
+            try:
+                queue = multiprocessing.Queue()
+                th = multiprocessing.Process(target = self.create_level, args=(current_level, folder_path, restricted_combinations, start_level_index, queue))
+                th.start()
+                counter = 0
+                if queue.empty():
+                    while True:
+                        if queue.empty():
+                            time.sleep(0.1)
+                            counter += 1
+                            if counter > 100:
+                                print("Kill the process")
+                                th.terminate()
+                                th.kill()
+                                th.close()
+                                break
+                        elif queue.get_nowait():
+                            break
 
-            self.number_ground_structures = randint(self.ground_structure_range[0], self.ground_structure_range[1]) # number of ground structures
-            number_platforms = randint(self.ground_structure_range[0], self.ground_structure_range[1])  # number of platforms (reduced automatically if not enough space)
-            # number of pigs (if set too large then can cause program to infinitely loop)
-            number_pigs = randint(int(self.pig_range[0]), int(self.pig_range[1]))
+                if counter < 100:
+                    pbar.set_description("Processing %s" % counter)
+                    th.join()
 
-            if (current_level + start_level_index) < 10:
-                level_name = "0" + str(current_level + start_level_index)
-            else:
-                level_name = str(current_level + start_level_index)
+            except Exception as e:
+                continue
 
-            number_ground_structures, complete_locations, final_pig_positions = self.create_ground_structures()
-            number_platforms, final_platforms, platform_centers \
-                = self.create_platforms(number_platforms, complete_locations, final_pig_positions)
-            complete_locations, final_pig_positions \
-                = self.create_platform_structures(final_platforms, platform_centers, complete_locations, final_pig_positions)
-
-            final_pig_positions, removed_pigs = self.remove_unnecessary_pigs(number_pigs)
-            final_pig_positions = self.add_necessary_pigs(number_pigs)
-            self.final_TNT_positions = self.add_TNT(removed_pigs)
-            number_birds = self.choose_number_birds(final_pig_positions, number_ground_structures,
-                                                    number_platforms)
-            possible_trihole_positions, possible_tri_positions, possible_cir_positions, possible_cirsmall_positions = self.find_additional_block_positions(
-                complete_locations)
-            selected_other = self.add_additional_blocks(possible_trihole_positions, possible_tri_positions,
-                                                        possible_cir_positions, possible_cirsmall_positions)
-            self.write_level_xml(complete_locations, selected_other, final_pig_positions, self.final_TNT_positions,
-                                 final_platforms, number_birds, level_name, restricted_combinations, folder_path)
-            logger.debug(f"Level Created{current_level} \n")
+    def create_level(self, current_level, folder_path, restricted_combinations, start_level_index, finished):
+        logger.debug(f"Create Level {current_level} {finished}")
+        self.number_ground_structures = randint(self.ground_structure_range[0],
+                                                self.ground_structure_range[1])  # number of ground structures
+        number_platforms = randint(self.air_structure_range[0], self.air_structure_range[
+            1])  # number of platforms (reduced automatically if not enough space)
+        # number of pigs (if set too large then can cause program to infinitely loop)
+        number_pigs = randint(int(self.pig_range[0]), int(self.pig_range[1]))
+        if (current_level + start_level_index) < 10:
+            level_name = "0" + str(current_level + start_level_index)
+        else:
+            level_name = str(current_level + start_level_index)
+        number_ground_structures, complete_locations, final_pig_positions = self.create_ground_structures()
+        number_platforms, final_platforms, platform_centers \
+            = self.create_platforms(number_platforms, complete_locations, final_pig_positions)
+        complete_locations, final_pig_positions \
+            = self.create_platform_structures(final_platforms, platform_centers, complete_locations,
+                                              final_pig_positions)
+        final_pig_positions, removed_pigs = self.remove_unnecessary_pigs(number_pigs)
+        final_pig_positions = self.add_necessary_pigs(number_pigs)
+        self.final_TNT_positions = self.add_TNT(removed_pigs)
+        number_birds = self.choose_number_birds(final_pig_positions, number_ground_structures,
+                                                number_platforms)
+        possible_trihole_positions, possible_tri_positions, possible_cir_positions, possible_cirsmall_positions = self.find_additional_block_positions(
+            complete_locations)
+        selected_other = self.add_additional_blocks(possible_trihole_positions, possible_tri_positions,
+                                                    possible_cir_positions, possible_cirsmall_positions)
+        self.write_level_xml(complete_locations, selected_other, final_pig_positions, self.final_TNT_positions,
+                             final_platforms, number_birds, level_name, restricted_combinations, folder_path)
+        finished.put(True)
+        logger.debug(f"Level Created {current_level} {finished} \n")
 
     def generate_subsets(self, current_tree_bottom):
         """
@@ -581,7 +615,7 @@ class BaselineGenerator:
             new_pig_positions = []
             for i in possible_pig_positions:
                 if (round((pig_choice[0] - pig_width / 2), 10) >= round((i[0] + pig_width / 2), 10) or round(
-                    (pig_choice[0] + pig_width / 2), 10) <= round((i[0] - pig_width / 2), 10) or round(
+                        (pig_choice[0] + pig_width / 2), 10) <= round((i[0] - pig_width / 2), 10) or round(
                     (pig_choice[1] + pig_height / 2), 10) <= round((i[1] - pig_height / 2), 10) or round(
                     (pig_choice[1] - pig_height / 2), 10) >= round((i[1] + pig_height / 2), 10)):
                     new_pig_positions.append(i)
@@ -819,7 +853,7 @@ class BaselineGenerator:
                     valid_pig = False
             for i in self.final_pig_positions:
                 if (round((test_position[0] - pig_width / 2), 10) < round((i[0] + (pig_width / 2)), 10) and round(
-                    (test_position[0] + pig_width / 2), 10) > round((i[0] - (pig_width / 2)), 10) and round(
+                        (test_position[0] + pig_width / 2), 10) > round((i[0] - (pig_width / 2)), 10) and round(
                     (test_position[1] + pig_height / 2), 10) > round((i[1] - (pig_height / 2)), 10) and round(
                     (test_position[1] - pig_height / 2), 10) < round((i[1] + (pig_height / 2)), 10)):
                     valid_pig = False
@@ -866,7 +900,8 @@ class BaselineGenerator:
                     if (round((test_position[0] - trihole_width / 2), 10) < round(
                             (i[1] + (self.blocks[str(i[0])][0]) / 2), 10) and round(
                         (test_position[0] + trihole_width / 2), 10) > round((i[1] - (self.blocks[str(i[0])][0]) / 2),
-                        10) and round((test_position[1] + trihole_height / 2), 10) > round(
+                                                                            10) and round(
+                        (test_position[1] + trihole_height / 2), 10) > round(
                         (i[2] - (self.blocks[str(i[0])][1]) / 2), 10) and round((test_position[1] - trihole_height / 2),
                                                                                 10) < round(
                         (i[2] + (self.blocks[str(i[0])][1]) / 2), 10)):
@@ -894,8 +929,9 @@ class BaselineGenerator:
                         if (round((test_position[0] - trihole_width / 2), 10) < round(
                                 (j[0] + (self.platform_size[0] / 2)), 10) and round(
                             (test_position[0] + trihole_width / 2), 10) > round((j[0] - (self.platform_size[0] / 2)),
-                            10) and round((test_position[1] + self.platform_distance_buffer + trihole_height / 2),
-                                          10) > round((j[1] - (self.platform_size[1] / 2)), 10) and round(
+                                                                                10) and round(
+                            (test_position[1] + self.platform_distance_buffer + trihole_height / 2),
+                            10) > round((j[1] - (self.platform_size[1] / 2)), 10) and round(
                             (test_position[1] - self.platform_distance_buffer - trihole_height / 2), 10) < round(
                             (j[1] + (self.platform_size[1] / 2)), 10)):
                             valid_position = False
@@ -1053,10 +1089,11 @@ class BaselineGenerator:
                     if (round((test_position[0] - cirsmall_width / 2), 10) < round(
                             (i[1] + (self.blocks[str(i[0])][0]) / 2), 10) and round(
                         (test_position[0] + cirsmall_width / 2), 10) > round((i[1] - (self.blocks[str(i[0])][0]) / 2),
-                        10) and round((test_position[1] + cirsmall_height / 2), 10) > round(
+                                                                             10) and round(
+                        (test_position[1] + cirsmall_height / 2), 10) > round(
                         (i[2] - (self.blocks[str(i[0])][1]) / 2), 10) and round(
                         (test_position[1] - cirsmall_height / 2), 10) < round((i[2] + (self.blocks[str(i[0])][1]) / 2),
-                        10)):
+                                                                              10)):
                         valid_position = False
                 for j in self.final_pig_positions:
                     if (round((test_position[0] - cirsmall_width / 2), 10) < round((j[0] + (self.pig_size[0] / 2)),
@@ -1081,8 +1118,9 @@ class BaselineGenerator:
                         if (round((test_position[0] - cirsmall_width / 2), 10) < round(
                                 (j[0] + (self.platform_size[0] / 2)), 10) and round(
                             (test_position[0] + cirsmall_width / 2), 10) > round((j[0] - (self.platform_size[0] / 2)),
-                            10) and round((test_position[1] + self.platform_distance_buffer + cirsmall_height / 2),
-                                          10) > round((j[1] - (self.platform_size[1] / 2)), 10) and round(
+                                                                                 10) and round(
+                            (test_position[1] + self.platform_distance_buffer + cirsmall_height / 2),
+                            10) > round((j[1] - (self.platform_size[1] / 2)), 10) and round(
                             (test_position[1] - self.platform_distance_buffer - cirsmall_height / 2), 10) < round(
                             (j[1] + (self.platform_size[1] / 2)), 10)):
                             valid_position = False
@@ -1109,7 +1147,8 @@ class BaselineGenerator:
             possible_cirsmall_positions = self.find_cirsmall_positions(complete_locations)
         return possible_trihole_positions, possible_tri_positions, possible_cir_positions, possible_cirsmall_positions
 
-    def add_additional_blocks(self, possible_trihole_positions, possible_tri_positions, possible_cir_positions, possible_cirsmall_positions):
+    def add_additional_blocks(self, possible_trihole_positions, possible_tri_positions, possible_cir_positions,
+                              possible_cirsmall_positions):
         """
         combine all possible additonal block positions into one set
         """

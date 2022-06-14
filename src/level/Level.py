@@ -127,8 +127,8 @@ class Level:
                     right_block_pos = element.x + element.width / 2 - min_x
                     bottom_block_pos = element.y - element.height / 2 - min_y
                     top_block_pos = element.y + element.height / 2 - min_y
-                    for x_pos in np.arange(left_block_pos, right_block_pos - resolution / 2, resolution):
-                        for y_pos in np.arange(bottom_block_pos, top_block_pos - resolution / 2, resolution):
+                    for x_pos in np.arange(left_block_pos, right_block_pos, resolution):
+                        for y_pos in np.arange(bottom_block_pos, top_block_pos, resolution):
 
                             x_cord = round(x_pos / resolution)
                             y_cord = round(y_pos / resolution)
@@ -138,21 +138,28 @@ class Level:
                             picture[y_len - y_cord - 1, x_cord] = element.get_identifier()
 
                 ret_pictures.append(picture)
-
         else:
             for element_list in element_lists:
-                min_x, min_y, max_x, max_y = self.calc_structure_dimensions(element_list)
+                working_list = element_list.copy()
+
+                min_x, min_y, max_x, max_y = self.calc_structure_dimensions(working_list)
 
                 x_cords = np.arange(min_x + resolution / 2, max_x - resolution / 2, resolution)
                 y_cords = np.arange(min_y + resolution / 2, max_y - resolution / 2, resolution)
 
                 picture = np.zeros((len(y_cords), len(x_cords)))
 
+                coordinate_lists = np.array([[element.x, element.y] for element in working_list])
+
                 for i, y_cord in enumerate(y_cords):
                     for j, x_cord in enumerate(x_cords):
                         in_location = []
 
-                        for element in element_list:
+                        norm = np.linalg.norm(coordinate_lists - np.array([x_cord, y_cord]), axis = 1)
+                        sorted = np.argsort(norm)
+
+                        for element_idx in sorted:
+                            element = working_list[element_idx.item()]
                             if element.shape_polygon.intersects(Point(x_cord, y_cord)):
                                 in_location.append(element)
                                 break
@@ -236,7 +243,7 @@ class Level:
 
     def filter_slingshot_platform(self):
         if len(self.platform) == 0:
-            logger.debug("No Platform")
+            # logger.debug("No Platform")
             return
 
         platform_coords = np.asarray(list(map(lambda p: p.coordinates, self.platform)))

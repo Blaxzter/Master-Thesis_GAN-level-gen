@@ -46,6 +46,8 @@ class LevelElement:
         elif self.type in Constants.pig_types.values():
             self.size = Constants.pig_size
             self.object_type = ObjectType.Pig
+            if self.y <= -3.5 + Constants.pig_size[0] / 2:
+                self.y = -3.5 + Constants.pig_size[0] / 2
 
         elif self.type in Constants.additional_objects.values():
             self.index = list(Constants.additional_objects.values()).index(self.type) + 1
@@ -66,6 +68,9 @@ class LevelElement:
         self.height = self.size[1]
 
         self.shape_polygon: Optional[Polygon] = None
+
+        # self.required_dots = round(((self.size[0] - Constants.resolution) / Constants.resolution) * ((self.size[1] - Constants.resolution) / Constants.resolution))
+        # self.used_dots = 0
 
     def get_bottom_left(self):
         horizontal_offset = self.size[0] / 2

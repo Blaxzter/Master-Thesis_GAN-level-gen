@@ -57,7 +57,7 @@ class Config:
             os.path.join(self.current_path, 'ai/Naive-Agent-standalone-Streamlined.jar')
         )
         self.rescue_level_path = os.path.normpath(
-            os.path.join(self.current_path, 'data/level_archive/{timestamp}/')
+            os.path.join(self.current_path, 'resources/data/source_files/level_archive/{timestamp}/')
         )
 
         self.evaluate = args.evaluate if args.evaluate else False
@@ -66,6 +66,12 @@ class Config:
         # Ml stuff
         self.create_tensorflow_writer = True
 
+        self.data_root = os.path.normpath(
+            os.path.join(self.current_path, 'resources/data/')
+        )
+        self.pickle_folder = os.path.normpath(
+            os.path.join(self.current_path, 'resources/data/pickles')
+        )
         self.tf_records_name = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/tfrecords/{dataset_name}.tfrecords')
         )
@@ -152,8 +158,20 @@ class Config:
         if folder is None:
             return self.data_train_path
         else:
+            if folder[-1] != '/':
+                folder += '/'
             return os.path.join(self.data_train_path, folder)
 
+    def get_pickle_folder(self):
+        return self.pickle_folder
+
+    def get_pickle_file(self, file_name):
+        if '.pickle' not in file_name:
+            file_name += '.pickle'
+        return os.path.join(self.pickle_folder, file_name)
+
+    def get_data_root(self):
+        return self.data_root
 
 
 if __name__ == '__main__':

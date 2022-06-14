@@ -1,35 +1,31 @@
 import os
 import sys
 
-import numpy as np
 import tensorflow as tf
-from matplotlib import pyplot as plt
 from tensorflow.keras import layers
-
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 from util.Config import Config
 from data_scripts.LevelDataset import LevelDataset
-from generator.gan.GanNetwork import GanNetwork
+from generator.gan.GanNetworkSingleStructure import GanNetworkSingleStructure
 from util.NetworkTrainer import NetworkTrainer
 
 if __name__ == '__main__':
-
     with tf.device('/GPU:0'):
         config = Config.get_instance()
         print(str(config))
 
-        dataset = LevelDataset(dataset_name = "raster_single_layer", batch_size = 32)
+        dataset = LevelDataset(dataset_name = "filtered_single_structure_112_100", batch_size = 256)
         dataset.load_dataset()
 
         data_augmentation = tf.keras.Sequential([
             layers.RandomFlip("horizontal")
         ])
 
-        gan = GanNetwork(data_augmentation = data_augmentation)
-        trainer = NetworkTrainer(run_name = "simple_gan", dataset = dataset, model = gan, epochs = 5000)
+        gan = GanNetworkSingleStructure(data_augmentation = data_augmentation)
+        trainer = NetworkTrainer(run_name = "simple_gan_112_100", dataset = dataset, model = gan, epochs = 5000)
         # trainer.continue_training(run_name = "simple_gan", checkpoint_date = "20220607-215307")
 
         # trainer.load(run_name = "simple_gan", checkpoint_date = "20220607-215307")
@@ -47,4 +43,3 @@ if __name__ == '__main__':
         # plt.show()
 
         trainer.train()
-

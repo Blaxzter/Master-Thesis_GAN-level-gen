@@ -48,13 +48,13 @@ class LevelDataset:
             'raw_image': tf.io.FixedLenFeature([], tf.string),
 
             # level data from playing
-            'cumulative_damage': tf.io.FixedLenFeature([], tf.float32),
-            'initial_damage': tf.io.FixedLenFeature([], tf.float32),
-            'is_stable': tf.io.FixedLenFeature([], tf.int64),
-            'death': tf.io.FixedLenFeature([], tf.int64),
-            'birds_used': tf.io.FixedLenFeature([], tf.int64),
-            'won': tf.io.FixedLenFeature([], tf.int64),
-            'score': tf.io.FixedLenFeature([], tf.int64),
+            # 'cumulative_damage': tf.io.FixedLenFeature([], tf.float32),
+            # 'initial_damage': tf.io.FixedLenFeature([], tf.float32),
+            # 'is_stable': tf.io.FixedLenFeature([], tf.int64),
+            # 'death': tf.io.FixedLenFeature([], tf.int64),
+            # 'birds_used': tf.io.FixedLenFeature([], tf.int64),
+            # 'won': tf.io.FixedLenFeature([], tf.int64),
+            # 'score': tf.io.FixedLenFeature([], tf.int64),
 
             # Meta data
             'level_height': tf.io.FixedLenFeature([], tf.float32),

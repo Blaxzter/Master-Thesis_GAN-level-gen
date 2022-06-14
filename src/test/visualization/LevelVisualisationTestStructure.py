@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 from game_management.GameConnection import GameConnection
 from game_management.GameManager import GameManager
+from generator.baseline.Baseline import BaselineGenerator
 from level.Level import Level
 from level.LevelReader import LevelReader
 from level.LevelVisualizer import LevelVisualizer
@@ -12,7 +13,18 @@ from util import ProgramArguments
 from util.Config import Config
 
 
+def generate_structure():
+    config = Config.get_instance()
+
+    level_dest = config.get_data_train_path(folder = 'generated/single_structure/')
+    generator = BaselineGenerator()
+    generator.settings(number_levels = 3, ground_structure_range = (1, 1), air_structure_range=(0, 0))
+    generator.generate_level_init(folder_path = level_dest)
+
+
 def leve_visualisation():
+    generate_structure()
+
     config = Config.get_instance()
     # config.game_folder_path = os.path.normpath('../science_birds/{os}')
     for level_path in sorted(Path(config.get_data_train_path(folder = 'generated/single_structure')).glob('*.xml')):
@@ -35,7 +47,7 @@ def leve_visualisation():
 
         fig, ax = plt.subplots(len(structures) + 1, 3, dpi = 500, figsize=(5, 10))
 
-        level_visualizer.visualize_screenshot(game_connection.create_level_img(structure = True), ax = ax[0, 0])
+        level_visualizer.visualize_screenshot(game_connection.create_level_img(structure = False), ax = ax[0, 0])
         level_visualizer.create_img_of_level(level = parse_level, element_ids = False, use_grid = True, add_dots = False, ax = ax[0, 1])
         level_visualizer.visualize_level_img(parse_level, dot_version = False, ax = ax[0, 2])
 

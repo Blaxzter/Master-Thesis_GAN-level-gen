@@ -176,7 +176,7 @@ class LevelVisualizer:
     def visualize_level_img(self, level: Level, per_structure = False, ax = None, dot_version = False):
 
         # Per structure and extern visualization not supported
-        if len(level.structures) != 1 and ax is not None and per_structure:
+        if level.structures is not None and len(level.structures) != 1 and ax is not None and per_structure:
             raise Exception("Not supported")
 
         level_representations = level.create_img(per_structure = per_structure, dot_version = dot_version)
@@ -193,11 +193,11 @@ class LevelVisualizer:
         if len(level_representations) == 1:
             import sys
             np.set_printoptions(threshold = sys.maxsize, linewidth = sys.maxsize)
-            # print(np.where(level_representations[0] == 0, " ", level_representations[0].astype(int)))
-            ax.matshow(level_representations[0])
+            # print(np.where(level_representations[0] == 0, " ", level_representations[0].astype(int))) extend = [0, level_representations[0].shape[0], 0, level_representations[0].shape[1]]
+            ax.imshow(np.flip(level_representations[0], axis = 0), origin='lower')
         else:
             for level_img, cax in zip(level_representations, ax.flatten()):
-                cax.matshow(level_img)
+                cax.imshow(np.flip(level_img, axis = 0), origin='lower')
 
         if show:
             if len(level_representations) == 1:
@@ -206,8 +206,8 @@ class LevelVisualizer:
                 plt.suptitle(f"{level} method: {'dots' if dot_version else 'math'}", fontsize = 6)
 
         plt.axis('scaled')
-        ax.set_xticks([])
-        ax.set_yticks([])
+        # ax.set_xticks([])
+        # ax.set_yticks([])
 
         if show:
             plt.show()
