@@ -63,7 +63,7 @@ class NetworkTrainer:
                 self.manager.save()
 
         # Generate after the final epoch
-        self.visualizer.visualize(epoch + 1)
+        self.visualizer.visualize(epoch + 1, start_time)
         self.manager.save()
 
     def train_step(self, content):

@@ -83,7 +83,7 @@ class TensorBoardViz:
             return
 
         with self.train_summary_writer.as_default():
-            tf.summary.image("Training data", img, step = step + self.global_step)
+            tf.summary.image(self.config.get_data_tag(), img, step = step + self.global_step)
 
     def visualize(self, epoch, start_timer):
         # Check if writer is enabled
@@ -93,10 +93,10 @@ class TensorBoardViz:
         self.generate_and_save_images(self.seed, epoch)
 
         with self.train_summary_writer.as_default():
-            tf.summary.scalar('generator_loss', self.gen_loss.result(), step = epoch + self.global_step)
-            tf.summary.scalar('discriminator_loss', self.disc_loss.result(), step = epoch + self.global_step)
-            tf.summary.scalar('real_prediction', self.real_prediction.result(), step = epoch + self.global_step)
-            tf.summary.scalar('fake_prediction', self.fake_prediction.result(), step = epoch + self.global_step)
+            tf.summary.scalar(f'{self.config.get_data_tag()}/generator_loss', self.gen_loss.result(), step = epoch + self.global_step)
+            tf.summary.scalar(f'{self.config.get_data_tag()}/discriminator_loss', self.disc_loss.result(), step = epoch + self.global_step)
+            tf.summary.scalar(f'{self.config.get_data_tag()}/real_prediction', self.real_prediction.result(), step = epoch + self.global_step)
+            tf.summary.scalar(f'{self.config.get_data_tag()}/fake_prediction', self.fake_prediction.result(), step = epoch + self.global_step)
 
         end_timer = time.time()
 

@@ -69,14 +69,23 @@ class Config:
         self.data_root = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/')
         )
+        self.run_data_root = os.path.normpath(
+            os.path.join(self.current_path, 'resources/run_data/')
+        )
         self.pickle_folder = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/pickles')
         )
         self.tf_records_name = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/tfrecords/{dataset_name}.tfrecords')
         )
+        self.log_file_root = os.path.normpath(
+            os.path.join(self.current_path, 'resources/logs/')
+        )
         self.train_log_dir = os.path.normpath(
             os.path.join(self.current_path, 'resources/logs/{current_run}/{timestamp}/train')
+        )
+        self.image_root = os.path.normpath(
+            os.path.join(self.current_path, 'resources/imgs/')
         )
         self.image_store = os.path.normpath(
             os.path.join(self.current_path, 'resources/imgs/generated/{timestamp}/')
@@ -87,6 +96,8 @@ class Config:
 
         self.save_checkpoint_every = 15
         self.keep_checkpoints = 2
+
+        self.tag = None
 
     def __str__(self):
         return f'Config:' \
@@ -172,6 +183,31 @@ class Config:
 
     def get_data_root(self):
         return self.data_root
+
+    def get_log_file(self, log_name):
+        for path in Path(self.log_file_root).rglob(log_name):
+            split = str(path).split(os.sep)
+            return str(path), split[split.index('logs') + 1]
+        else:
+            return None
+
+    def get_img_path(self, img_folder = None):
+        if img_folder is not None:
+            return os.path.join(self.image_root, img_folder)
+        else:
+            return self.image_root
+
+    def get_data_tag(self):
+        if self.tag is None:
+            raise Exception("Pls make a meaningful tag du hupen")
+
+        return self.tag
+
+    def get_run_data(self, folder):
+        if folder is not None:
+            return os.path.join(self.run_data_root, folder) + ".pickle"
+        else:
+            return self.run_data_root
 
 
 if __name__ == '__main__':
