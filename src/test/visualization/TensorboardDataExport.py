@@ -2,6 +2,7 @@ import os
 import pickle
 from collections import defaultdict
 
+import cv2 as cv
 import imageio
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,6 +10,31 @@ from loguru import logger
 from tqdm.auto import tqdm
 
 from util.Config import Config
+
+upper_bound = None  # 96
+lower_bound = None  # 337
+left_bound = None  # 607
+right_bound = None  # 1186
+
+video_duration = 15
+
+def get_rectangle(img):
+    imgray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    ret, thresh = cv.threshold(imgray, 254, 255, 0)
+    contours, hierarchy = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+
+    big_conts = list(sorted(map(lambda cont: (cv.contourArea(cont), cont), contours), key = lambda x: x[0]))[::-1][1:3]
+
+    more_left = 0 if min(big_conts[0][1][:, :, 0:1]).item() > min(big_conts[1][1][:, :, 0:1]).item() else 1
+
+    cords = big_conts[more_left][1]
+
+    left_bound, right_bound, upper_bound, lower_bound = \
+        (min(cords[:, :, 0:1]).item(), max(cords[:, :, 0:1]).item(), min(cords[:, :, 1:2]).item(), max(cords[:, :, 1:2]).item())
+
+    logger.debug(f"Found Cords: left_bound {left_bound}, right_bound {right_bound}, upper_bound {upper_bound}, lower_bound {lower_bound},")
+
+    return left_bound, right_bound, upper_bound, lower_bound
 
 
 def create_pickle_data(event_filename, output_dir, run_name):
@@ -28,6 +54,7 @@ def create_pickle_data(event_filename, output_dir, run_name):
     progress_bar = tqdm(total = len(serialized))
 
     def extract_data(element):
+        global upper_bound, lower_bound, left_bound, right_bound
         for value in element.summary.value:
             if value.metadata.plugin_data.plugin_name == 'scalars':
                 data[value.tag][element.step] = \
@@ -37,12 +64,21 @@ def create_pickle_data(event_filename, output_dir, run_name):
                 s = value.tensor.string_val[2]  # first elements are W and H
                 tf_img = tf.image.decode_image(s)  # [H, W, C]
                 np_img = tf_img.numpy()
-                data['image'][element.step] = np_img[96:337, 607:1186]
+
+                if upper_bound is None:
+                    left_bound, right_bound, upper_bound, lower_bound = get_rectangle(np_img)
+
+                data['image'][element.step] = np_img[upper_bound:lower_bound, left_bound:right_bound]
         progress_bar.update()
+
+    # for data in serialized:
+    #     extract_data(data)
 
     np.vectorize(extract_data)(serialized)
 
-    imageio.mimsave(f'{output_dir}/{run_name}.mp4', data['image'].values())
+    img_amount = len(data['image'])
+
+    imageio.mimsave(f'{output_dir}/{run_name}.mp4', data['image'].values(), fps = img_amount // video_duration)
 
     last_img = list(data['image'].values())[-1]
     del data['image']
@@ -85,7 +121,9 @@ def create_run_img(run_name):
 if __name__ == '__main__':
     config: Config = Config.get_instance()
     img_folder = config.get_img_path("generated")
-    log_file, run_name = config.get_log_file("events.out.tfevents.1654852719.ubuntu.25142.0.v2")
+    log_file, run_name = config.get_log_file("events.out.tfevents.1655214732.ubuntu.3382.0.v2")
+
+    logger.debug(f'Extract data: run_name: {run_name}, log_file: {log_file}')
 
     create_pickle_data(log_file, img_folder, run_name)
     create_run_img(run_name)

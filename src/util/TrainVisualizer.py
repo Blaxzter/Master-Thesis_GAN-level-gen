@@ -23,7 +23,6 @@ class TensorBoardViz:
 
         self.log_dir = None
         self.train_summary_writer = None
-        self.create_summary_writer(current_run)
 
         self.global_step = 0
 
@@ -46,12 +45,13 @@ class TensorBoardViz:
         if self.config.create_tensorflow_writer is False:
             return
 
-
         if run_time is None:
             self.log_dir = self.config.get_current_log_dir(run_name)
         else:
             self.log_dir = self.config.get_log_dir(run_name, run_time)
+
         self.train_summary_writer = tf.summary.create_file_writer(self.log_dir)
+        return self.log_dir
 
     def visualize_models(self):
         # Check if writer is enabled
@@ -138,7 +138,7 @@ class TensorBoardViz:
             image = tf.image.decode_png(buf.getvalue(), channels = 4)
             # Add the batch dimension
             image = tf.expand_dims(image, 0)
-            self.show_image(img = image, step = epoch)
+            self.show_image(img = image, step = epoch + self.global_step)
 
         if self.show_imgs:
             plt.show()

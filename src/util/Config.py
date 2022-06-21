@@ -1,5 +1,6 @@
 import os
 import platform
+import sys
 import time
 from enum import Enum
 from pathlib import Path
@@ -8,6 +9,8 @@ from exceptions.Exceptions import ParameterException, OSNotSupported
 from generator.baseline.Baseline import BaselineGenerator
 from util.ProgramArguments import get_program_arguments
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 class GeneratorOptions(Enum):
     baseline = 1
@@ -52,6 +55,8 @@ class Config:
                 self.game_folder_path = self.game_folder_path.replace('{os}', 'osx-new')
                 self.game_path = os.path.join(self.game_folder_path, "ScienceBirds.app")
                 self.copy_dest = os.path.normpath('Sciencebirds.app/Contents/Resources/Data/StreamingAssets/Levels')
+
+        self.is_meta_data_comp = True
 
         self.ai_path = args.ai_path if args.ai_path else os.path.normpath(
             os.path.join(self.current_path, 'ai/Naive-Agent-standalone-Streamlined.jar')
@@ -169,9 +174,10 @@ class Config:
         if folder is None:
             return self.data_train_path
         else:
-            if folder[-1] != '/':
-                folder += '/'
-            return os.path.join(self.data_train_path, folder)
+            if folder[-1] != os.sep:
+                folder += os.sep
+
+            return os.path.join(os.path.normpath(self.data_train_path), folder)
 
     def get_pickle_folder(self):
         return self.pickle_folder
@@ -208,6 +214,11 @@ class Config:
             return os.path.join(self.run_data_root, folder) + ".pickle"
         else:
             return self.run_data_root
+
+    def get_event_file(self, log_dir):
+        for path in Path(log_dir).rglob('events.out.tfevents.*'):
+            return str(path)
+        return None
 
 
 if __name__ == '__main__':

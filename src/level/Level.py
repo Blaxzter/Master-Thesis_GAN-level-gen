@@ -1,10 +1,11 @@
-from loguru import logger
-from shapely.geometry import Polygon, Point
 import numpy as np
+from loguru import logger
+from shapely.geometry import Point
 
-from level.Constants import resolution, ObjectType, LevelMetaData
+from level.Constants import resolution, ObjectType, StructureMetaData
 from level.LevelElement import LevelElement
 from util import RunConfig
+from util.Config import Config
 from util.Utils import round_to_cord
 
 
@@ -102,7 +103,8 @@ class Level:
     def create_img(self, per_structure = True, dot_version = False):
         logger.debug("Create level img")
         if not per_structure:
-            element_lists: [[LevelElement]] = [self.create_element_list(self.use_blocks, self.use_pigs, self.use_platform)]
+            element_lists: [[LevelElement]] = [
+                self.create_element_list(self.use_blocks, self.use_pigs, self.use_platform)]
         else:
             # Check if the level has been structurised
             if self.structures is None:
@@ -129,7 +131,6 @@ class Level:
                     top_block_pos = element.y + element.height / 2 - min_y
                     for x_pos in np.arange(left_block_pos, right_block_pos, resolution):
                         for y_pos in np.arange(bottom_block_pos, top_block_pos, resolution):
-
                             x_cord = round(x_pos / resolution)
                             y_cord = round(y_pos / resolution)
                             # print(f"picture[{x_cord}, {y_cord}] = {element.get_identifier()} of element {element.id}"
@@ -264,13 +265,16 @@ class Level:
         return Level.calc_structure_meta_data(current_elements)
 
     @staticmethod
-    def calc_structure_meta_data(element_list: [LevelElement]) -> LevelMetaData:
+    def calc_structure_meta_data(element_list: [LevelElement]) -> StructureMetaData:
         min_x, min_y, max_x, max_y = Level.calc_structure_dimensions(element_list)
         block_amount = len([x for x in element_list if x.object_type == ObjectType.Block])
         pig_amount = len([x for x in element_list if x.object_type == ObjectType.Pig])
         platform_amount = len([x for x in element_list if x.object_type == ObjectType.Platform])
         special_block_amount = len([x for x in element_list if x.object_type == ObjectType.SpecialBlock])
-        return LevelMetaData(
+        stone_blocks = len([x for x in element_list if x.object_type == ObjectType.Block and x.material == 'stone'])
+        ice_blocks = len([x for x in element_list if x.object_type == ObjectType.Block and x.material == 'ice'])
+        wood_blocks = len([x for x in element_list if x.object_type == ObjectType.Block and x.material == 'wood'])
+        return StructureMetaData(
             height = max_y - min_y,
             width = max_x - min_x,
             block_amount = block_amount,
@@ -278,6 +282,9 @@ class Level:
             platform_amount = platform_amount,
             special_block_amount = special_block_amount,
             total = block_amount + pig_amount + platform_amount + special_block_amount,
+            stone_blocks = stone_blocks,
+            wood_blocks = wood_blocks,
+            ice_blocks = ice_blocks,
             stable = None,
         )
 

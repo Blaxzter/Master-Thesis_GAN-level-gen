@@ -22,7 +22,7 @@ def generate_structure():
     generator.generate_level_init(folder_path = level_dest)
 
 
-def leve_visualisation():
+def level_visualisation():
     # generate_structure()
 
     config = Config.get_instance()
@@ -47,7 +47,7 @@ def leve_visualisation():
 
         level_visualizer.visualize_screenshot(game_connection.create_level_img(structure = True), ax = ax[0])
         level_visualizer.create_img_of_level(level = parse_level, element_ids = False, use_grid = True, add_dots = False, ax = ax[1])
-        level_visualizer.visualize_level_img(parse_level, dot_version = False, ax = ax[2])
+        level_visualizer.visualize_level_img(parse_level, dot_version = True, ax = ax[2])
         fig.suptitle(f'Level: {str(level_path)}', fontsize = 16)
 
         fig.tight_layout()
@@ -56,6 +56,5 @@ def leve_visualisation():
     game_manager.stop_game()
 
 
-
 if __name__ == '__main__':
-    leve_visualisation()
+    level_visualisation()

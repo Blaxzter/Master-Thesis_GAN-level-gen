@@ -4,7 +4,7 @@ from typing import Optional
 
 
 @dataclass
-class LevelMetaData:
+class StructureMetaData:
     """ Class that represents a levels / structures meta data """
     height: float = None
     width: float = None
@@ -13,7 +13,40 @@ class LevelMetaData:
     pig_amount: int = None
     special_block_amount: int = None
     total: int = None
+    ice_blocks: int = None
+    stone_blocks: int = None
+    wood_blocks: int = None
     stable: Optional[bool] = None
+
+    def __eq__(self, other):
+        if not isinstance(other, StructureMetaData):
+            return False
+
+        if self.block_amount != other.block_amount:
+            return False
+        if self.pig_amount != other.pig_amount:
+            return False
+        if self.platform_amount != other.platform_amount:
+            return False
+        if self.special_block_amount != other.special_block_amount:
+            return False
+        if self.ice_blocks != other.ice_blocks:
+            return False
+        if self.stone_blocks != other.stone_blocks:
+            return False
+        if self.wood_blocks != other.wood_blocks:
+            return False
+        if self.stable != other.stable:
+            return False
+
+        # Check for width through delta
+        if abs(self.width - other.width) > 0.1:
+            return False
+        if abs(self.height - other.height) > 0.1:
+            return False
+
+        return True
+
 
 # blocks number and size
 block_sizes = {
@@ -108,6 +141,7 @@ coordinate_round = 100000
 resolution = 0.11 / 2
 
 min_distance_to_slingshot = 2
+
 
 class ObjectType(Enum):
     Block = 1

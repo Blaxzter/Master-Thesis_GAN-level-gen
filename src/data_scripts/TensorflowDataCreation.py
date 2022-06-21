@@ -4,13 +4,16 @@ import pickle
 import numpy as np
 import tensorflow as tf
 from matplotlib import pyplot as plt
+from util.Config import Config
 
 # max_height = 86 + 2
 # max_width = 212
-from util.Config import Config
+
+# max_height = 99 + 1
+# max_width = 110 + 2
 
 max_height = 99 + 1
-max_width = 110 + 2
+max_width = 115 + 1
 
 # Take from tensorflow simple_gan tutorial
 def _bytes_feature(value):
@@ -97,7 +100,7 @@ def parse_single_data_example(data_example):
 def create_tensorflow_data():
     config = Config.get_instance()
 
-    data_pickle = config.get_pickle_file(f"single_structure_filtered")
+    data_pickle = config.get_pickle_file(f"single_structure_full_filtered")
     with open(data_pickle, 'rb') as f:
         data_dict = pickle.load(f)
 
