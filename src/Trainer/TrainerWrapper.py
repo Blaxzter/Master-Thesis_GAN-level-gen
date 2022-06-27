@@ -8,6 +8,7 @@ from tensorflow.core.util import event_pb2
 from tensorflow.python.summary.summary_iterator import summary_iterator
 
 from Trainer.DefaultTrainStepper import DefaultTrainStepper
+from Trainer.WGANGPTrainStepper import WGANGPTrainStepper
 from data_scripts.LevelDataset import LevelDataset
 from generator.gan.IGAN import IGAN
 from util.Config import Config
@@ -24,7 +25,8 @@ class NetworkTrainer:
         self.model: IGAN = model
         self.dataset: LevelDataset = dataset
         self.visualizer: TensorBoardViz = TensorBoardViz(model = model, dataset = dataset, current_run = self.run_name)
-        self.train_stepper = DefaultTrainStepper(self.model, self.dataset, self.visualizer)
+        self.train_stepper = WGANGPTrainStepper(self.model, self.dataset, self.visualizer)
+        self.visualizer.create_aggregator(self.train_stepper.get_aggregated_parameters())
 
         self.checkpoint = None
         self.checkpoint_dir = None
@@ -59,7 +61,7 @@ class NetworkTrainer:
 
         # Generate after the final epoch
         self.manager.save()
-        self.visualizer.visualize(current_epoch + 1, start_time)
+        # self.visualizer.visualize(current_epoch + 1, start_time)
 
     def save(self):
         self.manager.save()

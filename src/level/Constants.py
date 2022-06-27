@@ -152,7 +152,7 @@ class ObjectType(Enum):
     Bird = 5
 
 
-def get_sizes():
+def get_sizes(print_data = True):
     from tabulate import tabulate
 
     data = [[
@@ -164,7 +164,9 @@ def get_sizes():
         block_is_rotated[block_idx]
     ] for block_idx, block_size in block_sizes.items()]
 
-    print(tabulate(data, headers = ['block_name', 'x', 'y', 'rounded x', 'rounded y', 'Rotated']))
+    if print_data:
+        print(tabulate(data, headers = ['block_name', 'x', 'y', 'rounded x', 'rounded y', 'Rotated']))
+    return data
 
 
 if __name__ == '__main__':

@@ -17,12 +17,16 @@ class LevelDataset:
 
         self.norm_layer = None
         self.reverse_norm_layer = None
+        self.steps = -1
 
     def get_data_amount(self):
         return len(list(self.dataset))
 
+    def get_steps(self):
+        return len(list(self.get_dataset()))
+
     def get_dataset(self):
-        return self.dataset.shuffle(buffer_size = 60000).batch(self.batch_size)
+        return self.dataset.shuffle(buffer_size = 60000).batch(self.batch_size, drop_remainder=True)
 
     def load_dataset(self):
         # Load the dataset from the tf record file
@@ -31,6 +35,7 @@ class LevelDataset:
         # pass every single feature through our mapping function
         self.dataset = self.dataset.map(self.parse_tfr_element)
         self.dataset = self.normalize()
+        self.steps = self.get_steps()
 
     def normalize(self):
         images = np.concatenate([x for x, y in self.dataset], axis = 0)
