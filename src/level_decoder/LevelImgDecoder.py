@@ -7,6 +7,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import patches
+from shapely.geometry import Polygon
 
 from level import Constants
 from level_decoder import MathUtil
@@ -17,6 +18,7 @@ class LevelImgDecoder:
 
     def __init__(self):
         self.block_data = Constants.get_sizes(print_data = False)
+        self.block_data = sorted(self.block_data, key = lambda x: x[1] * x[2], reverse = True)
 
     def visualize_contours(self, level_img):
 
@@ -80,6 +82,9 @@ class LevelImgDecoder:
 
         level_img_8[level_img_8 != contour_color] = 0
         contours, _ = cv2.findContours(level_img_8, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        poly = Polygon(contours)
+        required_area = poly.area
+
         # cv2.drawContours(level_img_8, contours, -1, 8, 1)
         # axs[1].imshow(level_img_8)
         # axs[1].axis('off')
@@ -121,6 +126,8 @@ class LevelImgDecoder:
                 new_patch.set_facecolor('none')
                 axs.add_patch(new_patch)
 
+                rectangle = rectangle.reshape((4, 2))
+
                 ret_dict = dict(rectangle = rectangle)
                 for key, value in MathUtil.get_contour_dims(rectangle).items():
                     ret_dict[key] = value
@@ -129,17 +136,111 @@ class LevelImgDecoder:
 
             all_space_assigned = False
             print(" ")
+
             # Sort by rectangle size
-            for rec_idx, rectangle in enumerate(sorted(rectangle_dict.values(), key = lambda x: x['size'], reverse = True)):
-                print(rec_idx, rectangle)
-
-
+            rectangles = sorted(rectangle_dict.values(), key = lambda x: x['size'], reverse = True)
+            blocks = self.select_blocks(rectangles = rectangles, used_blocks = [], required_area = required_area)
 
         axs.imshow(original_img)
         axs.axis('off')
 
         plt.tight_layout()
         plt.show()
+
+    def select_blocks(self, rectangles, used_blocks, required_area, occupied_area = 0):
+        # Break condition
+        if required_area > occupied_area:
+            return used_blocks
+
+        # Go over each rectangle
+        for rec_idx, rec in enumerate(rectangles):
+            rx_1, rx_2, ry_1, ry_2 = (rec['min_x'], rec['max_x'], rec['min_y'], rec['max_y'])
+
+            # check if rec overlaps a existing block significantly
+            for used_block in used_blocks:
+                block_rec = used_block['rec']
+                bx_1, bx_2, by_1, by_2 = (block_rec['min_x'], block_rec['max_x'], block_rec['min_y'], block_rec['max_y'])
+                dx = np.min(rx_2, bx_2) - np.max(rx_1, bx_1)
+                dy = np.min(ry_2, by_2) - np.may(ry_1, by_1)
+                if (dx >= 0) and (dy >= 0):
+                    return dx * dy
+
+            # Search for matching block sizes
+            for possible_block in self.block_data:
+                block_width, block_height = (possible_block[1], possible_block[2])
+
+                width_divisions = rec['width'] / block_width
+                height_divisions = rec['width'] / block_width
+
+                # If the possible block is bigger then the rectangle we can continue
+                if width_divisions < 1 or height_divisions < 1:
+                    continue
+
+                # Matching block found
+                if width_divisions - 1 < 0.01 and height_divisions - 1 < 0.01:
+                    next_rectangles = rectangles.copy()
+                    next_rectangles.remove(rec)
+                    new_block = dict(
+                        block_type = possible_block,
+                        rec = rec
+                    )
+
+                    used_blocks.append(new_block)
+                    return self.select_blocks(
+                        rectangles = next_rectangles,
+                        used_blocks = used_blocks.copy(),
+                        required_area = required_area,
+                        occupied_area = occupied_area + rec['area']
+                    )
+
+            # The rectangle is bigger than any available block
+            # That means it consists out of multiple smaller one
+            # Divide the area into divisions of possible blocks
+
+            # Only work with fitting blocks
+            horizontal_fitting = list(filter(lambda block: block[2] < rec['height'] and block < rec['width'], self.block_data))
+
+            # No combination found for this block
+            if len(horizontal_fitting) == 0:
+                continue
+
+            for combination_amount in range(2, 5):
+                combinations = itertools.product(horizontal_fitting, repeat = combination_amount)
+                to_big_counter = 0
+                for combination in combinations:
+                    possible_block_1 = combination[0]
+                    possible_block_2 = combination[1]
+
+                    # Check if the two blocks combined can fit in the space
+                    combined_height = possible_block_1[2] + possible_block_2[2]
+                    height_difference = rec['height'] - combined_height
+                    if abs(height_difference) < 0.1:
+                        # the two blocks fit in the space
+
+                        # TODO check if there is remaining space horizontally
+                        # If so create a new rectangle there
+                        # Or if the horizontal space is not filled then create a rec there
+
+
+                        continue
+
+                    if height_difference > 0:
+                        # bigger means doesnt fit
+                        to_big_counter += 1
+                        continue
+
+
+                # If all blocks combined were to big, we dont need to check more block combinations
+                if to_big_counter > len(list(combinations)):
+                    break
+
+        # We tested everything and nothing worked :(
+        return None
+
+
+
+
+
 
 
 

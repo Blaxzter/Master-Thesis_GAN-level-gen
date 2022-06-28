@@ -46,6 +46,8 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 	private bool listenToAI = false;
 	private HUD _hudInstance = null;
 
+	private float stored_time;
+
 	IEnumerator Click(JSONNode data, WebSocket serverSocket) {
 
 		yield return new WaitForEndOfFrame ();
@@ -125,6 +127,11 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		screenshot.ReadPixels (new Rect (0, 0, Screen.width, Screen.height), 0, 0, true);
 		screenshot.Apply();
 
+		if (Time.timeScale == 0)
+		{
+			Time.timeScale = this.stored_time;
+		}
+		
 		string image = System.Convert.ToBase64String (screenshot.EncodeToPNG ());
 	
 		string id = data [0];
@@ -175,6 +182,12 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 	
 		string id = data [0];
 
+		if (Time.timeScale == 0)
+		{
+			print("Continue with " + this.stored_time);
+			Time.timeScale = this.stored_time;
+		}
+		
 		Message msg = new Message ();
 		msg.data = "data:image/png;base64," + image;
 		msg.time = DateTime.Now.ToString ();
@@ -197,6 +210,8 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		yield return new WaitForEndOfFrame ();
 
 		int levelIndex = data[2]["levelIndex"].AsInt;
+		bool waitForStable = data[2]["waitForStable"].AsBool;
+		bool stopTime = data[2]["stopTime"].AsBool;
 
 		Debug.Log ("Level index: " + levelIndex);
 
@@ -209,22 +224,36 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		levelList.SetLevel(levelIndex - 1);
 		ABSceneManager.Instance.LoadScene ("GameWorld");
 
+		if (stopTime)
+		{
+			print("Stop Time");
+			this.stored_time = Time.timeScale;
+			Time.timeScale = 0.5f;
+		}
+		
 		while (SceneManager.GetActiveScene ().name != "GameWorld")
 		{
 			print("Load scene");
-			yield return new WaitForSeconds(0.2f);
+			yield return new WaitForSeconds(0.01f);
+		}
+		if (stopTime)
+		{
+			Time.timeScale = 0;
 		}
 		
 		var currentLevelData = levelList.GetCurrentLevelData();
-		while (!ABGameWorld.Instance.IsLevelStable())
+		if (waitForStable)
 		{
-			print("Not Stable " + levelList.CurrentIndex + " level stability " + ABGameWorld.Instance.GetLevelStability());
-			currentLevelData.IsStable = false;
-			yield return new WaitForSeconds(0.2f);
+			while (!ABGameWorld.Instance.IsLevelStable())
+			{
+				print("Not Stable " + levelList.CurrentIndex + " level stability " + ABGameWorld.Instance.GetLevelStability());
+				currentLevelData.IsStable = false;
+				yield return new WaitForSeconds(0.2f);
+			}
+			currentLevelData.InitialDamage = currentLevelData.CumulativeDamage;
+			print("Stable: " + currentLevelData.InitialDamage);			
 		}
-		currentLevelData.InitialDamage = currentLevelData.CumulativeDamage;
-		print("Stable: " + currentLevelData.InitialDamage);
-		
+
 		Message msg = new Message ();
 		msg.data = currentLevelData.GetJson();
 		msg.time = DateTime.Now.ToString ();
@@ -525,6 +554,8 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		
 		generatorWebSocket = new WebSocket(new Uri("ws://localhost:9001/"));
 		yield return StartCoroutine(generatorWebSocket.Connect());
+
+		stored_time = Time.timeScale;
 		
 		while (true) {
 			

@@ -1,8 +1,10 @@
 import glob
 import os
+from pathlib import Path
 
 from loguru import logger
 
+from data_scripts.CreateDataScript import config
 from level.LevelElement import LevelElement
 from level.LevelReader import LevelReader
 
@@ -25,6 +27,19 @@ def utf16_to_utf8():
             file.truncate()
 
 
+def fix_camera():
+    level_path = config.get_instance().get_data_train_path('generated/single_structure')
+    level_names = list(Path(level_path).glob("*"))
+
+    for file_name in level_names:
+        with open(file_name, encoding = 'utf-8', mode = "r+") as file:
+            lines = file.readlines()
+            for idx, line in enumerate(lines):
+                if '<Camera x="0" y="2" minWidth="20" maxWidth="30"/>' in line:
+                    lines[idx] = '<Camera x="0" y="0" minWidth="20" maxWidth="30"/>'
+            file.seek(0)
+            file.writelines(lines)
+
 def fix_faulty_xml():
     files = read_all_files()
 
@@ -36,7 +51,6 @@ def fix_faulty_xml():
                     lines[idx] = line.replace('">', '"/>')
             file.seek(0)
             file.writelines(lines)
-
 
 def filter_levels():
     for level in read_all_files("./converted_levels/NoRotation/*.xml"):
@@ -89,8 +103,8 @@ def remove_pngs():
 
 
 if __name__ == '__main__':
-    filter_levels()
-
+    # filter_levels()
+    fix_camera()
     # filter_level_for(
     #    dict(
     #        path = './converted_levels/NoRotation/*.xml',

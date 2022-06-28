@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Level width ="2">
-<Camera x="0" y="2" minWidth="20" maxWidth="30"/>
-<Birds>
+<Camera x="0" y="0" minWidth="20" maxWidth="30"/><Birds>
 <Bird type="BirdWhite"/>
 <Bird type="BirdRed"/>
 <Bird type="BirdYellow"/>
@@ -32,3 +31,4 @@
 <TNT type="" material="" x="-1.4133333333" y="-1.31" rotation="0" />
 </GameObjects>
 </Level>
+

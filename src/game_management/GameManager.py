@@ -56,13 +56,13 @@ class GameManager:
 
         return ret_copied_levels
 
-    def change_level(self, path, delete_level = True):
+    def change_level(self, path, delete_level = True, wait_for_stable = False, stopTime = False):
         if delete_level:
             for level in Path(self.conf.get_game_level_path()).glob('*.*'):
                 os.remove(level)
         shutil.copy(str(path), self.conf.get_game_level_path())
         self.game_connection.load_level_menu()
-        self.game_connection.change_level(index = 4)
+        self.game_connection.change_level(index = 4, wait_for_stable = wait_for_stable, stopTime = stopTime)
         pass
 
     def create_img_of_level(self, index = 4):

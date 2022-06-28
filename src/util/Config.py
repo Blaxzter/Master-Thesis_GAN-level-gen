@@ -71,6 +71,10 @@ class Config:
         # Ml stuff
         self.create_tensorflow_writer = True
 
+        self.source_file_root = os.path.normpath(
+            os.path.join(self.current_path, 'resources/data/source_files/')
+        )
+
         self.data_root = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/')
         )
@@ -177,7 +181,7 @@ class Config:
             if folder[-1] != os.sep:
                 folder += os.sep
 
-            return os.path.join(os.path.normpath(self.data_train_path), folder)
+            return os.path.join(os.path.normpath(self.data_train_path), os.path.normpath(folder))
 
     def get_pickle_folder(self):
         return self.pickle_folder
@@ -215,10 +219,20 @@ class Config:
         else:
             return self.run_data_root
 
+    def get_text_data(self, file):
+        text_folder = os.path.join(self.data_root, "text")
+        return os.path.join(text_folder, file) + ".txt"
+
     def get_event_file(self, log_dir):
         for path in Path(log_dir).rglob('events.out.tfevents.*'):
             return str(path)
         return None
+
+    def get_deconverted_file(self):
+        next_free_level = 4
+        for path in Path(self.log_file_root).glob('*.xml'):
+            next_free_level = min(int(path.name[5:7]), next_free_level)
+        return os.path.join(self.source_file_root, 'deconverted_levels') + os.sep + "level_" + (str(next_free_level) if len(str(next_free_level)) > 1 else '0' + str(next_free_level)) + ".xml"
 
 
 if __name__ == '__main__':

@@ -4,16 +4,20 @@ import numpy as np
 
 
 def get_contour_dims(contour):
-    max_x, max_y = max(contour[:, :, 0]), max(contour[:, :, 1])
-    min_x, min_y = min(contour[:, :, 0]), min(contour[:, :, 1])
+    max_x, max_y = max(contour[:, 0]), max(contour[:, 1])
+    min_x, min_y = min(contour[:, 0]), min(contour[:, 1])
 
-    width = max_x - min_x
-    height = max_y - min_y
+    width = max_x - min_x + 1
+    height = max_y - min_y + 1
     return dict(
         width = width.item(),
         height = height.item(),
         size = (width * height).item(),
-        center_pos = np.asarray([min_x + width / 2, min_y + height / 2])
+        center_pos = np.asarray([min_x + width / 2, min_y + height / 2]),
+        max_x = max_x,
+        max_y = max_y,
+        min_x = min_x,
+        min_y = min_y
     )
 
 

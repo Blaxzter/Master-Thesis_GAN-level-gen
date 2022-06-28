@@ -43,6 +43,10 @@ class LevelReader:
         writer = open(name, 'w')
         xml_file.writexml(writer, indent = " ", addindent = " ", newl = '\n')
 
+    def write_xml_file_from_string(self, xml_string, name):
+        with open(name, 'w') as f:
+            f.write(xml_string)
+
     def create_level_from_structure(self, structure: [LevelElement], level: Level, move_to_ground: bool = True, move_closer: bool = True, red_birds = True):
         doc, level_node = create_basis_level_node(level, red_birds = red_birds)
 
