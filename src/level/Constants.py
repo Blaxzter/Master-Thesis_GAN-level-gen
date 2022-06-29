@@ -166,7 +166,15 @@ def get_sizes(print_data = True):
 
     if print_data:
         print(tabulate(data, headers = ['block_name', 'x', 'y', 'rounded x', 'rounded y', 'Rotated']))
-    return data
+    return [dict(
+        name = x[0],
+        width = x[1],
+        height = x[2],
+        area = x[1] * x[2],
+        rounded_width = x[3],
+        rounded_height = x[4],
+        rotated = x[5],
+    ) for x in data]
 
 
 if __name__ == '__main__':

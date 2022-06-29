@@ -126,16 +126,8 @@ class LevelImgDecoder:
                 new_patch.set_facecolor('none')
                 axs.add_patch(new_patch)
 
-                rectangle = rectangle.reshape((4, 2))
-
-                ret_dict = dict(rectangle = rectangle)
-                for key, value in MathUtil.get_contour_dims(rectangle).items():
-                    ret_dict[key] = value
-
+                ret_dict = self.create_rect_dict(rectangle.reshape((4, 2)))
                 rectangle_dict[rec_idx] = ret_dict
-
-            all_space_assigned = False
-            print(" ")
 
             # Sort by rectangle size
             rectangles = sorted(rectangle_dict.values(), key = lambda x: x['size'], reverse = True)
@@ -198,36 +190,78 @@ class LevelImgDecoder:
             # Divide the area into divisions of possible blocks
 
             # Only work with fitting blocks
-            horizontal_fitting = list(filter(lambda block: block[2] < rec['height'] and block < rec['width'], self.block_data))
+            fitting_blocks = list(filter(lambda block: block[2] < rec['height'] and block < rec['width'], self.block_data))
 
             # No combination found for this block
-            if len(horizontal_fitting) == 0:
+            if len(fitting_blocks) == 0:
                 continue
 
             for combination_amount in range(2, 5):
-                combinations = itertools.product(horizontal_fitting, repeat = combination_amount)
+                combinations = itertools.product(fitting_blocks, repeat = combination_amount)
                 to_big_counter = 0
                 for combination in combinations:
-                    possible_block_1 = combination[0]
-                    possible_block_2 = combination[1]
+                    element_width = combination[0]['width']
+
+                    # Only same width elements
+                    if np.sum(map(lambda block: block['width'] - element_width, combination)) > 0.01:
+                        continue
 
                     # Check if the two blocks combined can fit in the space
-                    combined_height = possible_block_1[2] + possible_block_2[2]
+                    combined_height = np.sum(map(lambda block: block['height'], combination))
                     height_difference = rec['height'] - combined_height
-                    if abs(height_difference) < 0.1:
+                    if abs(height_difference) < 0.01:
                         # the two blocks fit in the space
 
                         # TODO check if there is remaining space horizontally
                         # If so create a new rectangle there
                         # Or if the horizontal space is not filled then create a rec there
+                        all_space_used = True
+                        if rec['width'] - element_width > 0.01:
+                            rectangle = np.ndarray.copy(rec['rectangle'])
+                            rectangle[0][0] += element_width
+                            rectangle[1][0] += element_width
+
+                            new_dict = self.create_rect_dict(rectangle)
+                            rectangles.append(new_dict)
+                            all_space_used = False
+
+                        # Create the blocks of each block from bottom to top
+                        next_used_blocks = used_blocks.copy()
+                        left_start_y, right_start_y = (ry_1, ry_2)
+                        used_area = 0
+                        for block in combination:
+                            block_rectangle = np.ndarray.copy(rec)
+                            block_rectangle[2][1] = left_start_y
+                            block_rectangle[3][1] = right_start_y
+
+                            block_rectangle[0][1] = left_start_y + block['height']
+                            block_rectangle[1][1] = right_start_y + block['height']
+                            new_block = dict(
+                                block_type = block,
+                                rec = block_rectangle
+                            )
+                            next_used_blocks.append(new_block)
+                            used_area += block['area']
+
+                        # Remove the current big rectangle
+                        next_rectangles = rectangles.copy()
+                        next_rectangles.remove(rec)
+                        new_block = dict(
+                            block_type = possible_block,
+                            rec = rec
+                        )
+
+                        used_blocks.append(new_block)
+                        return self.select_blocks(
+                            rectangles = next_rectangles,
+                            used_blocks = used_blocks.copy(),
+                            required_area = required_area,
+                            occupied_area = occupied_area + (rec['area'] if all_space_used else used_area)
+                        )
 
 
-                        continue
-
-                    if height_difference > 0:
-                        # bigger means doesnt fit
-                        to_big_counter += 1
-                        continue
+                    # This means the block were to big which means doesnt fit
+                    to_big_counter += 1
 
 
                 # If all blocks combined were to big, we dont need to check more block combinations
@@ -237,11 +271,11 @@ class LevelImgDecoder:
         # We tested everything and nothing worked :(
         return None
 
-
-
-
-
-
+    def create_rect_dict(self, rectangle):
+        ret_dict = dict(rectangle = rectangle)
+        for key, value in MathUtil.get_contour_dims(rectangle).items():
+            ret_dict[key] = value
+        return ret_dict
 
 
 if __name__ == '__main__':
