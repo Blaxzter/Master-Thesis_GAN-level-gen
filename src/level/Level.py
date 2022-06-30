@@ -1,6 +1,7 @@
 import numpy as np
 from loguru import logger
 from shapely.geometry import Point
+from tqdm import tqdm
 
 from level.Constants import resolution, ObjectType, StructureMetaData
 from level.LevelElement import LevelElement
@@ -112,12 +113,15 @@ class Level:
 
             element_lists: [[LevelElement]] = self.structures
 
-        ret_pictures = []
+        return self.create_structure_img(dot_version, element_lists)
 
+    @staticmethod
+    def create_structure_img(element_lists, dot_version):
+        ret_images = []
         if not dot_version:
 
             for element_list in element_lists:
-                min_x, min_y, max_x, max_y = self.calc_structure_dimensions(element_list)
+                min_x, min_y, max_x, max_y = Level.calc_structure_dimensions(element_list)
                 x_len = round((max_x - min_x) / resolution)
                 y_len = round((max_y - min_y) / resolution)
                 picture = np.zeros((y_len + 1, x_len + 1))
@@ -138,12 +142,12 @@ class Level:
                             #       f"{f'y {y_cord} out of bounds {y_len}' if y_cord > y_len - 1 else ''}")
                             picture[y_len - y_cord - 1, x_cord] = element.get_identifier()
 
-                ret_pictures.append(picture)
+                ret_images.append(picture)
         else:
             for element_list in element_lists:
                 working_list = element_list.copy()
 
-                min_x, min_y, max_x, max_y = self.calc_structure_dimensions(working_list)
+                min_x, min_y, max_x, max_y = Level.calc_structure_dimensions(working_list)
 
                 x_cords = np.arange(min_x + resolution / 2, max_x - resolution / 2, resolution)
                 y_cords = np.arange(min_y + resolution / 2, max_y - resolution / 2, resolution)
@@ -152,7 +156,7 @@ class Level:
 
                 coordinate_lists = np.array([[element.x, element.y] for element in working_list])
 
-                for i, y_cord in enumerate(y_cords):
+                for i, y_cord in tqdm(enumerate(y_cords), total = len(y_cords)):
                     for j, x_cord in enumerate(x_cords):
                         in_location = []
 
@@ -170,9 +174,8 @@ class Level:
                         elif len(in_location) >= 1:
                             picture[len(y_cords) - i - 1, j] = in_location[0].get_identifier()
 
-                ret_pictures.append(picture)
-
-        return ret_pictures
+                ret_images.append(picture)
+        return ret_images
 
     def normalize(self):
 

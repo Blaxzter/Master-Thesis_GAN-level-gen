@@ -6,7 +6,7 @@ from level.Level import Level
 def create_camera(doc):
     camera = doc.createElement('Camera')
     camera.setAttribute('x', str(0))
-    camera.setAttribute('y', str(2))
+    camera.setAttribute('y', str(1))
     camera.setAttribute('minWidth', str(20))
     camera.setAttribute('maxWidth', str(30))
     return camera
@@ -34,7 +34,7 @@ def create_slingshot(doc):
     return slingshot
 
 
-def create_basis_level_node(level: Level, red_birds = False):
+def create_basis_level_node(level: Level = None, red_birds = False):
     doc = Document()
     doc.encoding = 'utf-8'
     node = doc.createElement('Level')

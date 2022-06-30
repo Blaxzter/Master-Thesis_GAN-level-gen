@@ -47,7 +47,7 @@ class LevelReader:
         with open(name, 'w') as f:
             f.write(xml_string)
 
-    def create_level_from_structure(self, structure: [LevelElement], level: Level, move_to_ground: bool = True, move_closer: bool = True, red_birds = True):
+    def create_level_from_structure(self, structure: [LevelElement], level: Level = None, move_to_ground: bool = True, move_closer: bool = True, red_birds = True):
         doc, level_node = create_basis_level_node(level, red_birds = red_birds)
 
         data = None
@@ -66,7 +66,7 @@ class LevelReader:
             current_element_doc.setAttribute("type", str(level_element.type))
             current_element_doc.setAttribute("material", str(level_element.material))
 
-            if move_closer:
+            if move_closer and level is not None:
                 current_element_doc.setAttribute(
                     "x",
                     str(level_element.original_x - abs(level.slingshot.original_x + min_distance_to_slingshot - data[0]))

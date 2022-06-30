@@ -26,7 +26,7 @@ class LevelVisualizer:
             show = True
             fig, ax = plt.subplots(dpi = self.dpi)
 
-        hsv = plt.get_cmap('Paired')
+        hsv = plt.get_cmap('brg')
         colors = hsv(np.linspace(0, 0.8, len(structure)))
 
         # Add Forms to img

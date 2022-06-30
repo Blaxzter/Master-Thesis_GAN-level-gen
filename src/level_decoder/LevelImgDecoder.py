@@ -18,7 +18,47 @@ class LevelImgDecoder:
 
     def __init__(self):
         self.block_data = Constants.get_sizes(print_data = False)
-        self.block_data = sorted(self.block_data, key = lambda x: x[1] * x[2], reverse = True)
+        self.block_data = sorted(self.block_data, key = lambda x: x['area'], reverse = True)
+
+    def visualize_rectangles(self, level_img, material_id = 1, ax = None):
+        # Create a copy of the img to manipulate it for the contour finding
+        current_img = np.ndarray.copy(level_img)
+        current_img = current_img.astype(np.uint8)
+        current_img[current_img != material_id] = 0
+
+        ax.imshow(level_img)
+
+        # get the contours
+        contours, _ = cv2.findContours(current_img, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+        ret_list = []
+
+        for contour_idx, contour in enumerate(contours):
+            contour_reshaped = contour.reshape((len(contour), 2))
+            poly = Polygon(contour_reshaped)
+            required_area = poly.area
+            rectangles, countour_list = MathUtil.get_rectangles(contour_reshaped)
+
+            hsv = plt.get_cmap('brg')
+            colors = hsv(np.linspace(0, 0.8, len(rectangles)))
+            for rec_idx, rectangle in enumerate(rectangles):
+                for dot, dot_color in zip(rectangle, ['red', 'green', 'blue', 'black']):
+                    dot = patches.Circle(dot.flatten(), 0.2)
+                    dot.set_facecolor(dot_color)
+                    ax.add_patch(dot)
+
+                new_patch = patches.Polygon(rectangle.reshape(4, 2), closed = True)
+                new_patch.set_linewidth(0.6)
+                new_patch.set_edgecolor(colors[rec_idx])
+                new_patch.set_facecolor('none')
+                ax.add_patch(new_patch)
+
+                ret_dict = self.create_rect_dict(rectangle.reshape((4, 2)))
+                ret_dict['contour_area'] = required_area
+                ret_dict['contour'] = contour_reshaped
+                ret_list.append(ret_dict)
+        return ret_list
+
 
     def visualize_contours(self, level_img):
 
@@ -82,15 +122,17 @@ class LevelImgDecoder:
 
         level_img_8[level_img_8 != contour_color] = 0
         contours, _ = cv2.findContours(level_img_8, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        poly = Polygon(contours)
-        required_area = poly.area
 
         # cv2.drawContours(level_img_8, contours, -1, 8, 1)
         # axs[1].imshow(level_img_8)
         # axs[1].axis('off')
 
-        counter = 0
+        blocks = []
+
         for contour_idx, contour in enumerate(contours):
+            contour_reshaped = contour.reshape((len(contour), 2))
+            poly = Polygon(contour_reshaped)
+            required_area = poly.area
 
             rectangles = [contour]
             contour_list = list(contour)
@@ -98,7 +140,7 @@ class LevelImgDecoder:
                 # if counter < 1:
                 #     counter += 1
                 #     continue
-                rectangles, contour_list = MathUtil.get_rectangles(contour)
+                rectangles, contour_list = MathUtil.get_rectangles(contour_reshaped)
 
             hsv = plt.get_cmap('brg')
             dot_colors = hsv(np.linspace(0, 0.8, len(contour_list)))
@@ -130,8 +172,11 @@ class LevelImgDecoder:
                 rectangle_dict[rec_idx] = ret_dict
 
             # Sort by rectangle size
-            rectangles = sorted(rectangle_dict.values(), key = lambda x: x['size'], reverse = True)
-            blocks = self.select_blocks(rectangles = rectangles, used_blocks = [], required_area = required_area)
+            rectangles = sorted(rectangle_dict.values(), key = lambda x: x['area'], reverse = True)
+            selected_blocks = self.select_blocks(rectangles = rectangles, used_blocks = [], required_area = required_area)
+            blocks.append(selected_blocks)
+
+        print(blocks)
 
         axs.imshow(original_img)
         axs.axis('off')
@@ -141,7 +186,7 @@ class LevelImgDecoder:
 
     def select_blocks(self, rectangles, used_blocks, required_area, occupied_area = 0):
         # Break condition
-        if required_area > occupied_area:
+        if abs(occupied_area - required_area) < 1:
             return used_blocks
 
         # Go over each rectangle
@@ -159,17 +204,17 @@ class LevelImgDecoder:
 
             # Search for matching block sizes
             for possible_block in self.block_data:
-                block_width, block_height = (possible_block[1], possible_block[2])
+                block_width, block_height = (possible_block['width'], possible_block['height'])
 
                 width_divisions = rec['width'] / block_width
-                height_divisions = rec['width'] / block_width
+                height_divisions = rec['height'] / block_height
 
                 # If the possible block is bigger then the rectangle we can continue
                 if width_divisions < 1 or height_divisions < 1:
                     continue
 
                 # Matching block found
-                if width_divisions - 1 < 0.01 and height_divisions - 1 < 0.01:
+                if width_divisions - 1 < 0.1 and height_divisions - 1 < 0.1:
                     next_rectangles = rectangles.copy()
                     next_rectangles.remove(rec)
                     new_block = dict(
@@ -196,77 +241,73 @@ class LevelImgDecoder:
             if len(fitting_blocks) == 0:
                 continue
 
-            for combination_amount in range(2, 5):
-                combinations = itertools.product(fitting_blocks, repeat = combination_amount)
-                to_big_counter = 0
-                for combination in combinations:
-                    element_width = combination[0]['width']
+            # Go over both orientations
+            for (idx_1, primary_orientation), (idx_2, secondary_orientation) in [((1, 'height'), (0, 'width')), ((0, 'width'), (1, 'height'))]:
 
-                    # Only same width elements
-                    if np.sum(map(lambda block: block['width'] - element_width, combination)) > 0.01:
-                        continue
+                for combination_amount in range(2, 5):
+                    combinations = itertools.product(fitting_blocks, repeat = combination_amount)
+                    to_big_counter = 0
+                    for combination in combinations:
+                        secondary_size = combination[0][secondary_orientation]
 
-                    # Check if the two blocks combined can fit in the space
-                    combined_height = np.sum(map(lambda block: block['height'], combination))
-                    height_difference = rec['height'] - combined_height
-                    if abs(height_difference) < 0.01:
-                        # the two blocks fit in the space
+                        # Only elements with the same secondary_orientation
+                        if np.sum(map(lambda block: block[secondary_orientation] - secondary_size, combination)) > 0.01:
+                            continue
 
-                        # TODO check if there is remaining space horizontally
-                        # If so create a new rectangle there
-                        # Or if the horizontal space is not filled then create a rec there
-                        all_space_used = True
-                        if rec['width'] - element_width > 0.01:
-                            rectangle = np.ndarray.copy(rec['rectangle'])
-                            rectangle[0][0] += element_width
-                            rectangle[1][0] += element_width
+                        # Check if the two blocks combined can fit in the space
+                        combined_height = np.sum(map(lambda block: block[primary_orientation], combination))
+                        height_difference = rec[primary_orientation] - combined_height
+                        if abs(height_difference) < 0.01:
+                            # the two blocks fit in the space
 
-                            new_dict = self.create_rect_dict(rectangle)
-                            rectangles.append(new_dict)
-                            all_space_used = False
+                            # Check if there is remaining space in the secondary direction
+                            # If so create a new rectangle there
+                            # Or if the horizontal space is not filled then create a rec there
+                            all_space_used = True
+                            if rec[secondary_orientation] - secondary_size > 0.01:
+                                rectangle = np.ndarray.copy(rec['rectangle'])
+                                rectangle[0][idx_2] += secondary_size
+                                rectangle[1][idx_2] += secondary_size
 
-                        # Create the blocks of each block from bottom to top
-                        next_used_blocks = used_blocks.copy()
-                        left_start_y, right_start_y = (ry_1, ry_2)
-                        used_area = 0
-                        for block in combination:
-                            block_rectangle = np.ndarray.copy(rec)
-                            block_rectangle[2][1] = left_start_y
-                            block_rectangle[3][1] = right_start_y
+                                new_dict = self.create_rect_dict(rectangle)
+                                rectangles.append(new_dict)
+                                all_space_used = False
 
-                            block_rectangle[0][1] = left_start_y + block['height']
-                            block_rectangle[1][1] = right_start_y + block['height']
-                            new_block = dict(
-                                block_type = block,
-                                rec = block_rectangle
+                            # Create the blocks of each block from bottom to top
+                            next_used_blocks = used_blocks.copy()
+                            left_start_y, right_start_y = (ry_1, ry_2)
+                            used_area = 0
+                            for block in combination:
+                                block_rectangle = np.ndarray.copy(rec)
+                                block_rectangle[2][idx_1] = left_start_y
+                                block_rectangle[3][idx_1] = right_start_y
+
+                                block_rectangle[0][idx_1] = left_start_y + block[primary_orientation]
+                                block_rectangle[1][idx_1] = right_start_y + block[primary_orientation]
+                                new_block = dict(
+                                    block_type = block,
+                                    rec = block_rectangle
+                                )
+                                next_used_blocks.append(new_block)
+                                used_area += block['area']
+
+                            # Remove the current big rectangle
+                            next_rectangles = rectangles.copy()
+                            next_rectangles.remove(rec)
+
+                            return self.select_blocks(
+                                rectangles = next_rectangles,
+                                used_blocks = next_used_blocks,
+                                required_area = required_area,
+                                occupied_area = occupied_area + (rec['area'] if all_space_used else used_area)
                             )
-                            next_used_blocks.append(new_block)
-                            used_area += block['area']
 
-                        # Remove the current big rectangle
-                        next_rectangles = rectangles.copy()
-                        next_rectangles.remove(rec)
-                        new_block = dict(
-                            block_type = possible_block,
-                            rec = rec
-                        )
+                        # This means the block were to big which means doesnt fit
+                        to_big_counter += 1
 
-                        used_blocks.append(new_block)
-                        return self.select_blocks(
-                            rectangles = next_rectangles,
-                            used_blocks = used_blocks.copy(),
-                            required_area = required_area,
-                            occupied_area = occupied_area + (rec['area'] if all_space_used else used_area)
-                        )
-
-
-                    # This means the block were to big which means doesnt fit
-                    to_big_counter += 1
-
-
-                # If all blocks combined were to big, we dont need to check more block combinations
-                if to_big_counter > len(list(combinations)):
-                    break
+                    # If all blocks combined were to big, we dont need to check more block combinations
+                    if to_big_counter > len(list(combinations)):
+                        break
 
         # We tested everything and nothing worked :(
         return None

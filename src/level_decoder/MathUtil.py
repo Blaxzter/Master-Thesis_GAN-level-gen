@@ -7,12 +7,12 @@ def get_contour_dims(contour):
     max_x, max_y = max(contour[:, 0]), max(contour[:, 1])
     min_x, min_y = min(contour[:, 0]), min(contour[:, 1])
 
-    width = max_x - min_x + 1
-    height = max_y - min_y + 1
+    width = max_x - min_x
+    height = max_y - min_y
     return dict(
         width = width.item(),
         height = height.item(),
-        size = (width * height).item(),
+        area = (width * height).item(),
         center_pos = np.asarray([min_x + width / 2, min_y + height / 2]),
         max_x = max_x,
         max_y = max_y,
@@ -23,7 +23,6 @@ def get_contour_dims(contour):
 
 def get_rectangles(contour):
     rectangles = []
-    contour = contour.reshape(len(contour), 2)
     contour_list = list(contour)
     # Creates additional points on the contour to create functioning rectangles
     create_new_points(contour_list)
