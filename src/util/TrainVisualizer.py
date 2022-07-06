@@ -30,7 +30,7 @@ class TensorBoardViz:
             Path(self.config.get_generated_image_store()).mkdir(parents=True, exist_ok=True)
 
         self.noise_dim = self.model.input_array_size
-        self.seed = tf.random.normal([1, self.noise_dim])
+        self.seed = self.model.create_random_vector()
 
         # Define our metrics
         self.metric_dicts = dict()

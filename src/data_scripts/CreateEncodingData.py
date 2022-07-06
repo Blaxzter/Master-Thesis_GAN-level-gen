@@ -17,15 +17,9 @@ from level.LevelVisualizer import LevelVisualizer
 from level_decoder.LevelImgDecoder import LevelImgDecoder
 from util.Config import Config
 
-if __name__ == '__main__':
 
-    config = Config.get_instance()
-    # game_connection = GameConnection(conf = config)
-    # game_manager = GameManager(conf = config, game_connection = game_connection)
-    # game_manager.start_game()
-    level_visualizer = LevelVisualizer()
+def create_element_for_each_block():
     elements = []
-
     start_x = 0
     sizes = Constants.get_sizes()
     for idx, block in enumerate(sizes):
@@ -39,7 +33,7 @@ if __name__ == '__main__':
             type = block['name'],
             material = "wood",
             x = start_x,
-            y = size[1] / 2 + 0.2,
+            y = size[1] / 2,
             rotation = 90 if block['rotated'] else 0
         )
         element = LevelElement(id = idx, **block_attribute)
@@ -47,6 +41,17 @@ if __name__ == '__main__':
 
         start_x += size[0] / 2 + Constants.resolution * 2
         element.shape_polygon = element.create_geometry()
+
+    return elements, sizes
+
+
+if __name__ == '__main__':
+
+    config = Config.get_instance()
+    # game_manager = GameManager(conf = config)
+    # game_manager.start_game()
+    level_visualizer = LevelVisualizer()
+    elements, sizes = create_element_for_each_block()
 
     fig, ax = plt.subplots(4, 1, dpi = 300)
 
@@ -56,17 +61,9 @@ if __name__ == '__main__':
     ax[1].imshow(np.pad(level_rep[0], 2))
     ax[2].imshow(np.pad(level_rep2[0], 2))
 
-    # level_reader = LevelReader()
-    # level = level_reader.create_level_from_structure(elements, red_birds = True)
-    # level_folder = config.get_data_train_path(folder = 'data_level')
-    # level_path = f'{level_folder}/level-04.xml'
-    # level_reader.write_xml_file(level, level_path)
-    # game_manager.change_level(path = str(level_path))
+    # gamemanager.switch_to_level_elements(elements)
     # img = game_connection.create_level_img(structure = True)
     # ax[3].imshow(img)
-
-    time.sleep(1)
-
 
     level_img_decoder = LevelImgDecoder()
     recs = level_img_decoder.visualize_rectangles(np.pad(level_rep[0], 3), material_id = 1, ax = ax[3])
@@ -108,5 +105,7 @@ if __name__ == '__main__':
     )
 
     plt.show()
+
+    ic(recs)
 
     # game_manager.stop_game()

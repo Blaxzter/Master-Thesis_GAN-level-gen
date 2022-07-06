@@ -15,6 +15,9 @@ from util.Config import Config
 max_height = 99 + 1
 max_width = 115 + 1
 
+max_height = 128
+max_width = 128
+
 # Take from tensorflow simple_gan tutorial
 def _bytes_feature(value):
     """Returns a bytes_list from a string / byte."""

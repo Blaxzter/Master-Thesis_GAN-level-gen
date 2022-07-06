@@ -3,6 +3,7 @@ from loguru import logger
 from shapely.geometry import Point
 from tqdm import tqdm
 
+from level import Constants
 from level.Constants import resolution, ObjectType, StructureMetaData
 from level.LevelElement import LevelElement
 from util import RunConfig
@@ -12,12 +13,12 @@ from util.Utils import round_to_cord
 
 class Level:
 
-    def __init__(self, path: str, original_doc = None, blocks = True, pigs = True, platform = False):
+    def __init__(self, path: str = None, original_doc = None, blocks = True, pigs = True, platform = False):
 
         self.path = path
         self.original_doc = original_doc
 
-        self.slingshot = None
+        self.slingshot = LevelElement(id = -1, type = "Slingshot", material = None, x = 0, y = 1)
 
         self.blocks: [LevelElement] = []
         self.pigs: [LevelElement] = []
@@ -50,6 +51,11 @@ class Level:
     def separate_structures(self):
         test_list = self.create_element_list(self.use_blocks, self.use_pigs, self.use_platform, sort_list = True)
 
+        # check if the first element has ploygons
+        if test_list[0].shape_polygon is None:
+            for element in test_list:
+                element.create_set_geometry()
+
         # A structure is a list of
         self.structures = []
         for element in test_list:
@@ -69,7 +75,7 @@ class Level:
                     dist_to_element = element.distance(struct_element)
                     if RunConfig.verbose:
                         logger.debug(f"Block {current_element_id} -> {struct_element.id}: {float(dist_to_element)}")
-                    if dist_to_element < 0.3:
+                    if dist_to_element < 0.2:
                         closest_structures.append(structure)
                         break
 
@@ -113,7 +119,7 @@ class Level:
 
             element_lists: [[LevelElement]] = self.structures
 
-        return self.create_structure_img(dot_version, element_lists)
+        return self.create_structure_img(element_lists, dot_version)
 
     @staticmethod
     def create_structure_img(element_lists, dot_version):
@@ -190,6 +196,24 @@ class Level:
             element.coordinates[1] -= min_y
 
         self.is_normalized = True
+
+    @staticmethod
+    def normalize_structure(structure, offset = False):
+
+        min_x, min_y, max_x, max_y = Level.calc_structure_dimensions(structure)
+
+        for element in structure:
+            element.x -= min_x
+            element.y -= min_y
+            element.coordinates[0] -= min_x
+            element.coordinates[1] -= min_y
+
+        if offset:
+            for element in structure:
+                element.x += abs(min_x)
+                element.y += abs(min_y)
+                element.coordinates[0] += abs(min_x)
+                element.coordinates[1] += abs(min_y)
 
     def print_elements(self, as_table = False):
         if not as_table:

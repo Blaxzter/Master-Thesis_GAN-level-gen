@@ -19,8 +19,8 @@ class WGANGPTrainStepper:
 
         self.config: Config = Config.get_instance()
 
-        self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=5e-5)
-        self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=5e-5)
+        self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4, beta_1 = 0, beta_2 = 0.9)
+        self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4, beta_1 = 0, beta_2 = 0.9)
 
         self.critic_iterations = 5
         self.gradient_penalty_weight = 10.0
@@ -51,7 +51,7 @@ class WGANGPTrainStepper:
 
     @tf.function
     def train_generator(self):
-        noise = tf.random.normal([self.batch_size, self.model.input_array_size])
+        noise = self.model.create_random_vector_batch(self.batch_size)
         ret_data_dict = dict()
         with tf.GradientTape() as tape:
             # create levels
@@ -71,9 +71,9 @@ class WGANGPTrainStepper:
     @tf.function
     def train_discriminator(self, content):
         # Create input vectores
-        noise = tf.random.normal([self.batch_size, self.model.input_array_size])
+        noise = self.model.create_random_vector_batch(self.batch_size)
         ret_data_dict = dict()
-        with tf.GradientTape() as t:
+        with tf.GradientTape() as tape:
             fake_img = self.model.generator(noise, training = True)
 
             real_logit = self.model.discriminator(content, training = True)
@@ -84,7 +84,7 @@ class WGANGPTrainStepper:
 
             d_loss = (real_loss + fake_loss) + gp * self.gradient_penalty_weight
 
-        discriminator_grad = t.gradient(d_loss, self.model.discriminator.trainable_variables)
+        discriminator_grad = tape.gradient(d_loss, self.model.discriminator.trainable_variables)
         self.discriminator_optimizer.apply_gradients(zip(discriminator_grad, self.model.discriminator.trainable_variables))
 
         ret_data_dict['discriminator_loss'] = d_loss

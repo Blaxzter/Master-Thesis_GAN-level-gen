@@ -77,6 +77,9 @@ class LevelElement:
         vertical_offset = self.size[1] / 2
         return round_cord(self.x - horizontal_offset, self.y - vertical_offset)
 
+    def create_set_geometry(self):
+        self.shape_polygon = self.create_geometry()
+
     def create_geometry(self):
 
         horizontal_offset = self.size[0] / 2

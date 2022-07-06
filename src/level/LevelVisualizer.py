@@ -19,8 +19,8 @@ class LevelVisualizer:
         self.id_font_size = id_font_size
         self.dot_size = dot_size
 
-    def create_img_of_structure(self, structure: [LevelElement], use_grid = True, add_dots = False, element_ids = True,
-                                ax = None):
+    def create_img_of_structure(self, structure: [LevelElement],
+                                use_grid = True, add_dots = False, element_ids = True, ax = None, scaled = False):
         show = False
         if ax is None:
             show = True
@@ -35,6 +35,11 @@ class LevelVisualizer:
             # Receive the data required to draw the element shape
             bottom_left, current_color, height, width = self.get_element_data(colors, element, idx)
 
+            if scaled:
+                bottom_left = (bottom_left[0] / Constants.resolution, bottom_left[1] / Constants.resolution * - 1)
+                height /= Constants.resolution * - 1
+                width /= Constants.resolution
+
             # Create the matplotlib patch for each element type
             new_patch = self.create_new_patch(ax, bottom_left, current_color, element, height, width)
 
@@ -43,8 +48,10 @@ class LevelVisualizer:
 
             # If block ids should be printed add text at the center of the element
             if element_ids:
-                plt.text(element.x, element.y, str(element.id), color = "black", fontsize = self.id_font_size,
-                         ha = 'center', va = 'center')
+                x_pos = element.x / (Constants.resolution if scaled else 1)
+                y_pos = element.y / (Constants.resolution if scaled else 1) * - 1
+                ax.text(x_pos, y_pos, str(element.id), color = "black", fontsize = self.id_font_size,
+                        ha = 'center', va = 'center')
 
         if use_grid or add_dots:
             self.create_dots_and_grid(structure, ax, add_dots, use_grid)
@@ -89,7 +96,7 @@ class LevelVisualizer:
 
             # If block ids should be printed add text at the center of the element
             if element_ids:
-                plt.text(element.x, element.y, str(element.id),
+                ax.text(element.x, element.y, str(element.id),
                          color = "black", fontsize = self.id_font_size, ha = 'center', va = 'center')
 
         if use_grid or add_dots:

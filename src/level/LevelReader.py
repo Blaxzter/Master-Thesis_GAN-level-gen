@@ -50,44 +50,52 @@ class LevelReader:
     def create_level_from_structure(self, structure: [LevelElement], level: Level = None, move_to_ground: bool = True, move_closer: bool = True, red_birds = True):
         doc, level_node = create_basis_level_node(level, red_birds = red_birds)
 
+        if level is None:
+            level = Level()
+            level.blocks = structure
+
         data = None
         if move_to_ground:
             data = Level.calc_structure_dimensions(structure, use_original = True)
 
+        level.separate_structures()
+
         game_objects = doc.createElement('GameObjects')
-        for level_element in structure:
-            block_name = 'Block'
-            if level_element.object_type == ObjectType.Platform:
-                block_name = 'Platform'
-            elif level_element.object_type == ObjectType.Pig:
-                block_name = 'Pig'
+        for structure in level.structures:
+            for level_element in structure:
+                block_name = 'Block'
+                if level_element.object_type == ObjectType.Platform:
+                    block_name = 'Platform'
+                elif level_element.object_type == ObjectType.Pig:
+                    block_name = 'Pig'
 
-            current_element_doc = doc.createElement(block_name)
-            current_element_doc.setAttribute("type", str(level_element.type))
-            current_element_doc.setAttribute("material", str(level_element.material))
+                current_element_doc = doc.createElement(block_name)
+                current_element_doc.setAttribute("type", str(level_element.type))
+                current_element_doc.setAttribute("material", str(level_element.material))
 
-            if move_closer and level is not None:
-                current_element_doc.setAttribute(
-                    "x",
-                    str(level_element.original_x - abs(level.slingshot.original_x + min_distance_to_slingshot - data[0]))
-                )
-            else:
-                current_element_doc.setAttribute("x", str(level_element.original_x))
+                if move_closer and level is not None:
+                    current_element_doc.setAttribute(
+                        "x",
+                        str(level_element.original_x - abs(level.slingshot.original_x + min_distance_to_slingshot - data[0]))
+                    )
+                else:
+                    current_element_doc.setAttribute("x", str(level_element.original_x))
 
-            if move_to_ground:
-                current_element_doc.setAttribute("y", str(level_element.original_y - abs(Constants.absolute_ground - data[1])))
-            else:
-                current_element_doc.setAttribute("y", str(level_element.original_y))
+                if move_to_ground:
+                    struct_data = Level.calc_structure_dimensions(structure, use_original = True)
+                    current_element_doc.setAttribute("y", str(level_element.original_y - abs(Constants.absolute_ground - struct_data[1])))
+                else:
+                    current_element_doc.setAttribute("y", str(level_element.original_y))
 
-            current_element_doc.setAttribute("rotation", str(level_element.rotation))
+                current_element_doc.setAttribute("rotation", str(level_element.rotation))
 
-            if level_element.object_type == ObjectType.Platform:
-                if level_element.size[0] != 0.62:
-                    current_element_doc.setAttribute("scaleX", str(level_element.size[0] * (1 / 0.62)))
-                if level_element.size[1] != 0.62:
-                    current_element_doc.setAttribute("scaleY", str(level_element.size[1] * (1 / 0.62)))
+                if level_element.object_type == ObjectType.Platform:
+                    if level_element.size[0] != 0.62:
+                        current_element_doc.setAttribute("scaleX", str(level_element.size[0] * (1 / 0.62)))
+                    if level_element.size[1] != 0.62:
+                        current_element_doc.setAttribute("scaleY", str(level_element.size[1] * (1 / 0.62)))
 
-            game_objects.appendChild(current_element_doc)
+                game_objects.appendChild(current_element_doc)
 
         level_node.appendChild(game_objects)
         doc.appendChild(level_node)

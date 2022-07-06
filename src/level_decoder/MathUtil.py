@@ -1,6 +1,7 @@
 import itertools
 
 import numpy as np
+from shapely.geometry import Point
 
 
 def get_contour_dims(contour):
@@ -21,7 +22,7 @@ def get_contour_dims(contour):
     )
 
 
-def get_rectangles(contour):
+def get_rectangles(contour, polygon):
     rectangles = []
     contour_list = list(contour)
     # Creates additional points on the contour to create functioning rectangles
@@ -45,8 +46,17 @@ def get_rectangles(contour):
         if np.abs(np.dot(p3 - p4, p4 - p1)) > 0.01:
             continue
 
-        rectangle = np.asarray([p1, p2, p3, p4]).reshape((4, 1, 2))
-        rectangles.append(rectangle)
+        # Check for every line if the center line is in a square
+        does_intersect = False
+        if polygon.convex_hull != polygon.area:
+            for center_point in [(p1 + p2) / 2, (p2 + p3) / 2, (p3 + p4) / 2, (p1 + p4) / 2]:
+                if not Point(center_point).intersects(polygon):
+                    does_intersect = True
+                    break
+
+        if not does_intersect:
+            rectangle = np.asarray([p1, p2, p3, p4]).reshape((4, 1, 2))
+            rectangles.append(rectangle)
 
     return rectangles, contour_list
 
@@ -218,3 +228,13 @@ def intersecting_line(p1, p2, p3, p4):
     l2 = line(p3, p4)
 
     return intersection(l1, l2)
+
+# https://stackoverflow.com/questions/44505504/how-to-make-a-circular-kernel
+
+def get_circular_kernel(diameter):
+
+    mid = (diameter - 1) / 2
+    distances = np.indices((diameter, diameter)) - np.array([mid, mid])[:, None, None]
+    kernel = ((np.linalg.norm(distances, axis=0) - mid) <= 0).astype(np.uint8)
+
+    return kernel

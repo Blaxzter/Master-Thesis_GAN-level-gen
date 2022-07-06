@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
+import numpy as np
+
 
 @dataclass
 class StructureMetaData:
@@ -177,5 +179,132 @@ def get_sizes(print_data = True):
     ) for x in data]
 
 
+sizes_per_raster = [
+    {
+        'block_name': 'SquareHole',
+        'area': 196, 'block_area': 225, 'contour_area': 196,
+        'block_height': 15.272727272727272, 'block_width': 15.272727272727272,
+        'height': 14.5, 'width': 14.5,
+        'width_compare': 0.12, 'height_compare': 0.12,
+        'block_rounded_height': 15, 'block_rounded_width': 15,
+        'block_rotated': False,
+    },
+    {
+        'block_name': 'RectFat',
+        'area': 105, 'block_area': 120, 'contour_area': 105,
+        'block_height': 7.818181818181818, 'block_width': 15.454545454545453,
+        'height': 7, 'width': 14.5,
+        'width_compare': 0.12, 'height_compare': 0.17,
+        'block_rounded_height': 8, 'block_rounded_width': 15,
+        'block_rotated': False,
+    },
+    {
+        'block_name': 'RectFat',
+        'area': 98, 'block_area': 120, 'contour_area': 98,
+        'block_height': 15.454545454545453, 'block_width': 7.818181818181818,
+        'height': 14.5, 'width': 7,
+        'width_compare': 0.17, 'height_compare': 0.12,
+        'block_rounded_height': 15, 'block_rounded_width': 8,
+        'block_rotated': True,
+    },
+    {
+        'block_name': 'SquareSmall',
+        'area': 42, 'block_area': 64, 'contour_area': 42,
+        'block_height': 7.818181818181818, 'block_width': 7.818181818181818,
+        'height': 7, 'width': 7,
+        'width_compare': 0.18, 'height_compare': 0.18,
+        'block_rounded_height': 8, 'block_rounded_width': 8,
+        'block_rotated': False,
+    },
+    {
+        'block_name': 'SquareTiny',
+        'area': 9, 'block_area': 16, 'contour_area': 9,
+        'block_height': 4, 'block_width': 4,
+        'height': 3.5, 'width': 3.5,
+        'width_compare': 0.17, 'height_compare': 0.17,
+        'block_rounded_height': 4, 'block_rounded_width': 4,
+        'block_rotated': False,
+    },
+    {
+        'block_name': 'RectTiny',
+        'area': 21, 'block_area': 32, 'contour_area': 21,
+        'block_height': 4, 'block_width': 7.818181818181818,
+        'height': 3.5, 'width': 7.5,
+        'width_compare': 0.09, 'height_compare': 0.17,
+        'block_rounded_height': 4, 'block_rounded_width': 8,
+        'block_rotated': False,
+    },
+    {
+        'block_name': 'RectTiny',
+        'area': 21, 'block_area': 32, 'contour_area': 21,
+        'block_height': 7.818181818181818, 'block_width': 4,
+        'height': 7.5, 'width': 3.5,
+        'width_compare': 0.17, 'height_compare': 0.09,
+        'block_rounded_height': 8, 'block_rounded_width': 4,
+        'block_rotated': True,
+    },
+    {
+        'block_name': 'RectSmall',
+        'area': 45, 'block_area': 60, 'contour_area': 45,
+        'block_height': 4, 'block_width': 15.454545454545453,
+        'height': 3.5, 'width': 14.5,
+        'width_compare': 0.05, 'height_compare': 0.17,
+        'block_rounded_height': 4, 'block_rounded_width': 15,
+        'block_rotated': False,
+    },
+    {
+        'block_name': 'RectSmall',
+        'area': 42, 'block_area': 60, 'contour_area': 42,
+        'block_height': 15.454545454545453, 'block_width': 4,
+        'height': 14.5, 'width': 3.5,
+        'width_compare': 0.17, 'height_compare': 0.05,
+        'block_rounded_height': 15, 'block_rounded_width': 4,
+        'block_rotated': True,
+    },
+    {
+        'block_name': 'RectMedium',
+        'area': 87, 'block_area': 124, 'contour_area': 87,
+        'block_height': 4, 'block_width': 30.545454545454543,
+        'height': 3.5, 'width': 29.5,
+        'width_compare': 0.03, 'height_compare': 0.17,
+        'block_rounded_height': 4, 'block_rounded_width': 31,
+        'block_rotated': False,
+    },
+    {
+        'block_name': 'RectMedium',
+        'area': 90, 'block_area': 124, 'contour_area': 90,
+        'block_height': 30.545454545454543, 'block_width': 4,
+        'height': 29.5, 'width': 3.5,
+        'width_compare': 0.17, 'height_compare': 0.03,
+        'block_rounded_height': 31, 'block_rounded_width': 4,
+        'block_rotated': True,
+    },
+    {
+        'block_name': 'RectBig',
+        'area': 111, 'block_area': 148, 'contour_area': 111,
+        'block_height': 4, 'block_width': 37.45454545454545,
+        'height': 3.5, 'width': 36.5,
+        'width_compare': 0.05, 'height_compare': 0.17,
+        'block_rounded_height': 4, 'block_rounded_width': 37,
+        'block_rotated': False,
+    },
+    {
+        'block_name': 'RectBig',
+        'area': 72, 'block_area': 148, 'contour_area': 72,
+        'block_height': 37.45454545454545, 'block_width': 4,
+        'height': 36.5, 'width': 3.5,
+        'width_compare': 0.17, 'height_compare': 0.05,
+        'block_rounded_height': 37, 'block_rounded_width': 4,
+        'block_rotated': True,
+    }]
+
 if __name__ == '__main__':
-    get_sizes()
+    size_list = []
+    for width, height in block_sizes.values():
+        size_list.append(int(width * 100))
+        size_list.append(int(height * 100))
+
+    print(size_list)
+    print(np.lcm.reduce(size_list))
+
+    # get_sizes()

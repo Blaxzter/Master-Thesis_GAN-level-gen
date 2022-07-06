@@ -4,18 +4,24 @@ import time
 from pathlib import Path
 
 from loguru import logger
+from matplotlib import pyplot as plt
 
 from game_management.GameConnection import GameConnection
+from level.LevelReader import LevelReader
 from util.Config import Config
 
 
 class GameManager:
 
-    def __init__(self, conf: Config, game_connection: GameConnection):
+    def __init__(self, conf: Config, game_connection: GameConnection = None):
         self.conf = conf
         self.rescue_level = conf.rescue_level
         self.rescue_level_path = conf.rescue_level_path
-        self.game_connection = game_connection
+
+        if game_connection is not None:
+            self.game_connection = game_connection
+        else:
+            self.game_connection = GameConnection(self.conf)
 
     def start_game(self, is_running = False):
         logger.debug("Start Game and Game Connection Server")
@@ -27,6 +33,14 @@ class GameManager:
     def stop_game(self):
         logger.debug("Stop Game Components")
         self.game_connection.stop_components()
+
+    def switch_to_level_elements(self, elements):
+        level_reader = LevelReader()
+        level = level_reader.create_level_from_structure(elements, red_birds = True)
+        level_folder = self.conf.get_data_train_path(folder = 'temp')
+        level_path = f'{level_folder}/level-04.xml'
+        level_reader.write_xml_file(level, level_path)
+        self.change_level(path = str(level_path), stopTime = True)
 
     def copy_game_levels(self, level_path = None, rescue_level = None):
         if rescue_level is None:
@@ -68,8 +82,12 @@ class GameManager:
     def create_img_of_level(self, index = 4):
         self.game_connection.load_level_menu()
         self.game_connection.change_level(index = index)
-        img = self.game_connection.get_img_data()
+        img = self.game_connection.create_level_img()
         return img
+
+    def create_img(self):
+        plt.imshow(self.game_connection.create_level_img())
+        plt.show()
 
     def remove_game_levels(self):
         for level in Path(self.conf.get_game_level_path()).glob('*.*'):
