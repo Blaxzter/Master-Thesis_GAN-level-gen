@@ -141,6 +141,7 @@ materials_color = ["brown", "grey", "blue"]
 
 coordinate_round = 100000
 resolution = 0.11 / 2
+resolution = 0.07
 
 min_distance_to_slingshot = 2
 
@@ -300,11 +301,17 @@ sizes_per_raster = [
 
 if __name__ == '__main__':
     size_list = []
-    for width, height in block_sizes.values():
-        size_list.append(int(width * 100))
-        size_list.append(int(height * 100))
+    for i in range(1, 20):
+        module_list = []
+        for width, height in block_sizes.values():
+            i_width = int(width * 100) / i - int(int(width * 100) / i)
+            module_list.append(i_width)
+            module_list.append(int(height * 100) / i - int(int(height * 100) / i))
+        size_list.append(np.max(module_list))
 
     print(size_list)
-    print(np.lcm.reduce(size_list))
+
+    for div_list in size_list:
+        print(div_list)
 
     # get_sizes()
