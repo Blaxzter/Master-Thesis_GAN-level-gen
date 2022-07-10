@@ -1,6 +1,3 @@
-import glob
-from icecream import ic
-
 class txt2xml(object):
     def __init__(self):
         self.material2code = {"wood": 0, "stone": 1, "ice": 2}
@@ -52,7 +49,6 @@ class txt2xml(object):
                            19: 8,
                            20: 8,
                            21: 8,
-                           21: 8,
                            22: 4
                            }
 
@@ -80,6 +76,7 @@ class txt2xml(object):
             "TriangleHole": [0.82, 0.82],
             "TriangleHole90": [0.82, 0.82]
         }
+        self.platform_first = False
     '''
     def stract_key_rotation_object_name_material(self, v):
         if v >= 4:

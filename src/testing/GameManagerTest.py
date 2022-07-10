@@ -4,6 +4,7 @@ from pathlib import Path
 from game_management.GameConnection import GameConnection
 from game_management.GameManager import GameManager
 from level.LevelReader import LevelReader
+from level.LevelUtil import calc_structure_meta_data
 from level.LevelVisualizer import LevelVisualizer
 from util import ProgramArguments
 from util.Config import Config
@@ -45,7 +46,7 @@ def level_split_test():
 
     for level in sorted(Path("source_files/generated/").glob('*.xml')):
         level_reader = LevelReader()
-        parsed_level = level_reader.parse_level(str(level), blocks = True, pigs = True, platform = True)
+        parsed_level = level_reader.parse_level(str(level), use_blocks = True, use_pigs = True, use_platform = True)
         parsed_level.filter_slingshot_platform()
 
         level_idx = level.name.strip('level-').strip('.xml')
@@ -56,8 +57,8 @@ def level_split_test():
 
         structure_data = dict()
         for idx, structure in enumerate(level_structures):
-            current_structure_data = parsed_level.calc_structure_meta_data(structure)
-            if structure_data.pig_amount == 0:
+            current_structure_data = calc_structure_meta_data(structure)
+            if current_structure_data.pig_amount == 0:
                 continue
             xml_file = level_reader.create_level_from_structure(structure, move_to_ground = True)
             structure_data[idx] = dict(

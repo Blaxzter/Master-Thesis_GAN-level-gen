@@ -1,5 +1,4 @@
 import multiprocessing
-import threading
 import time
 from copy import deepcopy
 from math import ceil
@@ -11,6 +10,7 @@ from loguru import logger
 from tqdm import tqdm
 
 
+# noinspection PyPep8
 class BaselineGenerator:
 
     def __init__(self):
@@ -72,7 +72,7 @@ class BaselineGenerator:
         self.min_ground_width = 4.5  # minimum amount of space allocated to ground structure
         # desired height limit of ground structures
         self.ground_structure_height_limit = ((
-                                                          self.level_height_max - self.minimum_height_gap) - self.absolute_ground) / 1.5
+                                                      self.level_height_max - self.minimum_height_gap) - self.absolute_ground) / 1.5
 
         self.max_attempts = 100  # number of times to attempt to place a platform before abandoning it
 
@@ -99,6 +99,8 @@ class BaselineGenerator:
         self.restricted_combination = ""
         self.use_triangles = False
         self.use_circles = False
+
+        self.restricted_blocks = []
 
     def settings(self, number_levels = 1, pig_range = "1,5", use_triangles = False, use_circles = False,
                  restricted_combination = "", ground_structure_range = (1, 1), air_structure_range = (1, 1)):
@@ -127,7 +129,7 @@ class BaselineGenerator:
             for material in self.materials:
                 if [material, value] not in restricted_combinations:
                     completely_restricted = False
-            if completely_restricted == True:
+            if completely_restricted:
                 self.restricted_blocks.append(value)
 
         self.probability_table_blocks = deepcopy(backup_probability_table_blocks)
@@ -151,7 +153,8 @@ class BaselineGenerator:
         for current_level in (pbar := tqdm(range(self.number_levels))):
             try:
                 queue = multiprocessing.Queue()
-                th = multiprocessing.Process(target = self.create_level, args=(current_level, folder_path, restricted_combinations, start_level_index, queue))
+                th = multiprocessing.Process(target = self.create_level, args = (
+                    current_level, folder_path, restricted_combinations, start_level_index, queue))
                 th.start()
                 counter = 0
                 if queue.empty():
@@ -579,7 +582,7 @@ class BaselineGenerator:
                                                                          10) and round(
                         (test_position[1] - pig_height / 2), 10) < round((i[2] + (self.blocks[str(i[0])][1]) / 2), 10)):
                         valid_pig = False
-                if valid_pig == True:
+                if valid_pig:
                     possible_pig_positions.append(test_position)
 
         # identify all possible pig positions on ground within structure
@@ -604,7 +607,7 @@ class BaselineGenerator:
                                                                             10) < round(
                     (i[2] + (self.blocks[str(i[0])][1]) / 2), 10)):
                     valid_pig = False
-            if valid_pig == True:
+            if valid_pig:
                 possible_pig_positions.append(test_position)
 
         # randomly choose a pig position and remove those that overlap it, repeat until no more valid positions
@@ -631,7 +634,7 @@ class BaselineGenerator:
         :return:
         """
         valid = False
-        while valid == False:
+        while not valid:
             ground_divides = []
             if self.number_ground_structures > 0:
                 ground_divides = [self.level_width_min, self.level_width_max]
@@ -770,7 +773,7 @@ class BaselineGenerator:
                                     platform[1]:
                                 overlap = True
 
-            if overlap == False:
+            if not overlap:
                 self.final_platforms.append(temp_platform)
                 platform_centers.append(platform_position)
 
@@ -857,7 +860,7 @@ class BaselineGenerator:
                     (test_position[1] + pig_height / 2), 10) > round((i[1] - (pig_height / 2)), 10) and round(
                     (test_position[1] - pig_height / 2), 10) < round((i[1] + (pig_height / 2)), 10)):
                     valid_pig = False
-            if valid_pig == True:
+            if valid_pig:
                 self.final_pig_positions.append(test_position)
         return self.final_pig_positions
 
@@ -935,7 +938,7 @@ class BaselineGenerator:
                             (test_position[1] - self.platform_distance_buffer - trihole_height / 2), 10) < round(
                             (j[1] + (self.platform_size[1] / 2)), 10)):
                             valid_position = False
-                if valid_position == True:
+                if valid_position:
                     possible_trihole_positions.append(test_position)
 
         return possible_trihole_positions
@@ -1000,7 +1003,7 @@ class BaselineGenerator:
 
                 if self.blocks[str(block[0])][0] < tri_width:  # as block not symmetrical need to check for support
                     valid_position = False
-                if valid_position == True:
+                if valid_position:
                     possible_tri_positions.append(test_position)
 
         return possible_tri_positions
@@ -1055,7 +1058,7 @@ class BaselineGenerator:
                             (test_position[1] - self.platform_distance_buffer - cir_height / 2), 10) < round(
                             (j[1] + (self.platform_size[1] / 2)), 10)):
                             valid_position = False
-                if valid_position == True:
+                if valid_position:
                     possible_cir_positions.append(test_position)
 
         return possible_cir_positions
@@ -1124,7 +1127,7 @@ class BaselineGenerator:
                             (test_position[1] - self.platform_distance_buffer - cirsmall_height / 2), 10) < round(
                             (j[1] + (self.platform_size[1] / 2)), 10)):
                             valid_position = False
-                if valid_position == True:
+                if valid_position:
                     possible_cirsmall_positions.append(test_position)
 
         return possible_cirsmall_positions
@@ -1137,13 +1140,13 @@ class BaselineGenerator:
         possible_tri_positions = []
         possible_cir_positions = []
         possible_cirsmall_positions = []
-        if self.trihole_allowed == True:
+        if self.trihole_allowed:
             possible_trihole_positions = self.find_trihole_positions(complete_locations)
-        if self.tri_allowed == True:
+        if self.tri_allowed:
             possible_tri_positions = self.find_tri_positions(complete_locations)
-        if self.cir_allowed == True:
+        if self.cir_allowed:
             possible_cir_positions = self.find_cir_positions(complete_locations)
-        if self.cirsmall_allowed == True:
+        if self.cirsmall_allowed:
             possible_cirsmall_positions = self.find_cirsmall_positions(complete_locations)
         return possible_trihole_positions, possible_tri_positions, possible_cir_positions, possible_cirsmall_positions
 

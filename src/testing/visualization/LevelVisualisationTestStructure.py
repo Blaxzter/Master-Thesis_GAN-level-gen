@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -6,10 +5,9 @@ import matplotlib.pyplot as plt
 from game_management.GameConnection import GameConnection
 from game_management.GameManager import GameManager
 from generator.baseline.Baseline import BaselineGenerator
-from level.Level import Level
 from level.LevelReader import LevelReader
+from level.LevelUtil import calc_structure_meta_data
 from level.LevelVisualizer import LevelVisualizer
-from util import ProgramArguments
 from util.Config import Config
 
 
@@ -40,7 +38,7 @@ def leve_visualisation():
         parse_level.normalize()
         parse_level.create_polygons()
         structures = parse_level.separate_structures()
-        structures = list(filter(lambda structure: Level.calc_structure_meta_data(structure).total > 1, structures))
+        structures = list(filter(lambda structure: calc_structure_meta_data(structure).total > 1, structures))
 
         game_manager.start_game(is_running = False)
         game_manager.change_level(path = str(level_path))
@@ -53,7 +51,7 @@ def leve_visualisation():
 
         level_counter = 1
         for idx, structure in enumerate(structures):
-            meta_data = Level.calc_structure_meta_data(structure)
+            meta_data = calc_structure_meta_data(structure)
             struct_doc = level_reader.create_level_from_structure(
                 structure = structure,
                 level = parse_level,

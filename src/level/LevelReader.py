@@ -5,6 +5,7 @@ from level.Constants import ObjectType, min_distance_to_slingshot
 from level.Level import Level
 from level.LevelCreator import create_basis_level_node
 from level.LevelElement import LevelElement
+from level.LevelUtil import calc_structure_dimensions
 
 
 class LevelReader:
@@ -56,7 +57,7 @@ class LevelReader:
 
         data = None
         if move_to_ground:
-            data = Level.calc_structure_dimensions(structure, use_original = True)
+            data = calc_structure_dimensions(structure, use_original = True)
 
         level.separate_structures()
 
@@ -82,7 +83,7 @@ class LevelReader:
                     current_element_doc.setAttribute("x", str(level_element.original_x))
 
                 if move_to_ground:
-                    struct_data = Level.calc_structure_dimensions(structure, use_original = True)
+                    struct_data = calc_structure_dimensions(structure, use_original = True)
                     current_element_doc.setAttribute("y", str(level_element.original_y - abs(Constants.absolute_ground - struct_data[1])))
                 else:
                     current_element_doc.setAttribute("y", str(level_element.original_y))

@@ -7,6 +7,7 @@ import subprocess
 import threading
 import time
 from subprocess import Popen as new
+from typing import Optional
 from wsgiref.simple_server import make_server
 
 import matplotlib.image as mpimg
@@ -17,11 +18,14 @@ from util.Config import Config
 
 
 class GameConnection(threading.Thread):
-    def __init__(self, conf: Config, host = 'localhost', port = 9001, stop_if_game_windows_close = True):
+    def __init__(self, conf: Config = None, host = 'localhost', port = 9001, stop_if_game_windows_close = True):
         super().__init__()
 
-        if conf:
-            self.ai_path = conf.get_ai_path()
+        self.conf = conf
+        if conf is None:
+            self.conf = Config.get_instance()
+
+        self.ai_path = self.conf.get_ai_path()
         self.condition_object = threading.Condition()
 
         self.host = host
@@ -39,8 +43,8 @@ class GameConnection(threading.Thread):
         self.response = None
 
         self.client = None
-        self.game_process: subprocess.Popen[str] = None
-        self.ai_process: subprocess.Popen[str] = None
+        self.game_process: Optional[subprocess.Popen[str]] = None
+        self.ai_process: Optional[subprocess.Popen[str]] = None
         self.counter = 0
 
         self.wait_for_all_levels_played_tries = 10

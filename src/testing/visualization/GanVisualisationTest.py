@@ -1,4 +1,4 @@
-from generator.gan.GanNetwork import GanNetwork
+from generator.gan.SimpleGans import SimpleGAN88212
 from util.Config import Config
 from util.TrainVisualizer import TensorBoardViz
 import tensorflow as tf
@@ -37,7 +37,7 @@ def create_graph_of_model():
     config = Config.get_instance()
     print(str(config))
 
-    model = GanNetwork()
+    model = SimpleGAN88212()
     model.generator.summary()
     model.discriminator.summary()
 

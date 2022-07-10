@@ -58,7 +58,6 @@ class xml2txt(object):
                            19: 8,
                            20: 8,
                            21: 8,
-                           21: 8,
                            22: 4
                            }
         self.block2size = {

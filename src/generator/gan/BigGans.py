@@ -6,6 +6,7 @@ from generator.gan.IGAN import IGAN
 layers = tf.keras.layers
 activations = tf.keras.activations
 
+
 # https://de.mathworks.com/help/deeplearning/ug/trainwasserstein-gan-with-gradient-penalty-wgan-gp.html#:~:text=To%20train%20a%20WGAN%2DGP%20model%2C%20you%20must%20train%20the,64%20for%2010%2C000%20generator%20iterations.
 # Example for a WGAN-GP Network
 
@@ -73,10 +74,6 @@ class WGANGP128128(IGAN):
 
         self.discriminator = model
 
-def add_upsampling_convolution_block(model, in_planes, out_planes):
-    model.add(layers.Conv2D(8 * 64, (5, 5), strides = (2, 2), padding = 'same'))
-    model.add(layers.LayerNormalization())
-    model.add(layers.LeakyReLU(0.2))
 
 if __name__ == '__main__':
     gan = WGANGP128128()

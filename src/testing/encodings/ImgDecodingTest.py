@@ -1,31 +1,8 @@
 import itertools
-import os
 import pickle
-import time
 
-from matplotlib import pyplot as plt
-
-from data_scripts import CreateEncodingData
-from game_management.GameManager import GameManager
-from level.Level import Level
-from level.LevelVisualizer import LevelVisualizer
-from level_decoder.LevelImgDecoder import LevelImgDecoder
+from converter.to_img_converter.LevelImgDecoder import LevelImgDecoder
 from util.Config import Config
-
-
-def get_debug_level():
-    pickle_data = config.get_pickle_file("block_data")
-    if os.path.isfile(pickle_data):
-        with open(pickle_data, 'rb') as f:
-            data = pickle.load(f)
-        return data
-    else:
-        elements, sizes = CreateEncodingData.create_element_for_each_block()
-        level_img = Level.create_structure_img([elements], dot_version = True)
-        with open(pickle_data, 'wb') as handle:
-            pickle.dump(level_img[0], handle, protocol = pickle.HIGHEST_PROTOCOL)
-        return level_img[0]
-
 
 if __name__ == '__main__':
     config = Config.get_instance()

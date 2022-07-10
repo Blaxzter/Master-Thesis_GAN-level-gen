@@ -1,9 +1,8 @@
-import json
 import pickle
 
 import numpy as np
 import tensorflow as tf
-from matplotlib import pyplot as plt
+
 from util.Config import Config
 
 # max_height = 86 + 2

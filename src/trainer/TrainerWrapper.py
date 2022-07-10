@@ -1,16 +1,13 @@
 import os
 import time
 
-import matplotlib.pyplot as plt
 import tensorflow as tf
 from loguru import logger
 from tensorflow.core.util import event_pb2
-from tensorflow.python.summary.summary_iterator import summary_iterator
 
-from Trainer.DefaultTrainStepper import DefaultTrainStepper
-from Trainer.WGANGPTrainStepper import WGANGPTrainStepper
 from data_scripts.LevelDataset import LevelDataset
 from generator.gan.IGAN import IGAN
+from trainer.WGANGPTrainStepper import WGANGPTrainStepper
 from util.Config import Config
 from util.TrainVisualizer import TensorBoardViz
 
@@ -45,7 +42,6 @@ class NetworkTrainer:
             logger.debug(f'Continue Training of {self.run_name} for {self.epochs} epochs at {self.visualizer.global_step}')
 
         current_epoch = 0
-        start_time = None
         for _ in range(self.epochs):
             start_time = time.time()
 
@@ -61,7 +57,6 @@ class NetworkTrainer:
 
         # Generate after the final epoch
         self.manager.save()
-        # self.visualizer.visualize(current_epoch + 1, start_time)
 
     def save(self):
         self.manager.save()

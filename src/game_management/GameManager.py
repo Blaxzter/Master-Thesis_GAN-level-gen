@@ -82,11 +82,14 @@ class GameManager:
     def create_img_of_level(self, index = 4):
         self.game_connection.load_level_menu()
         self.game_connection.change_level(index = index)
-        img = self.game_connection.create_level_img()
+        return self.get_img()
+
+    def get_img(self, structure = True):
+        img = self.game_connection.create_level_img(structure = structure)
         return img
 
-    def create_img(self):
-        plt.imshow(self.game_connection.create_level_img())
+    def create_img(self, structure = True):
+        plt.imshow(self.game_connection.create_level_img(structure = structure))
         plt.show()
 
     def remove_game_levels(self):

@@ -5,7 +5,7 @@ import time
 from enum import Enum
 from pathlib import Path
 
-from exceptions.Exceptions import ParameterException, OSNotSupported
+from exceptions.Exceptions import ParameterException
 from generator.baseline.Baseline import BaselineGenerator
 from util.ProgramArguments import get_program_arguments
 

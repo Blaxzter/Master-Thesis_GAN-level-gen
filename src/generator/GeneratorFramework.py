@@ -1,6 +1,5 @@
 from game_management.GameConnection import GameConnection
 from game_management.GameManager import GameManager
-from generator.baseline.Baseline import BaselineGenerator
 from util.Config import Config
 from util.Evaluator import Evaluator
 
@@ -32,5 +31,3 @@ class GeneratorFramework:
         for copied_level in copied_levels:
             level_index = int(copied_level.name[6:8])
             self.evaluator.evaluate_levels(start_level = level_index)
-
-

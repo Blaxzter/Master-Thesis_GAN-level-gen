@@ -1,0 +1,39 @@
+from pathlib import Path
+from time import sleep
+
+import matplotlib.pyplot as plt
+
+from converter.to_img_converter.LevelImgEncoder import LevelImgEncoder
+from testing.TestEnvironment import TestEnvironment
+
+
+def img_encoding_decoding_test():
+    test_environment = TestEnvironment()
+
+
+
+    for level_idx, level in test_environment.iter_levels():
+        create_encoding(level)
+        break
+
+
+def create_encoding(level):
+    level_img_encoder = LevelImgEncoder()
+
+    elements = level.get_used_elements()
+
+    encoded_dots = level_img_encoder.create_dot_img(elements)
+    encoded_calculated = level_img_encoder.create_calculated_img(elements)
+
+    fig, axs = plt.subplots(1, 2, dpi = 300, figsize = (12, 6))
+    axs[0].imshow(encoded_calculated)
+    axs[0].set_title("Calculated")
+
+    axs[1].imshow(encoded_dots)
+    axs[1].set_title("Through Dots")
+
+    plt.tight_layout()
+    plt.show()
+
+if __name__ == '__main__':
+    img_encoding_decoding_test()

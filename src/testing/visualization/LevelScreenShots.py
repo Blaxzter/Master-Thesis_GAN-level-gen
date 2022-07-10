@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -6,10 +5,7 @@ import matplotlib.pyplot as plt
 from game_management.GameConnection import GameConnection
 from game_management.GameManager import GameManager
 from generator.baseline.Baseline import BaselineGenerator
-from level.Level import Level
-from level.LevelReader import LevelReader
 from level.LevelVisualizer import LevelVisualizer
-from util import ProgramArguments
 from util.Config import Config
 
 

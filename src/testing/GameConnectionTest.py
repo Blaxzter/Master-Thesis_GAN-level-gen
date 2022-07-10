@@ -1,9 +1,7 @@
-from matplotlib import pyplot as plt
 import base64
 import io
-import matplotlib.image as mpimg
-from matplotlib import pyplot as plt
 
+import matplotlib.image as mpimg
 from loguru import logger
 from matplotlib import pyplot as plt
 

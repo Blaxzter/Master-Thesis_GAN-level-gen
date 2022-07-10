@@ -6,8 +6,8 @@ from pathlib import Path
 import numpy as np
 from matplotlib import pyplot as plt
 
-from level.Constants import StructureMetaData
 from level.LevelReader import LevelReader
+from level.LevelUtil import StructureMetaData
 from util.Config import Config
 
 

@@ -5,11 +5,11 @@ import matplotlib as mpl
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
-from loguru import logger
 
-from level.LevelElement import LevelElement
 from level import Constants
 from level.Level import Level
+from level.LevelElement import LevelElement
+from level.LevelUtil import calc_structure_dimensions
 
 
 class LevelVisualizer:
@@ -120,7 +120,7 @@ class LevelVisualizer:
             plt.close()
 
     def create_dots_and_grid(self, structure, ax, use_dots, use_grid):
-        min_x, min_y, max_x, max_y = Level.calc_structure_dimensions(structure)
+        min_x, min_y, max_x, max_y = calc_structure_dimensions(structure)
         if use_dots:
             x_cords = np.arange(min_x + Constants.resolution / 2, max_x - Constants.resolution, Constants.resolution)
             y_cords = np.arange(min_y + Constants.resolution / 2, max_y - Constants.resolution, Constants.resolution)

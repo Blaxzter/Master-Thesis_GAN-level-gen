@@ -71,7 +71,7 @@ def filter_levels():
 
             new_level_idx = '0' + str(level_counter + 5) if len(str(level_counter + 5)) == 1 else level_counter + 5
             new_level_name = f"./converted_levels/NoRotation/level-{new_level_idx}.xml"
-            level_reader.write_to_file(level, new_level_name = new_level_name)
+            level_reader.write_level_to_file(level, new_level_name = new_level_name)
             level_counter += 1
 
         logger.debug(f"Level contains od rotation: {file_name} \n")

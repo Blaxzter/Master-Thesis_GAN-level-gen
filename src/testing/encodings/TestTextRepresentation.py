@@ -1,15 +1,12 @@
-import os
 from pathlib import Path
 from time import sleep
 
 import matplotlib.pyplot as plt
 
-from data_scripts.sequentialvae.text2xml import txt2xml
-from data_scripts.sequentialvae.xml2text import xml2txt
+from converter.to_text_converter.text2xml import txt2xml
+from converter.to_text_converter.xml2text import xml2txt
 from game_management.GameConnection import GameConnection
 from game_management.GameManager import GameManager
-from generator.baseline.Baseline import BaselineGenerator
-from level.Level import Level
 from level.LevelReader import LevelReader
 from level.LevelVisualizer import LevelVisualizer
 from util.Config import Config

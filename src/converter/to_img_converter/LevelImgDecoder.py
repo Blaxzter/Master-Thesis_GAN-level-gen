@@ -1,8 +1,4 @@
-import functools
 import itertools
-import os.path
-import pickle
-import time
 
 import cv2
 import matplotlib.pyplot as plt
@@ -10,15 +6,10 @@ import numpy as np
 from matplotlib import patches
 from shapely.geometry import Polygon
 
-from data_scripts import CreateEncodingData
-from game_management.GameManager import GameManager
+from converter import MathUtil
 from level import Constants
-from level.Level import Level
 from level.LevelElement import LevelElement
 from level.LevelVisualizer import LevelVisualizer
-from level_decoder import MathUtil
-from util.Config import Config
-
 
 
 class LevelImgDecoder:
@@ -51,7 +42,7 @@ class LevelImgDecoder:
                 # If more then 4 contour points then search for rectangles
                 rectangles = [contour]
                 if len(contour) > 4:
-                      rectangles, _ = MathUtil.get_rectangles(contour_reshaped, poly)
+                    rectangles, _ = MathUtil.get_rectangles(contour_reshaped, poly)
 
                 # Calc data for each rectangle required in the find blocks method
                 rectangles_with_data = []
@@ -72,7 +63,7 @@ class LevelImgDecoder:
                 # if selected_blocks is None:
                 #     selected_blocks = self.select_blocks(rectangles = rect_dict, used_blocks = [],
                 #                                          required_area = required_area)
-                    # raise Exception('No Block Selected')
+                # raise Exception('No Block Selected')
                 if selected_blocks is not None:
                     for selected_block in selected_blocks:
                         selected_block['material'] = contour_color
@@ -119,7 +110,8 @@ class LevelImgDecoder:
             overlap = False
             for used_block in used_blocks:
                 block_rec = used_block['rec']
-                bx_1, bx_2, by_1, by_2 = (block_rec['min_x'], block_rec['max_x'], block_rec['min_y'], block_rec['max_y'])
+                bx_1, bx_2, by_1, by_2 = (
+                    block_rec['min_x'], block_rec['max_x'], block_rec['min_y'], block_rec['max_y'])
                 dx = np.min([rx_2, bx_2]) - np.max([rx_1, bx_1])
                 dy = np.min([ry_2, by_2]) - np.max([ry_1, by_1])
                 if (dx > 0) and (dy > 0):
@@ -160,17 +152,19 @@ class LevelImgDecoder:
             # That means it consists out of multiple smaller one
             # Divide the area into divisions of possible blocks
 
-        # for rec_idx, rec in rectangles.items():
+            # for rec_idx, rec in rectangles.items():
             # Only work with fitting blocks
-            fitting_blocks = list(filter(lambda _block: _block['height'] / rec['height'] - 1 < _block['height_compare'] and
-                                                        _block['width'] / rec['width'] - 1 < _block['width_compare'], self.block_data))
+            fitting_blocks = list(
+                filter(lambda _block: _block['height'] / rec['height'] - 1 < _block['height_compare'] and
+                                      _block['width'] / rec['width'] - 1 < _block['width_compare'], self.block_data))
 
             # No combination found for this block
             if len(fitting_blocks) == 0:
                 continue
 
             # Go over both orientations
-            for (idx_1, primary_orientation), (idx_2, secondary_orientation) in [((1, 'height'), (0, 'width')), ((0, 'width'), (1, 'height'))]:
+            for (idx_1, primary_orientation), (idx_2, secondary_orientation) in [((1, 'height'), (0, 'width')),
+                                                                                 ((0, 'width'), (1, 'height'))]:
 
                 for combination_amount in range(2, 5):
                     combinations = itertools.product(fitting_blocks, repeat = 2)
@@ -179,7 +173,8 @@ class LevelImgDecoder:
                         secondary_size = combination[0][secondary_orientation]
 
                         # Only elements with the same secondary_orientation
-                        if np.sum(list(map(lambda block: block[secondary_orientation] - secondary_size, combination))) > 0.01:
+                        if np.sum(list(map(lambda block: block[secondary_orientation] - secondary_size,
+                                           combination))) > 0.01:
                             continue
 
                         # Check if the two blocks combined can fit in the space
@@ -193,7 +188,8 @@ class LevelImgDecoder:
                             # If so create a new rectangle there
                             # Or if the horizontal space is not filled then create a rec there
                             all_space_used = True
-                            if rec[secondary_orientation] / secondary_size - 1 > max(0.1, 1 / rec[secondary_orientation]):
+                            if rec[secondary_orientation] / secondary_size - 1 > max(0.1,
+                                                                                     1 / rec[secondary_orientation]):
                                 rectangle = np.ndarray.copy(rec['rectangle'])
                                 rectangle[0][idx_2] += secondary_size
                                 rectangle[1][idx_2] += secondary_size
@@ -253,7 +249,7 @@ class LevelImgDecoder:
                 material = Constants.materials[block['material'] - 1],
                 x = np.average(block['rec']['rectangle'][:, 0]) * Constants.resolution,
                 y = np.average(block['rec']['rectangle'][:, 1]) * Constants.resolution * -1,
-                rotation = 90 if block['block_type']['block_rotated']else 0
+                rotation = 90 if block['block_type']['block_rotated'] else 0
             )
             element = LevelElement(id = block_idx, **block_attribute)
             ret_level_elements.append(element)
@@ -271,8 +267,10 @@ class LevelImgDecoder:
             ret_level_elements.append(element)
         return ret_level_elements
 
-    def create_rect_dict(self, rectangle):
+    def create_rect_dict(self, rectangle, poly = None):
         ret_dict = dict(rectangle = rectangle)
+        if poly is not None:
+            ret_dict['contour_area'] = poly.area
         for key, value in MathUtil.get_contour_dims(rectangle).items():
             ret_dict[key] = value
         return ret_dict
@@ -288,19 +286,19 @@ class LevelImgDecoder:
             [[f'thresh_{i}', f'rectangle_{i}', f'decoded_{i}'] for i in range(bottom_value + 1, top_value - 1)] +
             [[f'pig_thresh', f'eroded', f'positions']],
             dpi = 300,
-            figsize=(8, 10)
+            figsize = (8, 10)
         )
 
         axd['original'].imshow(level_img_8)
         axd['original'].axis('off')
 
         for color_idx in range(bottom_value + 1, top_value - 1):
-            axs = [axd[ax_name] for ax_name in [f'thresh_{color_idx}', f'rectangle_{color_idx}', f'decoded_{color_idx}']]
+            axs = [axd[ax_name] for ax_name in
+                   [f'thresh_{color_idx}', f'rectangle_{color_idx}', f'decoded_{color_idx}']]
 
             self.visualize_one_decoding(level_img, contour_color = color_idx, axs = axs)
             for ax in axs:
                 ax.axis('off')
-
 
         axs = [axd[ax_name] for ax_name in [f'pig_thresh', f'eroded', f'positions']]
         self.visualize_pig_position(level_img, axs = axs)
@@ -352,20 +350,21 @@ class LevelImgDecoder:
                 if rec_data['height'] <= 2:
                     return False
                 return True
+
             #
             # print(f"Rectangle Count 1: {len(rectangles)}")
             # rectangles = list(filter(rec_filter, rectangles))
             # print(f"Rectangle Count 2: {len(rectangles)}")
             # print(f"\n")
 
-
             hsv = plt.get_cmap('brg')
             dot_colors = hsv(np.linspace(0, 0.8, len(contour_list)))
             for dot_idx, (contour_point, dot_color) in enumerate(zip(contour_list, dot_colors)):
                 point_flatten = contour_point.flatten()
                 if len(contour_list) < 12:
-                    axs[axs_idx].text(point_flatten[0] + 2, point_flatten[1], str(dot_idx), color = dot_color, fontsize = 6,
-                             ha = 'center', va = 'center')
+                    axs[axs_idx].text(point_flatten[0] + 2, point_flatten[1], str(dot_idx), color = dot_color,
+                                      fontsize = 6,
+                                      ha = 'center', va = 'center')
                 dot = patches.Circle(point_flatten, 0.4)
                 dot.set_facecolor(dot_color)
                 axs[axs_idx].add_patch(dot)
@@ -379,7 +378,7 @@ class LevelImgDecoder:
                 center = np.average(rect_reshaped, axis = 0)
                 if len(contour_list) < 12:
                     axs[axs_idx].text(center[0], center[1], str(rec_idx), color = 'White', fontsize = 6,
-                             ha = 'center', va = 'center')
+                                      ha = 'center', va = 'center')
                 new_patch = patches.Polygon(rect_reshaped, closed = True)
                 new_patch.set_linewidth(0.6)
                 new_patch.set_edgecolor(colors[rec_idx])
@@ -397,7 +396,8 @@ class LevelImgDecoder:
             for rec_idx, rec in enumerate(rectangles):
                 rect_dict[rec_idx] = rec
 
-            selected_blocks = self.select_blocks(rectangles = rect_dict.copy(), used_blocks = [], required_area = required_area)
+            selected_blocks = self.select_blocks(rectangles = rect_dict.copy(), used_blocks = [],
+                                                 required_area = required_area)
 
             # if len(contour) > 5 and len(selected_blocks) == 3:
             #     print(contour)
@@ -407,7 +407,7 @@ class LevelImgDecoder:
             #     print(rect_dict)
             #     print(len(contour))
             #     selected_blocks = self.select_blocks(rectangles = rect_dict, used_blocks = [], required_area = required_area)
-                # raise Exception("No Block Selected")
+            # raise Exception("No Block Selected")
             if selected_blocks is not None:
                 for selected_block in selected_blocks:
                     selected_block['material'] = contour_color
@@ -496,7 +496,7 @@ class LevelImgDecoder:
                 point_flatten = contour_point.flatten()
                 if len(contour_list) < 12:
                     axs[0].text(point_flatten[0] + 2, point_flatten[1], str(dot_idx), color = dot_color,
-                                      fontsize = 4, ha = 'center', va = 'center')
+                                fontsize = 4, ha = 'center', va = 'center')
                 dot = patches.Circle(point_flatten, 0.4)
                 dot.set_facecolor(dot_color)
                 axs[0].add_patch(dot)
@@ -509,7 +509,7 @@ class LevelImgDecoder:
                 point_flatten = contour_point.flatten()
                 if len(contour_list) < 12:
                     axs[1].text(point_flatten[0] + 2, point_flatten[1], str(dot_idx), color = dot_color,
-                                      fontsize = 4, ha = 'center', va = 'center')
+                                fontsize = 4, ha = 'center', va = 'center')
                 dot = patches.Circle(point_flatten, 0.4)
                 dot.set_facecolor(dot_color)
                 axs[1].add_patch(dot)
@@ -532,4 +532,22 @@ class LevelImgDecoder:
             plt.tight_layout()
             plt.show()
 
+    def get_rectangles(self, level_img, material_id = 1):
+        # Create a copy of the img to manipulate it for the contour finding
+        current_img = np.ndarray.copy(level_img)
+        current_img = current_img.astype(np.uint8)
+        current_img[current_img != material_id] = 0
 
+        # get the contours
+        contours, _ = cv2.findContours(current_img, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+        ret_list = []
+        for contour_idx, contour in enumerate(contours):
+            contour_reshaped = contour.reshape((len(contour), 2))
+            poly = Polygon(contour_reshaped)
+
+            rectangles, contour_list = MathUtil.get_rectangles(contour_reshaped, poly)
+            rect_data = list(map(lambda rectangle: self.create_rect_dict(rectangle.reshape((4, 2)), poly), rectangles))
+            ret_list += rect_data
+
+        return ret_list

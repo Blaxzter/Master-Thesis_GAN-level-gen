@@ -5,15 +5,11 @@ from pathlib import Path
 from loguru import logger
 from tqdm import tqdm
 
-from level.LevelReader import LevelReader
-from level.LevelVisualizer import LevelVisualizer
-from level.Level import Level
 from game_management.GameConnection import GameConnection
-import os
-from util.Config import Config
 from game_management.GameManager import GameManager
-from util import ProgramArguments
-
+from level.LevelReader import LevelReader
+from level.LevelUtil import calc_structure_meta_data
+from util.Config import Config
 
 logger.disable('level.Level')
 
@@ -46,7 +42,7 @@ def create_level_data_multi_structure(original_data_level, p_dict, lock):
 
     level_counter = 0
     for idx, structure in enumerate(level_structures):
-        meta_data = Level.calc_structure_meta_data(structure)
+        meta_data = calc_structure_meta_data(structure)
 
         if meta_data.pig_amount == 0:
             continue
@@ -116,7 +112,7 @@ def create_level_data_single_structure(original_data_level, p_dict, lock):
     parsed_level.create_polygons()
     parsed_level.filter_slingshot_platform()
 
-    meta_data = Level.calc_structure_meta_data(parsed_level.get_used_elements())
+    meta_data = calc_structure_meta_data(parsed_level.get_used_elements())
     if meta_data.pig_amount == 0:
         return
 

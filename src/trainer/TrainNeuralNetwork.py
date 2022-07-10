@@ -6,7 +6,7 @@ import tensorflow as tf
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
-from Trainer.TrainerWrapper import NetworkTrainer
+from trainer.TrainerWrapper import NetworkTrainer
 from util.Config import Config
 from data_scripts.LevelDataset import LevelDataset
 from generator.gan.BigGans import WGANGP128128

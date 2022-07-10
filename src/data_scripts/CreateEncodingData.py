@@ -1,21 +1,21 @@
+import os
+import pickle
 import sys
-import time
-
-from icecream import ic
 
 import matplotlib.pyplot as plt
 import numpy as np
+from icecream import ic
 from tabulate import tabulate
 
-from game_management.GameConnection import GameConnection
+from converter.to_img_converter.LevelImgDecoder import LevelImgDecoder
+from converter.to_img_converter.LevelImgEncoder import LevelImgEncoder
 from game_management.GameManager import GameManager
 from level import Constants
-from level.Level import Level
 from level.LevelElement import LevelElement
-from level.LevelReader import LevelReader
 from level.LevelVisualizer import LevelVisualizer
-from level_decoder.LevelImgDecoder import LevelImgDecoder
 from util.Config import Config
+
+config = Config.get_instance()
 
 
 def create_element_for_each_block():
@@ -45,35 +45,65 @@ def create_element_for_each_block():
     return elements, sizes
 
 
-if __name__ == '__main__':
+def get_debug_level():
+    pickle_data = config.get_pickle_file("block_data")
+    if os.path.isfile(pickle_data):
+        with open(pickle_data, 'rb') as f:
+            data = pickle.load(f)
+        return data
+    else:
+        level_img_encoder = LevelImgEncoder()
+        elements, sizes = create_element_for_each_block()
+        level_img = level_img_encoder.create_img_of_structures([elements], dot_version = True)
+        with open(pickle_data, 'wb') as handle:
+            pickle.dump(level_img[0], handle, protocol = pickle.HIGHEST_PROTOCOL)
+        return level_img[0]
 
-    config = Config.get_instance()
-    # game_manager = GameManager(conf = config)
-    # game_manager.start_game()
+
+def test_encoding_data():
+    create_screen_shot = False
+
+    if create_screen_shot:
+        game_manager = GameManager(conf = config)
+        game_manager.start_game()
+
+    level_img_encoder = LevelImgEncoder()
     level_visualizer = LevelVisualizer()
     elements, sizes = create_element_for_each_block()
 
-    fig, ax = plt.subplots(4, 1, dpi = 300)
+    fig, ax = plt.subplots(3 + (1 if create_screen_shot else 0), 1, dpi = 300)
 
-    element_img = level_visualizer.create_img_of_structure(elements, ax = ax[0])
-    level_rep = Level.create_structure_img([elements], dot_version = True)
-    level_rep2 = Level.create_structure_img([elements], dot_version = False)
-    ax[1].imshow(np.pad(level_rep[0], 2))
-    ax[2].imshow(np.pad(level_rep2[0], 2))
+    # Create the images
+    level_visualizer.create_img_of_structure(elements, ax = ax[0])
+    dot_img = level_img_encoder.create_dot_img(elements)
+    calc_img = level_img_encoder.create_calculated_img(elements)
 
-    # gamemanager.switch_to_level_elements(elements)
-    # img = game_connection.create_level_img(structure = True)
-    # ax[3].imshow(img)
+    ax[1].imshow(np.pad(dot_img, 2))
+    ax[2].imshow(np.pad(calc_img, 2))
+
+    if create_screen_shot:
+        game_manager.switch_to_level_elements(elements)
+        img = game_manager.get_img()
+        ax[3].imshow(img)
 
     level_img_decoder = LevelImgDecoder()
-    recs = level_img_decoder.visualize_rectangles(np.pad(level_rep[0], 3), material_id = 1, ax = ax[3])
-
+    recs = level_img_decoder.get_rectangles(calc_img)
     recs = sorted(recs, key = lambda x: x['min_x'])
+
     for block_idx, block in enumerate(sizes):
         for key, value in block.items():
             recs[block_idx][f'block_{key}'] = value
 
     np.set_printoptions(threshold = sys.maxsize, linewidth = sys.maxsize)
+
+    plt.show()
+
+    print_rect_data(recs)
+
+    # game_manager.stop_game()
+
+
+def print_rect_data(recs):
     print(tabulate([[
         c_dict['block_name'],
         c_dict['area'],
@@ -87,7 +117,7 @@ if __name__ == '__main__':
         c_dict['block_rounded_width'],
         c_dict['block_rounded_height'],
         c_dict['block_rotated']
-        ] for c_dict in recs],
+    ] for c_dict in recs],
         headers = [
             'block_name',
             'area',
@@ -104,8 +134,8 @@ if __name__ == '__main__':
         ])
     )
 
-    plt.show()
-
     ic(recs)
 
-    # game_manager.stop_game()
+
+if __name__ == '__main__':
+    test_encoding_data()
