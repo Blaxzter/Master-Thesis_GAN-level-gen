@@ -61,6 +61,46 @@ class LevelImgEncoder:
 
         return picture
 
+    def create_calculated_img_no_size_check(self, element_list):
+        min_x, min_y, max_x, max_y = calc_structure_dimensions(element_list)
+
+        cord_list = []
+
+        print(f'\n')
+
+        # logger.debug(f"New Structure {(round((max_x - min_x) / resolution), round((max_y - min_y) / resolution))}")
+        for element in element_list:
+
+            left_block_pos = element.x - element.width / 2 - min_x
+            right_block_pos = element.x + element.width / 2 - min_x
+            bottom_block_pos = element.y - element.height / 2 - min_y
+            top_block_pos = element.y + element.height / 2 - min_y
+
+            x_cord_range = np.linspace(left_block_pos + resolution / 2, right_block_pos - resolution / 2) + 0.001
+            y_cord_range = np.linspace(bottom_block_pos + resolution / 2, top_block_pos - resolution / 2) + 0.001
+
+            x_cords = np.unique(np.round(x_cord_range / resolution)).astype(np.int)
+            y_cords = np.unique(np.round(y_cord_range / resolution)).astype(np.int)
+
+            # print(f'ID: {element.id} -> ({len(x_cords)}, {len(y_cords)})')
+
+            cord_list.append(dict(
+                x_cords = x_cords,
+                y_cords = y_cords,
+                max_x = np.max(x_cords),
+                max_y = np.max(y_cords),
+                material = element.get_identifier()
+            ))
+
+        img_width = np.max(list(map(lambda x: x['max_x'], cord_list)))
+        img_height = np.max(list(map(lambda x: x['max_y'], cord_list)))
+
+        picture = np.zeros((img_height, img_width))
+        for cords in cord_list:
+            picture[tuple(np.meshgrid(img_height - cords['y_cords'], cords['x_cords'] - 1))] = cords['material']
+
+        return picture
+
     def create_calculated_img(self, element_list):
         min_x, min_y, max_x, max_y = calc_structure_dimensions(element_list)
 
@@ -78,13 +118,14 @@ class LevelImgEncoder:
             bottom_block_pos = element.y - element.height / 2 - min_y
             top_block_pos = element.y + element.height / 2 - min_y
 
-            x_cord_range = np.linspace(left_block_pos + resolution / 2, right_block_pos - resolution / 2)
-            y_cord_range = np.linspace(bottom_block_pos + resolution / 2, top_block_pos - resolution / 2)
+            x_cord_range = np.linspace(left_block_pos + resolution / 2, right_block_pos - resolution / 2) + 0.001
+            y_cord_range = np.linspace(bottom_block_pos + resolution / 2, top_block_pos - resolution / 2) + 0.001
 
             x_cords = np.unique(np.round(x_cord_range / resolution)).astype(np.int)
             y_cords = np.unique(np.round(y_cord_range / resolution)).astype(np.int)
 
             if len(x_cords) != element.int_width:
+                print(f"Id {element.id}: x_wrong {len(x_cords)} != {element.int_width}")
                 right_stop = right_block_pos - resolution
 
                 if len(x_cords) < element.int_width:
@@ -93,9 +134,9 @@ class LevelImgEncoder:
 
                 x_cord_range = np.linspace(left_block_pos + resolution / 2, right_stop)
                 x_cords = np.unique(np.round(x_cord_range / resolution)).astype(np.int)
-                print(f"Hilfe hilfe: {len(x_cords)} != {element.int_width}")
 
             if len(y_cords) != element.int_height:
+                print(f"Id {element.id}: y_wrong {len(y_cords)} != {element.int_height}")
                 top_stop = top_block_pos - resolution
 
                 if len(x_cords) < element.int_width:
@@ -104,9 +145,6 @@ class LevelImgEncoder:
 
                 y_cord_range = np.linspace(bottom_block_pos + resolution / 2, top_stop)
                 y_cords = np.unique(np.round(y_cord_range / resolution)).astype(np.int)
-                print(f"Hilfe hilfe: {len(y_cords)} != {element.int_height}")
-
-            print(f'ID: {element.id} -> ({len(x_cords)}, {len(y_cords)})')
 
             cord_list.append(dict(
                 x_cords = x_cords,
@@ -119,31 +157,8 @@ class LevelImgEncoder:
         img_width = np.max(list(map(lambda x: x['max_x'], cord_list)))
         img_height = np.max(list(map(lambda x: x['max_y'], cord_list)))
 
-        picture = np.zeros((img_height + 1, img_width + 1))
+        picture = np.zeros((img_height, img_width))
         for cords in cord_list:
-            picture[tuple(np.meshgrid(img_height - cords['y_cords'], cords['x_cords']))] = cords['material']
-
-            # if len(x_cords) < element.int_width:
-            #     x_cords = np.unique(np.round(
-            #         np.linspace(left_block_pos + resolution / 2, right_block_pos) / resolution)).astype(np.int)
-            #
-            # if len(y_cords) < element.int_height:
-            #     y_cords = np.unique(np.round(
-            #         np.linspace(bottom_block_pos + resolution / 2, top_block_pos) / resolution)).astype(np.int)
-            #
-            # for x_pos in x_cords:
-            #     for y_pos in y_cords:
-            #
-            #         # if element.object_type is ObjectType.Pig:
-            #         #     dist = np.linalg.norm(np.array([element.x, element.y]) - np.array([x_pos, y_pos]))
-            #         #     if dist > 0.21:
-            #         #         continue
-            #
-            #         # x_cord = round(x_pos / resolution)
-            #         # y_cord = round(y_pos / resolution)
-            #         # print(f"picture[{x_cord}, {y_cord}] = {element.get_identifier()} of element {element.id}"
-            #         #       f"{f'x {x_cord} out of bounds {x_len}' if x_cord > x_len - 1 else ''} "
-            #         #       f"{f'y {y_cord} out of bounds {y_len}' if y_cord > y_len - 1 else ''}")
-            #         picture[y_len - y_pos, x_pos] = element.get_identifier()
+            picture[tuple(np.meshgrid(img_height - cords['y_cords'], cords['x_cords'] - 1))] = cords['material']
 
         return picture

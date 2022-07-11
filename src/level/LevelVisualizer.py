@@ -56,8 +56,8 @@ class LevelVisualizer:
         if use_grid or add_dots:
             self.create_dots_and_grid(structure, ax, add_dots, use_grid)
 
-        ax.set_xticks([])
-        ax.set_yticks([])
+        # ax.set_xticks([])
+        # ax.set_yticks([])
         ax.axis('scaled')
 
         if show:
@@ -102,8 +102,8 @@ class LevelVisualizer:
         if use_grid or add_dots:
             self.create_dots_and_grid(element_list, ax, add_dots, use_grid)
 
-        ax.set_xticks([])
-        ax.set_yticks([])
+        # ax.set_xticks([])
+        # ax.set_yticks([])
         ax.axis('scaled')
 
         if show:
@@ -125,12 +125,24 @@ class LevelVisualizer:
             x_cords = np.arange(min_x + Constants.resolution / 2, max_x - Constants.resolution, Constants.resolution)
             y_cords = np.arange(min_y + Constants.resolution / 2, max_y - Constants.resolution, Constants.resolution)
             XX, YY = np.meshgrid(x_cords, y_cords)
-            plt.scatter(XX, YY, s = self.dot_size)
+            ax.scatter(XX, YY, s = self.dot_size)
         if use_grid:
             ax.set_xticks(np.arange(min_x, max_x, Constants.resolution))
             ax.set_yticks(np.arange(min_y, max_y, Constants.resolution))
-            plt.tick_params(axis = 'both', which = 'both', grid_alpha = 0, grid_color = "white")
-            plt.grid(alpha = 0.2)
+            ax.tick_params(axis = 'both', which = 'both', grid_alpha = 0, grid_color = "grey")
+            ax.grid(alpha = 0.2)
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
+            for tick in ax.xaxis.get_major_ticks():
+                tick.tick1line.set_visible(False)
+                tick.tick2line.set_visible(False)
+                tick.label1.set_visible(False)
+                tick.label2.set_visible(False)
+            for tick in ax.yaxis.get_major_ticks():
+                tick.tick1line.set_visible(False)
+                tick.tick2line.set_visible(False)
+                tick.label1.set_visible(False)
+                tick.label2.set_visible(False)
 
     def get_element_data(self, colors, element, idx, level = None):
         bottom_left = element.get_bottom_left()
