@@ -49,7 +49,7 @@ class LevelVisualizer:
             # If block ids should be printed add text at the center of the element
             if element_ids:
                 x_pos = element.x / (Constants.resolution if scaled else 1)
-                y_pos = element.y / (Constants.resolution if scaled else 1) * - 1
+                y_pos = element.y / (Constants.resolution * -1 if scaled else 1)
                 ax.text(x_pos, y_pos, str(element.id), color = "black", fontsize = self.id_font_size,
                         ha = 'center', va = 'center')
 

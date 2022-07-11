@@ -92,7 +92,7 @@ def calc_structure_meta_data(element_list: [LevelElement]) -> StructureMetaData:
     )
 
 
-def calc_structure_dimensions(element_list: [LevelElement], use_original = False):
+def calc_structure_dimensions(element_list: [LevelElement], use_original = False, round = False):
     """
     Calculates with the given elements the metadata wanted
     :param element_list: The list of level elements which are included in the calculation
@@ -104,4 +104,7 @@ def calc_structure_dimensions(element_list: [LevelElement], use_original = False
         max_x = max(max_x, (element.x if not use_original else element.original_x) + element.width / 2)
         max_y = max(max_y, (element.y if not use_original else element.original_y) + element.height / 2)
 
-    return round_to_cord(min_x), round_to_cord(min_y), round_to_cord(max_x), round_to_cord(max_y)
+    if round:
+        return round_to_cord(min_x), round_to_cord(min_y), round_to_cord(max_x), round_to_cord(max_y)
+    else:
+        return min_x, min_y, max_x, max_y
