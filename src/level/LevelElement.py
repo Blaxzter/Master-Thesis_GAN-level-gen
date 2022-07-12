@@ -61,7 +61,7 @@ class LevelElement:
             if self.is_vertical:
                 self.index += 1
             self.size = Constants.block_sizes[str(self.index)]
-        self.object_type = ObjectType.Block
+            self.object_type = ObjectType.Block
 
         self.width = self.size[0]
         self.height = self.size[1]

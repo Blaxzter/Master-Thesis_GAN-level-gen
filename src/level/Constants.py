@@ -112,6 +112,8 @@ def get_sizes(print_data = True):
 
     data = [[
         block_names[block_idx],
+        block_size[0],
+        block_size[1],
         block_size[0] / resolution,
         block_size[1] / resolution,
         round(block_size[0] / resolution),
@@ -120,15 +122,18 @@ def get_sizes(print_data = True):
     ] for block_idx, block_size in block_sizes.items()]
 
     if print_data:
-        print(tabulate(data, headers = ['block_name', 'x', 'y', 'rounded x', 'rounded y', 'Rotated']))
+        print(tabulate(data, headers = ['block_name', 'width', 'height', 'width in res', 'height in res', 'rounded width', 'rounded height', 'Rotated']))
+
     return [dict(
         name = x[0],
-        width = x[1],
-        height = x[2],
-        area = x[3] * x[4],
-        rounded_width = x[3],
-        rounded_height = x[4],
-        rotated = x[5],
+        orig_width = x[1],
+        orig_height = x[2],
+        width_res = x[3],
+        height_res = x[4],
+        rounded_width = x[5],
+        rounded_height = x[6],
+        area = x[5] * x[6],
+        rotated = x[7],
     ) for x in data]
 
 

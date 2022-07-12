@@ -533,6 +533,46 @@ class LevelImgDecoder:
             plt.tight_layout()
             plt.show()
 
+    def visualize_rectangle(self, level_img, material_id, ax):
+        """
+        Visualizes the rectangles of one level img
+        """
+        current_img = np.ndarray.copy(level_img)
+        current_img = current_img.astype(np.uint8)
+        current_img[current_img != material_id] = 0
+
+        show_img = False
+        if ax is None:
+            show_img = True
+            fig, ax = plt.subplots(1, 1, dpi = 300)
+
+        # get the contours
+        contours, _ = cv2.findContours(current_img, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        ax.imshow(current_img)
+        for contour_idx, contour in enumerate(contours):
+            contour_reshaped = contour.reshape((len(contour), 2))
+            poly = Polygon(contour_reshaped)
+
+            rectangles, contour_list = MathUtil.get_rectangles(contour_reshaped, poly)
+
+            hsv = plt.get_cmap('brg')
+            colors = hsv(np.linspace(0, 0.8, len(rectangles)))
+            for rec_idx, rectangle in enumerate(rectangles):
+                new_patch = patches.Polygon(rectangle.reshape(4, 2), closed = True)
+                new_patch.set_linewidth(0.6)
+                new_patch.set_edgecolor(colors[rec_idx])
+                new_patch.set_facecolor('none')
+                ax.add_patch(new_patch)
+
+                for dot, dot_color in zip(rectangle, ['red', 'green', 'blue', 'black']):
+                    dot = patches.Circle(dot.flatten(), 0.4)
+                    dot.set_facecolor(dot_color)
+                    ax.add_patch(dot)
+
+        if show_img:
+            plt.tight_layout()
+            plt.show()
+
     def get_rectangles(self, level_img, material_id = 1):
         # Create a copy of the img to manipulate it for the contour finding
         current_img = np.ndarray.copy(level_img)

@@ -1,8 +1,10 @@
+import json
 import os
 import platform
 import sys
 import time
 from enum import Enum
+from io import StringIO
 from pathlib import Path
 
 from exceptions.Exceptions import ParameterException
@@ -83,6 +85,9 @@ class Config:
         )
         self.pickle_folder = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/pickles')
+        )
+        self.encoding_folder = os.path.normpath(
+            os.path.join(self.current_path, 'resources/data/encoding_data')
         )
         self.tf_records_name = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/tfrecords/{dataset_name}.tfrecords')
@@ -227,6 +232,17 @@ class Config:
         for path in Path(log_dir).rglob('events.out.tfevents.*'):
             return str(path)
         return None
+
+    def get_encoding_data(self, file_name):
+        if file_name is not None:
+            path = os.path.join(self.encoding_folder, file_name) + ".json"
+            if os.path.isfile(path):
+                with open(path, 'r') as f:
+                    return json.loads(''.join(f.readlines()))
+            else:
+                return path
+        else:
+            return self.run_data_root
 
     def get_deconverted_file(self):
         next_free_level = 4
