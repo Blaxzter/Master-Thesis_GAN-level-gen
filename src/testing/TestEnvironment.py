@@ -9,13 +9,13 @@ from util.Config import Config
 
 class TestEnvironment:
 
-    def __init__(self):
+    def __init__(self, level_folder = 'structures'):
         self.config = Config.get_instance()
         self.game_connection = GameConnection(conf = self.config)
         self.game_manager = GameManager(conf = self.config, game_connection = self.game_connection)
         self.level_reader = LevelReader()
         self.level_visualizer = LevelVisualizer()
-        self.level_path = self.config.get_data_train_path(folder = 'generated/single_structure')
+        self.level_path = self.config.get_data_train_path(folder = level_folder)
 
         self.levels = list(map(str, Path(self.level_path).glob('*.xml')))
 
@@ -28,7 +28,6 @@ class TestEnvironment:
             level.normalize()
             level.create_polygons()
             yield level_counter, level
-
 
     def start_game(self, is_running = False):
         self.game_manager.start_game(is_running = is_running)

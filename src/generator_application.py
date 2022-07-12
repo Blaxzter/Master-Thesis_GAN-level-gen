@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 
-from generator.gan.SimpleGans import SimpleGAN100116
+from generator.gan.SimpleGans import SimpleGAN100116, SimpleGAN100112
 from util.Config import Config
 
 canvas = None
@@ -40,6 +40,38 @@ def generate_img(gan):
     canvas.get_tk_widget().pack()
 
 
+def load_model_0():
+    config: Config = Config.get_instance()
+    checkpoint_dir = config.get_checkpoint_dir('simple_gan_112_100', '20220614-155205')
+
+    simple_gan = SimpleGAN100112()
+    return checkpoint_dir, simple_gan
+
+
+def load_model_1():
+    config: Config = Config.get_instance()
+    checkpoint_dir = config.get_checkpoint_dir('simple_gan_116_100', '20220619-195718')
+
+    simple_gan = SimpleGAN100116()
+    return checkpoint_dir, simple_gan
+
+
+def load_model_2():
+    config: Config = Config.get_instance()
+    checkpoint_dir = config.get_checkpoint_dir('wasserstein-gan_116_100', '20220623-015436')
+
+    simple_gan = SimpleGAN100116()
+    return checkpoint_dir, simple_gan
+
+
+def load_model_3():
+    config: Config = Config.get_instance()
+    checkpoint_dir = config.get_checkpoint_dir('wasserstein-gan_116_100_adam', '20220627-202454')
+
+    simple_gan = SimpleGAN100116()
+    return checkpoint_dir, simple_gan
+
+
 if __name__ == '__main__':
     # the main Tkinter window
     window = Tk()
@@ -50,25 +82,23 @@ if __name__ == '__main__':
     # dimensions of the main window
     window.geometry("1200x800")
 
-    config: Config = Config.get_instance()
-    checkpoint_dir = config.get_checkpoint_dir('simple_gan_116_100', '20220619-195718')
-
-    simple_gan = SimpleGAN100116()
-    # simple_gan.generator.load_weights(last_checkpoint)
-    # simple_gan.discriminator.load_weights(last_checkpoint)
+    # checkpoint_dir, gan = load_model_0()
+    checkpoint_dir, gan = load_model_1()
+    # checkpoint_dir, gan = load_model_2()
+    # checkpoint_dir, gan = load_model_3()
 
     checkpoint = tf.train.Checkpoint(
         generator_optimizer = tf.keras.optimizers.Adam(1e-4),
         discriminator_optimizer = tf.keras.optimizers.Adam(1e-4),
-        generator = simple_gan.generator,
-        discriminator = simple_gan.discriminator
+        generator = gan.generator,
+        discriminator = gan.discriminator
     )
     checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
     manager = tf.train.CheckpointManager(
         checkpoint, checkpoint_prefix, max_to_keep = 2
     )
 
-    simple_gan.create_img()
+    gan.create_img()
 
     checkpoint.restore(manager.latest_checkpoint)
     if manager.latest_checkpoint:
@@ -82,7 +112,7 @@ if __name__ == '__main__':
     # button that displays the plot
     plot_button = Button(
         master = window,
-        command = lambda: generate_img(simple_gan),
+        command = lambda: generate_img(gan),
         height = 2,
         width = 10,
         text = "Generate")

@@ -204,5 +204,5 @@ def print_rect_data(recs):
 
 
 if __name__ == '__main__':
-    # visualize_encoding_data()
-    test_encoding_data(test_dot = False)
+    visualize_encoding_data()
+    # test_encoding_data(test_dot = False)

@@ -104,9 +104,7 @@ class LevelImgEncoder:
     def create_calculated_img(self, element_list):
         min_x, min_y, max_x, max_y = calc_structure_dimensions(element_list)
 
-        cord_list = [
-
-        ]
+        cord_list = []
 
         print(f'\n')
 

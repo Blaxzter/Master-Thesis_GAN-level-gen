@@ -353,7 +353,7 @@ class LevelImgDecoder:
 
             #
             # print(f"Rectangle Count 1: {len(rectangles)}")
-            # rectangles = list(filter(rec_filter, rectangles))
+            rectangles = list(filter(rec_filter, rectangles))
             # print(f"Rectangle Count 2: {len(rectangles)}")
             # print(f"\n")
 
@@ -398,6 +398,7 @@ class LevelImgDecoder:
 
             selected_blocks = self.select_blocks(rectangles = rect_dict.copy(), used_blocks = [],
                                                  required_area = required_area)
+
 
             # if len(contour) > 5 and len(selected_blocks) == 3:
             #     print(contour)

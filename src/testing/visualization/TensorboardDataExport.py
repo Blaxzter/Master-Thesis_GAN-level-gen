@@ -118,10 +118,38 @@ def create_run_img(run_name):
     plt.show()
 
 
+def create_wgan_run_img(run_name):
+    data_file = config.get_run_data(run_name)
+    if not os.path.isfile(data_file):
+        logger.debug(f"Pickle file {data_file} doesn't exists")
+        return
+
+    with open(data_file, 'rb') as f:
+        data = pickle.load(f)
+
+    fig, axd = plt.subplot_mosaic([['generator_loss', 'discriminator_loss', 'img', 'img'],
+                                   ['real_prediction', 'fake_prediction', 'img', 'img']],
+                                  figsize = (14, 6))
+
+    for name, c_data in data.items():
+        if name == 'image':
+            continue
+
+        axd[name].plot(c_data.keys(), c_data.values())
+        axd[name].set_title(name)
+
+    axd['img'].imshow(data['image'])
+    axd['img'].set_title("Last generated img")
+
+    fig.suptitle(run_name)
+
+    plt.tight_layout()
+    plt.show()
+
 if __name__ == '__main__':
     config: Config = Config.get_instance()
     img_folder = config.get_img_path("generated")
-    log_file, run_name = config.get_log_file("events.out.tfevents.1655214732.ubuntu.3382.0.v2")
+    log_file, run_name = config.get_log_file("events.out.tfevents.1656354301.ubuntu.474168.0.v2")
 
     logger.debug(f'Extract data: run_name: {run_name}, log_file: {log_file}')
 
