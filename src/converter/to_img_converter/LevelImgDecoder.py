@@ -10,13 +10,18 @@ from converter import MathUtil
 from level import Constants
 from level.LevelElement import LevelElement
 from level.LevelVisualizer import LevelVisualizer
+from util.Config import Config
 
 
 class LevelImgDecoder:
 
     def __init__(self):
-        self.block_data = Constants.sizes_per_raster
-        self.block_data = sorted(self.block_data, key = lambda x: x['area'], reverse = True)
+        self.config = Config.get_instance()
+        self.block_data = self.config.get_encoding_data(f"encoding_res_{Constants.resolution}")
+        if type(self.block_data) is not str:
+            self.resolution = self.block_data['resolution']
+            del self.block_data['resolution']
+
         self.level_viz = LevelVisualizer()
 
     def decode_level(self, level_img):
@@ -33,16 +38,29 @@ class LevelImgDecoder:
             current_img[current_img != contour_color] = 0
             contours, _ = cv2.findContours(current_img, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
+            def create_contour_dict(_contour):
+                _contour_reshaped = _contour.reshape((len(_contour), 2))
+                _poly = Polygon(_contour_reshaped)
+                _required_area = _poly.area
+                return dict(
+                    contour = _contour_reshaped,
+                    poly = _poly,
+                    required_area = _required_area
+                )
+
+            # Create the contour data list and sort by required area
+            contour_data_list = [create_contour_dict(contour) for contour in contours]
+            contour_data_list = sorted(contour_data_list, key = lambda x: x['required_area'])
+
             # Go over each found contour
-            for contour_idx, contour in enumerate(contours):
-                contour_reshaped = contour.reshape((len(contour), 2))
-                poly = Polygon(contour_reshaped)
-                required_area = poly.area
+            for contour_idx, contour_data in enumerate(contour_data_list):
 
                 # If more then 4 contour points then search for rectangles
+                poly = contour_data['poly']
+                contour = contour_data['contour']
                 rectangles = [contour]
                 if len(contour) > 4:
-                    rectangles, _ = MathUtil.get_rectangles(contour_reshaped, poly)
+                    rectangles, _ = MathUtil.get_rectangles(contour, poly)
 
                 # Calc data for each rectangle required in the find blocks method
                 rectangles_with_data = []
@@ -59,11 +77,12 @@ class LevelImgDecoder:
 
                 # Select the blocks and designate the correct contour color as material
                 selected_blocks = self.select_blocks(rectangles = rect_dict, used_blocks = [],
-                                                     required_area = required_area)
-                # if selected_blocks is None:
-                #     selected_blocks = self.select_blocks(rectangles = rect_dict, used_blocks = [],
-                #                                          required_area = required_area)
-                # raise Exception('No Block Selected')
+                                                     required_area = contour_data['required_area'])
+                if selected_blocks is None:
+                    selected_blocks = self.select_blocks(rectangles = rect_dict, used_blocks = [],
+                                                         required_area = contour_data['required_area'])
+                    raise Exception('No Block Selected')
+
                 if selected_blocks is not None:
                     for selected_block in selected_blocks:
                         selected_block['material'] = contour_color
@@ -122,17 +141,18 @@ class LevelImgDecoder:
                 continue
 
             # Search for matching block sizes
-            for possible_block in self.block_data:
-                width_diff = abs(possible_block['width'] / rec['width'] - 1)
-                height_diff = abs(possible_block['height'] / rec['height'] - 1)
+            for block_idx, block in self.block_data.items():
+                block_width, block_height = block['dim']
+                width_diff = abs(block_width / rec['width'] - 1)
+                height_diff = abs(block_height / rec['height'] - 1)
 
-                if width_diff > possible_block['width_compare'] or height_diff > possible_block['height_compare']:
+                if width_diff > 0.001 or height_diff > 0.001:
                     continue
 
                 next_rectangles = rectangles.copy()
                 del next_rectangles[rec_idx]
                 new_block = dict(
-                    block_type = possible_block,
+                    block_type = block,
                     rec = rec
                 )
 
@@ -152,33 +172,37 @@ class LevelImgDecoder:
             # That means it consists out of multiple smaller one
             # Divide the area into divisions of possible blocks
 
-            # for rec_idx, rec in rectangles.items():
-            # Only work with fitting blocks
-            fitting_blocks = list(
-                filter(lambda _block: _block['height'] / rec['height'] - 1 < _block['height_compare'] and
-                                      _block['width'] / rec['width'] - 1 < _block['width_compare'], self.block_data))
-
-            # No combination found for this block
-            if len(fitting_blocks) == 0:
-                continue
-
             # Go over both orientations
-            for (idx_1, primary_orientation), (idx_2, secondary_orientation) in [((1, 'height'), (0, 'width')),
-                                                                                 ((0, 'width'), (1, 'height'))]:
+            for (idx_1, primary_orientation), (idx_2, secondary_orientation) in \
+                    [((1, 'height'), (0, 'width')), ((0, 'width'), (1, 'height'))]:
+
+                # for rec_idx, rec in rectangles.items():
+                # Only work with fitting blocks
+                fitting_blocks = {
+                    k: _block for k, _block in self.block_data.items()
+                    if _block[primary_orientation] + 2 / rec[primary_orientation] - 1 < 0.001
+                }
+
+                # No combination found for this block
+                if len(fitting_blocks) == 0:
+                    continue
+
 
                 for combination_amount in range(2, 5):
-                    combinations = itertools.product(fitting_blocks, repeat = 2)
+                    combinations = itertools.product(fitting_blocks.items(), repeat = 2)
                     to_big_counter = 0
                     for combination in combinations:
-                        secondary_size = combination[0][secondary_orientation]
+
+                        secondary_size = combination[0][1][secondary_orientation]
 
                         # Only elements with the same secondary_orientation
-                        if np.sum(list(map(lambda block: block[secondary_orientation] - secondary_size,
+                        if np.sum(list(map(lambda block: block[1][secondary_orientation] - secondary_size,
                                            combination))) > 0.01:
                             continue
 
                         # Check if the two blocks combined can fit in the space
-                        combined_height = np.sum(list(map(lambda block: block[primary_orientation], combination)))
+                        combined_height = np.sum(list(map(lambda block: block[1][primary_orientation], combination)))
+
                         height_difference = rec[primary_orientation] / combined_height
                         if abs(height_difference - 1) < 1 / rec[primary_orientation]:
                             # the two blocks fit in the space
@@ -188,8 +212,7 @@ class LevelImgDecoder:
                             # If so create a new rectangle there
                             # Or if the horizontal space is not filled then create a rec there
                             all_space_used = True
-                            if rec[secondary_orientation] / secondary_size - 1 > max(0.1,
-                                                                                     1 / rec[secondary_orientation]):
+                            if rec[secondary_orientation] / secondary_size - 1 > 0.001:
                                 rectangle = np.ndarray.copy(rec['rectangle'])
                                 rectangle[0][idx_2] += secondary_size
                                 rectangle[1][idx_2] += secondary_size
@@ -202,20 +225,20 @@ class LevelImgDecoder:
                             next_used_blocks = used_blocks.copy()
                             start_value = ry_1 if primary_orientation == 'height' else rx_1
                             used_area = 0
-                            for block in combination:
+                            for block_idx, block in combination:
                                 block_rectangle = np.ndarray.copy(rec['rectangle'])
                                 block_rectangle[1][idx_1] = start_value
                                 block_rectangle[2][idx_1] = start_value
 
-                                block_rectangle[0][idx_1] = start_value + block[f'block_{primary_orientation}']
-                                block_rectangle[3][idx_1] = start_value + block[f'block_{primary_orientation}']
+                                block_rectangle[0][idx_1] = start_value + block[f'{primary_orientation}']
+                                block_rectangle[3][idx_1] = start_value + block[f'{primary_orientation}']
                                 new_block = dict(
                                     block_type = block,
                                     rec = self.create_rect_dict(block_rectangle)
                                 )
                                 next_used_blocks.append(new_block)
                                 used_area += block['area']
-                                start_value += block[f'block_{primary_orientation}']
+                                start_value += block[f'{primary_orientation}']
 
                             # Remove the current big rectangle
                             del next_rectangles[rec_idx]
@@ -245,11 +268,11 @@ class LevelImgDecoder:
         block_idx = 0
         for block_idx, block in enumerate(blocks):
             block_attribute = dict(
-                type = block['block_type']['block_name'],
+                type = block['block_type']['name'],
                 material = Constants.materials[block['material'] - 1],
                 x = np.average(block['rec']['rectangle'][:, 0]) * Constants.resolution,
                 y = np.average(block['rec']['rectangle'][:, 1]) * Constants.resolution * -1,
-                rotation = 90 if block['block_type']['block_rotated'] else 0
+                rotation = 90 if block['block_type']['rotated'] else 0
             )
             element = LevelElement(id = block_idx, **block_attribute)
             ret_level_elements.append(element)
@@ -281,10 +304,18 @@ class LevelImgDecoder:
         top_value = np.max(level_img_8)
         bottom_value = np.min(level_img_8)
 
+        no_birds = False
+        if top_value == bottom_value + 1:
+            no_birds = True
+
+        ax_plot_positions = [['original', 'original', 'original']] + \
+                            [[f'thresh_{i}', f'rectangle_{i}', f'decoded_{i}']
+                             for i in range(bottom_value + 1, top_value - (-1 if no_birds else + 1))]
+        if not no_birds:
+            ax_plot_positions += [[f'pig_thresh', f'eroded', f'positions']]
+
         fig, axd = plt.subplot_mosaic(
-            [['original', 'original', 'original']] +
-            [[f'thresh_{i}', f'rectangle_{i}', f'decoded_{i}'] for i in range(bottom_value + 1, top_value - 1)] +
-            [[f'pig_thresh', f'eroded', f'positions']],
+            ax_plot_positions,
             dpi = 300,
             figsize = (8, 10)
         )
@@ -292,7 +323,7 @@ class LevelImgDecoder:
         axd['original'].imshow(level_img_8)
         axd['original'].axis('off')
 
-        for color_idx in range(bottom_value + 1, top_value - 1):
+        for color_idx in range(bottom_value + 1, top_value - (-1 if no_birds else + 1)):
             axs = [axd[ax_name] for ax_name in
                    [f'thresh_{color_idx}', f'rectangle_{color_idx}', f'decoded_{color_idx}']]
 
@@ -300,8 +331,9 @@ class LevelImgDecoder:
             for ax in axs:
                 ax.axis('off')
 
-        axs = [axd[ax_name] for ax_name in [f'pig_thresh', f'eroded', f'positions']]
-        self.visualize_pig_position(level_img, axs = axs)
+        if not no_birds:
+            axs = [axd[ax_name] for ax_name in [f'pig_thresh', f'eroded', f'positions']]
+            self.visualize_pig_position(level_img, axs = axs)
 
         plt.tight_layout()
         plt.show()
@@ -341,21 +373,6 @@ class LevelImgDecoder:
             contour_list = list(contour)
             if len(contour) > 4:
                 rectangles, contour_list = MathUtil.get_rectangles(contour_reshaped, poly)
-
-            def rec_filter(_rectangle):
-                _rectangle = _rectangle.reshape((4, 2))
-                rec_data = MathUtil.get_contour_dims(_rectangle)
-                if rec_data['width'] <= 2:
-                    return False
-                if rec_data['height'] <= 2:
-                    return False
-                return True
-
-            #
-            # print(f"Rectangle Count 1: {len(rectangles)}")
-            rectangles = list(filter(rec_filter, rectangles))
-            # print(f"Rectangle Count 2: {len(rectangles)}")
-            # print(f"\n")
 
             hsv = plt.get_cmap('brg')
             dot_colors = hsv(np.linspace(0, 0.8, len(contour_list)))

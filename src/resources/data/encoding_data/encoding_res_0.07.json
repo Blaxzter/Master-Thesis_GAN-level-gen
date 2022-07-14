@@ -5,6 +5,8 @@
         "rotated": false,
         "area": 121,
         "poly_area": 121.0,
+        "width": 11,
+        "height": 11,
         "dim": [
             11,
             11
@@ -15,171 +17,195 @@
         ]
     },
     "1": {
-        "name": "RectFat",
-        "rotated": false,
-        "area": 55,
-        "poly_area": 55.0,
-        "dim": [
-            5,
-            11
-        ],
-        "orig_dim": [
-            0.85,
-            0.43
-        ]
-    },
-    "2": {
-        "name": "RectFat",
-        "rotated": true,
-        "area": 55,
-        "poly_area": 55.0,
-        "dim": [
-            11,
-            5
-        ],
-        "orig_dim": [
-            0.43,
-            0.85
-        ]
-    },
-    "3": {
-        "name": "SquareSmall",
-        "rotated": false,
-        "area": 25,
-        "poly_area": 25.0,
-        "dim": [
-            5,
-            5
-        ],
-        "orig_dim": [
-            0.43,
-            0.43
-        ]
-    },
-    "4": {
-        "name": "SquareTiny",
-        "rotated": false,
-        "area": 4,
-        "poly_area": 4.0,
-        "dim": [
-            2,
-            2
-        ],
-        "orig_dim": [
-            0.22,
-            0.22
-        ]
-    },
-    "5": {
-        "name": "RectTiny",
-        "rotated": false,
-        "area": 10,
-        "poly_area": 10.0,
-        "dim": [
-            2,
-            5
-        ],
-        "orig_dim": [
-            0.43,
-            0.22
-        ]
-    },
-    "6": {
-        "name": "RectTiny",
-        "rotated": true,
-        "area": 10,
-        "poly_area": 10.0,
-        "dim": [
-            5,
-            2
-        ],
-        "orig_dim": [
-            0.22,
-            0.43
-        ]
-    },
-    "7": {
-        "name": "RectSmall",
-        "rotated": false,
-        "area": 22,
-        "poly_area": 22.0,
-        "dim": [
-            2,
-            11
-        ],
-        "orig_dim": [
-            0.85,
-            0.22
-        ]
-    },
-    "8": {
-        "name": "RectSmall",
-        "rotated": true,
-        "area": 22,
-        "poly_area": 22.0,
-        "dim": [
-            11,
-            2
-        ],
-        "orig_dim": [
-            0.22,
-            0.85
-        ]
-    },
-    "9": {
-        "name": "RectMedium",
-        "rotated": false,
-        "area": 46,
-        "poly_area": 46.0,
-        "dim": [
-            2,
-            23
-        ],
-        "orig_dim": [
-            1.68,
-            0.22
-        ]
-    },
-    "10": {
-        "name": "RectMedium",
-        "rotated": true,
-        "area": 46,
-        "poly_area": 46.0,
-        "dim": [
-            23,
-            2
-        ],
-        "orig_dim": [
-            0.22,
-            1.68
-        ]
-    },
-    "11": {
         "name": "RectBig",
         "rotated": false,
         "area": 56,
         "poly_area": 56.0,
+        "width": 28,
+        "height": 2,
         "dim": [
-            2,
-            28
+            28,
+            2
         ],
         "orig_dim": [
             2.06,
             0.22
         ]
     },
-    "12": {
+    "2": {
         "name": "RectBig",
         "rotated": true,
         "area": 56,
         "poly_area": 56.0,
+        "width": 2,
+        "height": 28,
         "dim": [
-            28,
-            2
+            2,
+            28
         ],
         "orig_dim": [
             0.22,
             2.06
+        ]
+    },
+    "3": {
+        "name": "RectFat",
+        "rotated": false,
+        "area": 55,
+        "poly_area": 55.0,
+        "width": 11,
+        "height": 5,
+        "dim": [
+            11,
+            5
+        ],
+        "orig_dim": [
+            0.85,
+            0.43
+        ]
+    },
+    "4": {
+        "name": "RectFat",
+        "rotated": true,
+        "area": 55,
+        "poly_area": 55.0,
+        "width": 5,
+        "height": 11,
+        "dim": [
+            5,
+            11
+        ],
+        "orig_dim": [
+            0.43,
+            0.85
+        ]
+    },
+    "5": {
+        "name": "RectMedium",
+        "rotated": false,
+        "area": 46,
+        "poly_area": 46.0,
+        "width": 23,
+        "height": 2,
+        "dim": [
+            23,
+            2
+        ],
+        "orig_dim": [
+            1.68,
+            0.22
+        ]
+    },
+    "6": {
+        "name": "RectMedium",
+        "rotated": true,
+        "area": 46,
+        "poly_area": 46.0,
+        "width": 2,
+        "height": 23,
+        "dim": [
+            2,
+            23
+        ],
+        "orig_dim": [
+            0.22,
+            1.68
+        ]
+    },
+    "7": {
+        "name": "SquareSmall",
+        "rotated": false,
+        "area": 25,
+        "poly_area": 25.0,
+        "width": 5,
+        "height": 5,
+        "dim": [
+            5,
+            5
+        ],
+        "orig_dim": [
+            0.43,
+            0.43
+        ]
+    },
+    "8": {
+        "name": "RectSmall",
+        "rotated": false,
+        "area": 22,
+        "poly_area": 22.0,
+        "width": 11,
+        "height": 2,
+        "dim": [
+            11,
+            2
+        ],
+        "orig_dim": [
+            0.85,
+            0.22
+        ]
+    },
+    "9": {
+        "name": "RectSmall",
+        "rotated": true,
+        "area": 22,
+        "poly_area": 22.0,
+        "width": 2,
+        "height": 11,
+        "dim": [
+            2,
+            11
+        ],
+        "orig_dim": [
+            0.22,
+            0.85
+        ]
+    },
+    "10": {
+        "name": "RectTiny",
+        "rotated": false,
+        "area": 10,
+        "poly_area": 10.0,
+        "width": 5,
+        "height": 2,
+        "dim": [
+            5,
+            2
+        ],
+        "orig_dim": [
+            0.43,
+            0.22
+        ]
+    },
+    "11": {
+        "name": "RectTiny",
+        "rotated": true,
+        "area": 10,
+        "poly_area": 10.0,
+        "width": 2,
+        "height": 5,
+        "dim": [
+            2,
+            5
+        ],
+        "orig_dim": [
+            0.22,
+            0.43
+        ]
+    },
+    "12": {
+        "name": "SquareTiny",
+        "rotated": false,
+        "area": 4,
+        "poly_area": 4.0,
+        "width": 2,
+        "height": 2,
+        "dim": [
+            2,
+            2
+        ],
+        "orig_dim": [
+            0.22,
+            0.22
         ]
     }
 }

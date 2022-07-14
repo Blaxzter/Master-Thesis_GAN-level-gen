@@ -41,7 +41,7 @@ class LevelImgEncoder:
 
         coordinate_lists = np.array([[element.x, element.y] for element in working_list])
 
-        for i, y_cord in tqdm(enumerate(y_cords), total = len(y_cords)):
+        for i, y_cord in enumerate(y_cords):
             for j, x_cord in enumerate(x_cords):
                 in_location = []
 

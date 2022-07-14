@@ -2,6 +2,7 @@ import numpy as np
 from loguru import logger
 
 from converter.to_img_converter.LevelImgEncoder import LevelImgEncoder
+from level import Constants
 from level.LevelElement import LevelElement
 from level.LevelUtil import calc_structure_meta_data, calc_structure_dimensions
 from util import RunConfig
@@ -132,23 +133,24 @@ class Level:
 
         self.is_normalized = True
 
-    def print_elements(self, as_table = False):
+    def print_elements(self, as_table = False, group_by_material = True):
+        logger.debug(f"Print level: {self.path}")
+
         if not as_table:
             for element in self.blocks + self.pigs + self.platform:
                 logger.debug(element)
         else:
             from tabulate import tabulate
 
-            data = [[
-                element.type,
-                element.material,
-                element.x,
-                element.y,
-                element.rotation,
-                element.size
-            ] for element in self.blocks + self.pigs + self.platform]
+            level_data = [[element.type, element.material, element.x, element.y, element.rotation, element.size] for
+                         element in self.blocks + self.pigs + self.platform]
+            data = sorted(
+                level_data,
+                key = lambda entry: (Constants.materials.index(entry[1])
+                if group_by_material and entry[1] != '' else 4, entry[2])
+            )
 
-            logger.debug(tabulate(data, headers = ["type", "material", "x", "y", "rotation", "sizes"]))
+            print(tabulate(data, headers = ["type", "material", "x", "y", "rotation", "sizes"]))
 
     def contains_od_rotation(self):
 
@@ -207,3 +209,14 @@ class Level:
     def get_level_metadata(self):
         current_elements = self.get_used_elements()
         return calc_structure_meta_data(current_elements)
+
+
+    @staticmethod
+    def create_level_from_structure(level_elements: [LevelElement]):
+        ret_level = Level(path = 'created')
+        for level_element in level_elements:
+            ret_level[level_element.object_type.name].append(
+                level_element
+            )
+
+        return ret_level

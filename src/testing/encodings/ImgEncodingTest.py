@@ -100,4 +100,4 @@ def compare_encodings(level, test_environment):
     plt.show()
 
 if __name__ == '__main__':
-    img_encoding_test()
+    create_encodings()

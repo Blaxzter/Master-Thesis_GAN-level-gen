@@ -21,7 +21,7 @@ config = Config.get_instance()
 
 def create_element_for_each_block(x_offset = 0, y_offset = 0):
     """
-    Creates structure list of each block type
+        Creates structure list of each block type
     """
     elements = []
     start_x = 0
@@ -198,13 +198,15 @@ def create_decoding_data():
     data_dict = dict()
 
     elements, sizes = create_element_for_each_block()
-    level_rep, cord_list = level_img_encoder.create_calculated_img(elements)
+    level_rep = level_img_encoder.create_calculated_img(elements)
 
     recs = level_img_decoder.get_rectangles(np.pad(level_rep, 0))
     recs = sorted(recs, key = lambda x: x['min_x'])
     for block_idx, block in enumerate(sizes):
         for key, value in block.items():
             recs[block_idx][f'block_{key}'] = value
+
+    recs = sorted(recs, key = lambda x: (-x['area'], -x['width']))
 
     data_dict['resolution'] = Constants.resolution
     for rec_idx, rec_data in enumerate(recs):
@@ -213,11 +215,14 @@ def create_decoding_data():
             rotated = rec_data['block_rotated'],
             area = rec_data['area'],
             poly_area = rec_data['contour_area'],
-            dim = (rec_data['height'], rec_data['width']),
+            width = rec_data['width'],
+            height = rec_data['height'],
+            dim = (rec_data['width'], rec_data['height']),
             orig_dim = (rec_data['block_orig_width'], rec_data['block_orig_height'])
         )
 
     pickle_data = config.get_encoding_data(f"encoding_res_{Constants.resolution}")
+
     if type(pickle_data) != str:
         ic(pickle_data)
     else:
