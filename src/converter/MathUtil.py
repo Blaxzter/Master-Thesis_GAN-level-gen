@@ -1,3 +1,4 @@
+from level.Constants import resolution
 import itertools
 
 import numpy as np
@@ -130,8 +131,12 @@ def create_new_points(contour_list: list):
                     contour_list.insert(idx_2 + 1, np.asarray(cord))
         counter_1 += 1
 
-
     added_points = []
+
+    global_closest = 1000
+    points = np.asarray(contour_list)
+    for point_idx, point in enumerate(points):
+        global_closest = np.min([np.min(np.linalg.norm(np.delete(points, point_idx, axis = 0) - point, axis = 1)), global_closest])
 
     counter_1 = 0
     while counter_1 < len(contour_list):
@@ -178,23 +183,72 @@ def create_new_points(contour_list: list):
 
             cord_array = np.asarray(cord)
             # Check if the point exists allready
-            if len(added_points) > 0 and np.min(np.linalg.norm(np.asarray(added_points) - cord_array, axis = 1)) < 0.01:
-                counter_1 += 1
-                continue
+
+            min_distance = np.inf
+
+            if len(added_points) > 0:
+                min_distance = np.min(np.linalg.norm(np.asarray(added_points) - cord_array, axis = 1))
+                if min_distance < 0.01:
+                    counter_1 += 1
+                    continue
+
+            if global_closest > min_distance:
+                global_closest = min_distance
 
             # If its on the first line then insert it between the first and second
             if not isnt_on_first_line:
-                contour_list.insert(p1_idx_1 + 1, cord_array)
+
+                direct_vec = (p1_2 - p1_1) * (1 / np.linalg.norm(p1_2 - p1_1)) * global_closest
+
+                add_point(cord_array - direct_vec, contour_list + added_points, added_points)
+                added_points.append(cord_array)
+                add_point(cord_array + direct_vec, contour_list + added_points, added_points)
+
             else:
                 # Otherwise between the second two points
-                contour_list.insert(p2_idx_1 + 1, cord_array)
+                direct_vec = (p2_2 - p2_1) * (1 / np.linalg.norm(p2_2 - p2_1)) * global_closest
 
-            added_points.append(cord_array)
+                add_point(cord_array - direct_vec, contour_list + added_points, added_points)
+                added_points.append(cord_array)
+                add_point(cord_array + direct_vec, contour_list + added_points, added_points)
 
-            print(p1_idx_1, cord, p2_idx_1)
             counter_2 += 2
 
         counter_1 += 1
+
+    added_points = np.asarray(added_points)
+
+    contour_list_copy = contour_list.copy()
+    if len(added_points) != 0:
+        counter_1 = 0
+        # Insert dots into contour ring at right positions
+        added_points_counter = 0
+        to_be_added_points = len(added_points)
+        while counter_1 < len(contour_list_copy):
+            (idx_1, p1), (idx_2, p2) = get_next_line(contour_list_copy, idx = counter_1)
+
+            d_1 = np.linalg.norm(added_points - p1, axis = 1)
+            d_2 = np.linalg.norm(added_points - p2, axis = 1)
+            select_mask = d_1 + d_2 - np.linalg.norm(p2 - p1) < 0.01
+
+            points_on_line = added_points[select_mask]
+
+            for new_point_idx, point_idx in enumerate(np.argsort(d_1[select_mask])):
+                contour_list.insert(idx_1 + new_point_idx + 1 + added_points_counter, points_on_line[point_idx])
+
+            added_points_counter += len(points_on_line)
+
+            added_points = added_points[~select_mask]
+            counter_1 += 1
+            if added_points_counter >= to_be_added_points:
+                break
+
+def add_point(new_point, previous_points, point_list):
+    min_distance = np.min(np.linalg.norm(np.asarray(previous_points) - new_point, axis = 1))
+    if min_distance > 0.01:
+        point_list.append(new_point)
+        return True
+    return False
 
 
 # https://stackoverflow.com/questions/434287/what-is-the-most-pythonic-way-to-iterate-over-a-list-in-chunks

@@ -14,7 +14,8 @@ def decode_test_level():
     test_elements, _ = create_element_for_each_block()
     test_level = Level.create_level_from_structure(test_elements)
     img_rep = create_encoding(test_level)
-    create_decoding(img_rep)
+    create_rectangles(img_rep)
+
 
 def img_encoding_decoding_test():
     test_environment = TestEnvironment('generated/single_structure')
@@ -23,17 +24,23 @@ def img_encoding_decoding_test():
         level.print_elements(as_table = True)
 
         img_rep = create_encoding(level)
-        create_decoding(img_rep)
+        create_rectangles(img_rep)
         break
 
 
-def create_decoding(img_rep):
+def create_rectangles(img_rep):
     level_img_decoder = LevelImgDecoder()
-    decoded_level = level_img_decoder.visualize_contours(img_rep)
+    # decoded_level = level_img_decoder.visualize_contours(img_rep)
     # level_img_decoder.visualize_rectangles(img_rep, material_id = 1)
-    # level_img_decoder.visualize_rectangles(img_rep, material_id = 2)
+    level_img_decoder.visualize_rectangles(img_rep, material_id = 2)
     # level_img_decoder.visualize_rectangles(img_rep, material_id = 3)
-    pass
+
+
+def visualize_decoding(img_rep):
+    level_img_decoder = LevelImgDecoder()
+    level_img_decoder.visualize_one_decoding(img_rep, material_id = 1)
+    level_img_decoder.visualize_one_decoding(img_rep, material_id = 2)
+    # level_img_decoder.visualize_rectangles(img_rep, material_id = 3)
 
 
 def create_encoding(level):

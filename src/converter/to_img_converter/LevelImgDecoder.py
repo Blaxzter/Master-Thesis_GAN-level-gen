@@ -327,7 +327,7 @@ class LevelImgDecoder:
             axs = [axd[ax_name] for ax_name in
                    [f'thresh_{color_idx}', f'rectangle_{color_idx}', f'decoded_{color_idx}']]
 
-            self.visualize_one_decoding(level_img, contour_color = color_idx, axs = axs)
+            self.visualize_one_decoding(level_img, material_id = color_idx, axs = axs)
             for ax in axs:
                 ax.axis('off')
 
@@ -338,7 +338,7 @@ class LevelImgDecoder:
         plt.tight_layout()
         plt.show()
 
-    def visualize_one_decoding(self, level_img, contour_color = 0, axs = None):
+    def visualize_one_decoding(self, level_img, material_id = 0, axs = None):
 
         level_img_8 = level_img.astype(np.uint8)
         original_img = level_img_8.copy()
@@ -354,7 +354,7 @@ class LevelImgDecoder:
             axs[axs_idx].axis('off')
             axs_idx += 1
 
-        level_img_8[level_img_8 != contour_color] = 0
+        level_img_8[level_img_8 != material_id] = 0
         contours, _ = cv2.findContours(level_img_8, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
         contour_viz = level_img_8.copy()
@@ -379,9 +379,8 @@ class LevelImgDecoder:
             for dot_idx, (contour_point, dot_color) in enumerate(zip(contour_list, dot_colors)):
                 point_flatten = contour_point.flatten()
                 if len(contour_list) < 12:
-                    axs[axs_idx].text(point_flatten[0] + 2, point_flatten[1], str(dot_idx), color = dot_color,
-                                      fontsize = 6,
-                                      ha = 'center', va = 'center')
+                    axs[axs_idx].text(point_flatten[0], point_flatten[1], str(dot_idx), color = 'white',
+                                      fontsize = 3, ha = 'center', va = 'center')
                 dot = patches.Circle(point_flatten, 0.4)
                 dot.set_facecolor(dot_color)
                 axs[axs_idx].add_patch(dot)
@@ -428,7 +427,7 @@ class LevelImgDecoder:
             # raise Exception("No Block Selected")
             if selected_blocks is not None:
                 for selected_block in selected_blocks:
-                    selected_block['material'] = contour_color
+                    selected_block['material'] = material_id
                 blocks.append(selected_blocks)
 
         # Maybe do a bit of block adjustment to fit better
@@ -488,7 +487,7 @@ class LevelImgDecoder:
         show_img = False
         if axs is None:
             show_img = True
-            fig, axs = plt.subplots(1, 3, dpi = 300, figsize = (12, 3))
+            fig, axs = plt.subplots(1, 3, dpi = 500, figsize = (12, 3))
 
         axs[0].set_title("Original Dots")
         axs[0].imshow(current_img)
@@ -513,8 +512,8 @@ class LevelImgDecoder:
             for dot_idx, (contour_point, dot_color) in enumerate(zip(contour_list, dot_colors)):
                 point_flatten = contour_point.flatten()
                 if len(contour_list) < 12:
-                    axs[0].text(point_flatten[0] + 2, point_flatten[1], str(dot_idx), color = dot_color,
-                                fontsize = 4, ha = 'center', va = 'center')
+                    axs[0].text(point_flatten[0], point_flatten[1], str(dot_idx), color = 'white',
+                                fontsize = 2.5, ha = 'center', va = 'center')
                 dot = patches.Circle(point_flatten, 0.4)
                 dot.set_facecolor(dot_color)
                 axs[0].add_patch(dot)
@@ -525,9 +524,8 @@ class LevelImgDecoder:
             dot_colors = hsv(np.linspace(0, 0.8, len(contour_list)))
             for dot_idx, (contour_point, dot_color) in enumerate(zip(contour_list, dot_colors)):
                 point_flatten = contour_point.flatten()
-                if len(contour_list) < 12:
-                    axs[1].text(point_flatten[0] + 2, point_flatten[1], str(dot_idx), color = dot_color,
-                                fontsize = 4, ha = 'center', va = 'center')
+                axs[1].text(point_flatten[0], point_flatten[1], str(dot_idx), color = 'white',
+                            fontsize = 2.5, ha = 'center', va = 'center')
                 dot = patches.Circle(point_flatten, 0.4)
                 dot.set_facecolor(dot_color)
                 axs[1].add_patch(dot)
@@ -550,7 +548,7 @@ class LevelImgDecoder:
             plt.tight_layout()
             plt.show()
 
-    def visualize_rectangle(self, level_img, material_id, ax):
+    def visualize_rectangle(self, level_img, material_id, ax = None):
         """
         Visualizes the rectangles of one level img
         """
