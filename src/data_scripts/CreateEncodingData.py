@@ -19,7 +19,7 @@ from util.Config import Config
 config = Config.get_instance()
 
 
-def create_element_for_each_block(x_offset = 0, y_offset = 0):
+def create_element_for_each_block(direction = 'height', stacked = 0, x_offset = 0, y_offset = 0):
     """
         Creates structure list of each block type
     """

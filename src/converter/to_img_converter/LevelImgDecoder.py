@@ -29,9 +29,13 @@ class LevelImgDecoder:
         top_value = np.max(level_img_8)
         bottom_value = np.min(level_img_8)
 
+        no_birds = False
+        if top_value == bottom_value + 1:
+            no_birds = True
+
         ret_blocks = []
         # Go over each contour color
-        for contour_color in range(bottom_value + 1, top_value):
+        for contour_color in range(bottom_value + 1, top_value - (-1 if no_birds else + 0)):
 
             # Get the contour through open cv
             current_img = np.copy(level_img_8)
@@ -92,7 +96,10 @@ class LevelImgDecoder:
         # Only required between selected blocks i guess :D
 
         flattend_blocks = list(itertools.chain(*ret_blocks))
-        pig_positions = self.get_pig_position(level_img)
+
+        pig_positions = []
+        if not no_birds:
+            pig_positions = self.get_pig_position(level_img)
 
         # Create block elements out of the possible blocks and the rectangle
         level_elements = self.create_level_elements(flattend_blocks, pig_positions)
@@ -412,19 +419,16 @@ class LevelImgDecoder:
             for rec_idx, rec in enumerate(rectangles):
                 rect_dict[rec_idx] = rec
 
-            selected_blocks = self.select_blocks(rectangles = rect_dict.copy(), used_blocks = [],
-                                                 required_area = required_area)
+            selected_blocks = self.select_blocks(
+                rectangles = rect_dict.copy(), used_blocks = [], required_area = required_area
+            )
 
 
-            # if len(contour) > 5 and len(selected_blocks) == 3:
-            #     print(contour)
-            #     selected_blocks = self.select_blocks(rectangles = rect_dict, used_blocks = [],
-            #                                          required_area = required_area)
-            # if selected_blocks is None:
-            #     print(rect_dict)
-            #     print(len(contour))
-            #     selected_blocks = self.select_blocks(rectangles = rect_dict, used_blocks = [], required_area = required_area)
-            # raise Exception("No Block Selected")
+            if selected_blocks is None:
+                print(rect_dict)
+                print(len(contour))
+                selected_blocks = self.select_blocks(rectangles = rect_dict, used_blocks = [], required_area = required_area)
+                raise Exception("No Block Selected")
             if selected_blocks is not None:
                 for selected_block in selected_blocks:
                     selected_block['material'] = material_id

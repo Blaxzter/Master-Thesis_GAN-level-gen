@@ -1,12 +1,10 @@
-from pathlib import Path
-from time import sleep
-
 import matplotlib.pyplot as plt
 
 from converter.to_img_converter.LevelImgDecoder import LevelImgDecoder
 from converter.to_img_converter.LevelImgEncoder import LevelImgEncoder
 from data_scripts.CreateEncodingData import create_element_for_each_block
 from level.Level import Level
+from level.LevelVisualizer import LevelVisualizer
 from testing.TestEnvironment import TestEnvironment
 
 
@@ -14,7 +12,14 @@ def decode_test_level():
     test_elements, _ = create_element_for_each_block()
     test_level = Level.create_level_from_structure(test_elements)
     img_rep = create_encoding(test_level)
-    create_rectangles(img_rep)
+    level_img_decoder = LevelImgDecoder()
+    decoded_elements = level_img_decoder.decode_level(img_rep)
+    created_level = Level.create_level_from_structure(decoded_elements)
+    created_level.print_elements(as_table = True)
+
+    visualizer = LevelVisualizer()
+    visualizer.create_img_of_level(created_level, use_grid = False, add_dots = False)
+
 
 
 def img_encoding_decoding_test():
@@ -24,7 +29,7 @@ def img_encoding_decoding_test():
         level.print_elements(as_table = True)
 
         img_rep = create_encoding(level)
-        create_rectangles(img_rep)
+        visualize_decoding(img_rep)
         break
 
 
@@ -38,7 +43,7 @@ def create_rectangles(img_rep):
 
 def visualize_decoding(img_rep):
     level_img_decoder = LevelImgDecoder()
-    level_img_decoder.visualize_one_decoding(img_rep, material_id = 1)
+    # level_img_decoder.visualize_one_decoding(img_rep, material_id = 1)
     level_img_decoder.visualize_one_decoding(img_rep, material_id = 2)
     # level_img_decoder.visualize_rectangles(img_rep, material_id = 3)
 
@@ -71,4 +76,4 @@ def visualize_encoding(level):
 
 if __name__ == '__main__':
     # decode_test_level()
-    img_encoding_decoding_test()
+    decode_test_level()
