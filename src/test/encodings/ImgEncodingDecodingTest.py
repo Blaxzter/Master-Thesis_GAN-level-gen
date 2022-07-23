@@ -5,7 +5,7 @@ from converter.to_img_converter.LevelImgEncoder import LevelImgEncoder
 from data_scripts.CreateEncodingData import create_element_for_each_block
 from level.Level import Level
 from level.LevelVisualizer import LevelVisualizer
-from testing.TestEnvironment import TestEnvironment
+from test.TestEnvironment import TestEnvironment
 
 
 def decode_test_level():

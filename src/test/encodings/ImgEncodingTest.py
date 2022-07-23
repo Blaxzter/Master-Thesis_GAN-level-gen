@@ -3,9 +3,12 @@ from pathlib import Path
 from time import sleep
 
 import matplotlib.pyplot as plt
+from icecream import ic
 
+from converter.to_img_converter.LevelImgDecoder import LevelImgDecoder
 from converter.to_img_converter.LevelImgEncoder import LevelImgEncoder
-from testing.TestEnvironment import TestEnvironment
+from data_scripts.CreateEncodingData import create_element_for_each_block
+from test.TestEnvironment import TestEnvironment
 
 
 def img_encoding_test():
@@ -99,5 +102,70 @@ def compare_encodings(level, test_environment):
     plt.tight_layout()
     plt.show()
 
+
+def compare_stack_recs(direction = 'vertical', stacked = 4, x_offset = 0, y_offset = 0):
+    level_img_encoder = LevelImgEncoder()
+    level_img_decoder = LevelImgDecoder()
+
+    data = dict()
+
+    for stack in range(stacked):
+
+        elements, sizes = create_element_for_each_block(direction, stack + 1, x_offset, y_offset, diff_materials = True)
+
+        # Create the images
+        calc_img = level_img_encoder.create_calculated_img(elements)
+        recs = level_img_decoder.get_rectangles(calc_img, material_id = 2)
+
+        plt.imshow(calc_img)
+        plt.show()
+
+        recs = sorted(recs, key = lambda x: x['min_x'])
+        rec_data = dict()
+        for rec_idx, rec in enumerate(recs):
+            rec_data[rec_idx] = (rec['height'], rec['width'])
+
+        data[stack] = rec_data
+
+    for stack in range(1, stacked):
+        print_string = ""
+        for rec_idx, rec in data[0].items():
+            y1, x1 = rec
+            y2, x2 = data[stack][rec_idx]
+
+            print_string += f'({y2 - (y1)}, {x2 - x1}) '
+
+        print(print_string)
+
+def compare_material_recs(direction = 'vertical', stacked = 3, x_offset = 0, y_offset = 0):
+    level_img_encoder = LevelImgEncoder()
+    level_img_decoder = LevelImgDecoder()
+
+    data = dict()
+
+    elements, sizes = create_element_for_each_block(direction, stacked, x_offset, y_offset, diff_materials = True)
+    calc_img = level_img_encoder.create_calculated_img(elements)
+
+    for material in range(stacked):
+        # Create the images
+        recs = level_img_decoder.get_rectangles(calc_img, material_id = material + 1)
+
+        recs = sorted(recs, key = lambda x: x['min_x'])
+        rec_data = dict()
+        for rec_idx, rec in enumerate(recs):
+            rec_data[rec_idx] = (rec['height'], rec['width'])
+
+        data[material] = rec_data
+
+    for material in range(1, stacked):
+        print_string = ""
+        for rec_idx, rec in data[0].items():
+            y1, x1 = rec
+            y2, x2 = data[material][rec_idx]
+
+            print_string += f'({y2 - (y1)}, {x2 - x1}) '
+
+        print(print_string)
+
 if __name__ == '__main__':
-    create_encodings()
+    compare_stack_recs()

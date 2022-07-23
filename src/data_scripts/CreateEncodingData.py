@@ -14,18 +14,25 @@ from game_management.GameManager import GameManager
 from level import Constants
 from level.LevelElement import LevelElement
 from level.LevelVisualizer import LevelVisualizer
+from util import Utils
 from util.Config import Config
 
 config = Config.get_instance()
 
 
-def create_element_for_each_block(direction = 'height', stacked = 0, x_offset = 0, y_offset = 0):
+def create_element_for_each_block(direction = 'vertical', stacked = 1, x_offset = 0, y_offset = 0, diff_materials = False):
     """
         Creates structure list of each block type
     """
     elements = []
     start_x = 0
     sizes = Constants.get_sizes(print_data = False)
+
+    if diff_materials:
+        materials = Constants.materials * (int(stacked / 3) + 1)
+    else:
+        materials = ['wood'] * stacked
+
     for idx, block in enumerate(sizes):
         index = list(Constants.block_names.values()).index(block['name']) + 1
         if block['rotated']:
@@ -33,18 +40,28 @@ def create_element_for_each_block(direction = 'height', stacked = 0, x_offset = 
         size = Constants.block_sizes[str(index)]
 
         start_x += size[0] / 2
-        block_attribute = dict(
-            type = block['name'],
-            material = "wood",
-            x = start_x,
-            y = size[1] / 2 + y_offset,
-            rotation = 90 if block['rotated'] else 0
-        )
-        element = LevelElement(id = idx, **block_attribute)
-        elements.append(element)
 
-        start_x += size[0] / 2 + Constants.resolution * 2 + x_offset * idx
-        element.shape_polygon = element.create_geometry()
+        vertical_stacked = 0
+        horizontal_stacked = 0
+        for stack_idx, stack in enumerate(range(stacked)):
+            block_attribute = dict(
+                type = block['name'],
+                material = materials[stack],
+                x = start_x + horizontal_stacked,
+                y = size[1] / 2 + y_offset + vertical_stacked,
+                rotation = 90 if block['rotated'] else 0
+            )
+            element = LevelElement(id = idx + stack_idx, **block_attribute)
+            element.shape_polygon = element.create_geometry()
+            elements.append(element)
+
+            if stack_idx != stacked - 1:
+                if direction == 'vertical':
+                    vertical_stacked += size[1]
+                elif direction == 'horizontal':
+                    horizontal_stacked += size[0]
+
+        start_x += size[0] / 2 + Constants.resolution * 2 + x_offset * idx + horizontal_stacked
 
     return elements, sizes
 
@@ -67,7 +84,7 @@ def get_debug_level():
         return level_img[0]
 
 
-def test_encoding_data(test_dot = True):
+def test_offesets(test_dot = False):
     """
     Creates the testing level with more and more space between the blocks.
     Searches for the rectangles in the img representation and compares
@@ -132,27 +149,27 @@ def test_encoding_data(test_dot = True):
     print(tabulate(data_list, headers = [' '] + list(offset_data.keys())))
 
 
-def visualize_encoding_data(viz_recs = True):
-    create_screen_shot = False
+def visualize_encoding_data(viz_recs = True, direction = 'vertical', stacked = 1, x_offset = 0, y_offset = 0, create_screen_shot = False, diff_materials = True):
 
     level_img_encoder = LevelImgEncoder()
     level_img_decoder = LevelImgDecoder()
     level_visualizer = LevelVisualizer()
-    elements, sizes = create_element_for_each_block()
+    elements, sizes = create_element_for_each_block(direction, stacked, x_offset, y_offset, diff_materials)
 
     # Create the images
-    dot_img = level_img_encoder.create_dot_img(elements)
-    calc_img = level_img_encoder.create_calculated_img(elements)
-    calc_img_no_size_check = level_img_encoder.create_calculated_img_no_size_check(elements)
+    dot_img, dot_time = Utils.timeit(level_img_encoder.create_dot_img, args = {'element_list': elements})
+    calc_img, calc_img_time = Utils.timeit(level_img_encoder.create_calculated_img, args = {'element_list': elements})
+    calc_img_no_size_check, calc_img_no_size_time = Utils.timeit(level_img_encoder.create_calculated_img_no_size_check,
+                                                                 args = {'element_list': elements})
 
-    fig = plt.figure(constrained_layout = True, dpi = 300)
+    fig = plt.figure(figsize = (6, 7), dpi = 300)
     fig.suptitle('Encoding Data Level')
-    # create 3x1 subfigs
-    subfigs = fig.subfigures(nrows = 4 + (1 if create_screen_shot else 0), ncols = 1)
 
-    ax = subfigs[0].subplots(nrows = 1, ncols = 1)
+    # create 3x1 subfigs
+    subfigs = fig.subfigures(nrows = 4, ncols = 1)
+
     if create_screen_shot:
-        axs = subfigs.subplots(nrows = 1, ncols = 2)
+        axs = subfigs[0].subplots(nrows = 1, ncols = 2)
         game_manager = GameManager(conf = config)
         game_manager.start_game()
 
@@ -161,30 +178,39 @@ def visualize_encoding_data(viz_recs = True):
         img = game_manager.get_img()
         axs[1].imshow(img)
         ax = axs[0]
+    else:
+        ax = subfigs[0].subplots(nrows = 1, ncols = 1)
 
     level_visualizer.create_img_of_structure(elements, scaled = False, ax = ax)
-    ax.set_title('No Size Reduction')
+    ax.set_title(f'No Size Reduction')
 
     iter_data = zip(subfigs[1:], [
-        {'img': dot_img, 'name': 'Dot Encoding'},
-        {'img': calc_img, 'name': 'Calculated Encoding'},
-        {'img': calc_img_no_size_check, 'name': 'Calculated Encoding No Size Checks'},
+        {'img': dot_img, 'name': 'Dot Encoding', 'time': dot_time},
+        {'img': calc_img, 'name': 'Calculated Encoding', 'time': calc_img_time},
+        {'img': calc_img_no_size_check, 'name': 'Calculated Encoding No Size Checks', 'time': calc_img_no_size_time},
     ])
 
     for subfig, data in iter_data:
         axs = subfig.subplots(nrows = 1, ncols = 2 if viz_recs else 1).flatten()
 
         if viz_recs:
-            subfig.suptitle(data['name'])
+            subfig.suptitle(data['name'] + f' time: {data["time"]}')
         else:
-            axs[0].set_title(data['name'])
+            axs[0].set_title(data['name'] + f' time: {data["time"]}')
 
         current_img = np.pad(data['img'], 2)
         axs[0].imshow(current_img)
         if viz_recs:
             level_img_decoder.visualize_rectangle(level_img = current_img, material_id = 1, ax = axs[1])
 
-    plt.subplots_adjust(hspace = 0.4)
+    plt.subplots_adjust(
+        left = 0.2,
+        bottom = 0.1,
+        right = 0.85,
+        top = 0.85,
+        wspace = 0.2,
+        hspace = 0.35
+    )
     plt.show()
 
     if create_screen_shot:
@@ -230,7 +256,6 @@ def create_decoding_data():
             f.write(json.dumps(data_dict, indent=4))
 
 
-
 def print_rect_data(recs):
     np.set_printoptions(threshold = sys.maxsize, linewidth = sys.maxsize)
     print(tabulate([[
@@ -267,6 +292,8 @@ def print_rect_data(recs):
 
 
 if __name__ == '__main__':
-    # visualize_encoding_data()
+    visualize_encoding_data(
+        viz_recs = True, direction = 'vertical', stacked = 2, x_offset = 0, y_offset = 0, create_screen_shot = False
+    )
     # test_encoding_data(test_dot = False)
-    create_decoding_data()
+    # create_decoding_data()

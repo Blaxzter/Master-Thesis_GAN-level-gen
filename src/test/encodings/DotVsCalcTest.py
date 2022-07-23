@@ -40,7 +40,6 @@ def leve_visualisation():
         parse_level.create_polygons()
 
         # game_manager.change_level(path = str(level_path))
-
         fig, ax = plt.subplots(1, 3, dpi = 300, figsize=(15, 5))
 
         # level_visualizer.visualize_screenshot(game_connection.create_level_img(structure = True), ax = ax[0])

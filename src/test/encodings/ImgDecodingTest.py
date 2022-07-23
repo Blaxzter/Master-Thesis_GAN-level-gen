@@ -3,7 +3,7 @@ import pickle
 
 from converter.to_img_converter.LevelImgDecoder import LevelImgDecoder
 from converter.to_img_converter.LevelImgEncoder import LevelImgEncoder
-from testing.TestEnvironment import TestEnvironment
+from test.TestEnvironment import TestEnvironment
 
 from util.Config import Config
 
