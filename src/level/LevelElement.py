@@ -115,9 +115,9 @@ class LevelElement:
 
     def get_identifier(self):
         if "Basic" in self.type:
-            return 5
+            return 4
         if "Platform" in self.type:
-            return 6
+            return 5
 
         return Constants.materials.index(self.material) + 1
 

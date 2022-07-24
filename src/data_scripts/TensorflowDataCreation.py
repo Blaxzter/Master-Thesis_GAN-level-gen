@@ -17,6 +17,9 @@ max_width = 115 + 1
 max_height = 128
 max_width = 128
 
+
+create_multi_dim_img = True
+
 # Take from tensorflow simple_gan tutorial
 def _bytes_feature(value):
     """Returns a bytes_list from a string / byte."""
@@ -65,12 +68,20 @@ def parse_single_data_example(data_example):
 
     padded_img_data = pad_image_to_size(img_data)
 
+    if create_multi_dim_img:
+        new_img = np.zeros((max_height, max_width, 4))
+        for i in range(4):
+            new_img[:, :, i][padded_img_data.reshape((128, 128)) == i + 1] = 1
+        new_img = new_img.astype(dtype = np.int16)
+    else:
+        new_img = padded_img_data
+
     data = {
         # Img data
-        'height': _int64_feature(padded_img_data.shape[0]),
-        'width': _int64_feature(padded_img_data.shape[1]),
-        'depth': _int64_feature(padded_img_data.shape[2]),
-        'raw_image': _bytes_feature(serialize_array(padded_img_data)),
+        'height': _int64_feature(new_img.shape[0]),
+        'width': _int64_feature(new_img.shape[1]),
+        'depth': _int64_feature(new_img.shape[2]),
+        'raw_image': _bytes_feature(serialize_array(new_img)),
 
         # Meta data
         'level_height': _float_feature(meta_data.height),
@@ -102,11 +113,11 @@ def parse_single_data_example(data_example):
 def create_tensorflow_data():
     config = Config.get_instance()
 
-    data_pickle = config.get_pickle_file(f"single_structure_full_filtered")
+    data_pickle = config.get_pickle_file(f"new_encoding_unified.pickle")
     with open(data_pickle, 'rb') as f:
         data_dict = pickle.load(f)
 
-    record_file = config.get_tf_records(dataset_name = f'filtered_single_structure_{max_width}_{max_height}')
+    record_file = config.get_tf_records(dataset_name = f'new_encoding_filtered_{max_width}_{max_height}')
     with tf.io.TFRecordWriter(record_file) as writer:
         for date_name, data_example in data_dict.items():
             tf_example = parse_single_data_example(data_example)

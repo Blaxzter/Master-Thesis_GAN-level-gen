@@ -137,6 +137,7 @@ def compare_stack_recs(direction = 'vertical', stacked = 4, x_offset = 0, y_offs
 
         print(print_string)
 
+
 def compare_material_recs(direction = 'vertical', stacked = 3, x_offset = 0, y_offset = 0):
     level_img_encoder = LevelImgEncoder()
     level_img_decoder = LevelImgDecoder()
@@ -163,7 +164,7 @@ def compare_material_recs(direction = 'vertical', stacked = 3, x_offset = 0, y_o
             y1, x1 = rec
             y2, x2 = data[material][rec_idx]
 
-            print_string += f'({y2 - (y1)}, {x2 - x1}) '
+            print_string += f'({y2 - y1}, {x2 - x1}) '
 
         print(print_string)
 

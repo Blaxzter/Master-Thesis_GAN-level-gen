@@ -1,6 +1,8 @@
 import json
 import os
 import pickle
+from collections import defaultdict
+from copy import copy
 from pathlib import Path
 
 import numpy as np
@@ -127,6 +129,7 @@ def visualize_shape(data: dict, max_height = 86, max_width = 212):
         width_count_dict[level_img_shape[1]] += 1
 
     fig, axs = plt.subplots(1, 2, dpi = 300, figsize = (9, 4))
+
     axs[0].bar(label_height, list(height_count_dict.values()))
     axs[0].set_title('Height distribution')
     axs[0].set_ylabel('Amount of levels')
@@ -225,31 +228,99 @@ def filter_level(data, out_file):
         pickle.dump(out_dict, handle, protocol = pickle.HIGHEST_PROTOCOL)
 
 
+def unify_level(data_dict, out_file):
+
+
+    fig, axs = plt.subplots(1, 3, dpi = 300, figsize = (12, 4))
+
+    height_groups = dict()
+    # Group level by height
+    for key in data_dict.keys():
+        level_data = data_dict[key]
+
+        level_img_shape = level_data['img_data'].shape
+        height = level_img_shape[0]
+        if height in height_groups:
+            height_groups[height].append((key, level_data))
+        else:
+            height_groups[height] = [(key, level_data)]
+
+
+    # merge close groups
+    axs[0].bar(list(height_groups.keys()), list(map(len, height_groups.values())))
+    axs[0].set_title(f'Before merging: {sum(list(map(len, height_groups.values())))}')
+    axs[0].set_ylabel('Amount of levels')
+    axs[0].set_xlabel('Height of Levels')
+
+    heights = sorted(list(height_groups.keys()))
+
+    out_dict = dict()
+    temp_list = []
+    for height_idx in range(len(heights) - 1):
+        height = heights[height_idx]
+
+        temp_list += height_groups[height]
+
+        if len(temp_list) > 50:
+            out_dict[height] = copy(temp_list)
+            temp_list = []
+
+    axs[1].bar(list(out_dict.keys()), list(map(len, out_dict.values())))
+    axs[1].set_title(f'After group merging: {sum(list(map(len, out_dict.values())))}')
+    axs[1].set_ylabel('Amount of levels')
+    axs[1].set_xlabel('Height of Levels')
+
+    avg_height = round(np.average(list(map(len, map(list, out_dict.values())))))
+    for key, amount in out_dict.items():
+        out_dict[key] = out_dict[key][:avg_height]
+
+    axs[2].bar(list(out_dict.keys()), list(map(len, out_dict.values())))
+    axs[2].set_title(f'After Unifying: {sum(list(map(len, out_dict.values())))}')
+    axs[2].set_ylabel('Amount of levels')
+    axs[2].set_xlabel('Height of Levels')
+
+    plt.show()
+
+    save_dict = dict()
+    for height, level_list in out_dict.items():
+        for key, level in level_list:
+            save_dict[key] = level
+
+    with open(out_file, 'wb') as handle:
+        pickle.dump(save_dict, handle, protocol = pickle.HIGHEST_PROTOCOL)
+
+
 if __name__ == '__main__':
+
+    root_pickle_file = 'new_encoding'
+
     config = Config.get_instance()
-    file_name = config.get_pickle_file(file_name = 'single_structure_full')
+    file_name = config.get_pickle_file(file_name = root_pickle_file)
 
     # data_dict = load_data("../resources/data/pickles/level_data_with_screenshot")
     # strip_screenshot_from_data(data_dict)
 
     data_dict = load_data(file_name)
-    parse_data(data_dict, config.get_pickle_file("single_structure_full_out"))
-    #
-    file_name = config.get_pickle_file(file_name = 'single_structure_full_out')
-    data_dict = load_data(file_name)
+    file_name = config.get_pickle_file(f"{root_pickle_file}_out")
+    parse_data(data_dict, file_name)
 
-    out_file_filtered = config.get_pickle_file("single_structure_full_filtered")
+    data_dict = load_data(file_name)
+    out_file_filtered = config.get_pickle_file(f"{root_pickle_file}_filtered")
     filter_level(data_dict, out_file = out_file_filtered)
 
-    file_filtered = config.get_pickle_file("single_structure_full_filtered")
-    data_dict = load_data(file_filtered)
-    max_height, max_width, max_value, min_value = get_max_shape_size(data_dict)
-    #
-    data_dict = load_data(file_filtered)
-    visualize_shape(data_dict, max_height, max_width)
-    #
-    data_dict = load_data(file_filtered)
-    view_files_with_prop(data_dict, amount = -1, min_width = 0, max_width = 30, min_height = 0, max_height = 13)
+    data_dict = load_data(config.get_pickle_file(file_name = f'{root_pickle_file}_filtered'))
+    out_file_filtered = config.get_pickle_file(f"{root_pickle_file}_unified")
+    unify_level(data_dict, out_file = out_file_filtered)
+
+    # file_filtered = config.get_pickle_file(f"{root_pickle_file}_unified")
+    # data_dict = load_data(file_filtered)
+    # max_height, max_width, max_value, min_value = get_max_shape_size(data_dict)
+    # #
+    # data_dict = load_data(file_filtered)
+    # visualize_shape(data_dict, max_height, max_width)
+    # #
+    # data_dict = load_data(file_filtered)
+    # view_files_with_prop(data_dict, amount = -1, min_width = 0, max_width = 30, min_height = 0, max_height = 13)
 
     # data_dict = load_data(file_name)
     # visualize_data(data_dict, start_index = 0, end_index = 10, width_filter = -1)

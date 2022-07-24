@@ -27,8 +27,9 @@ test_on_live_game = False
 
 if test_on_live_game:
     game_manager = GameManager(conf = config, game_connection = game_connection)
+    game_manager.start_game(is_running = False)
 
-data_file = f'{config.get_pickle_folder()}/single_structure_full.pickle'
+data_file = f'{config.get_pickle_folder()}/new_encoding.pickle'
 
 
 def create_level_data_multi_structure(original_data_level, p_dict, lock):
@@ -102,7 +103,7 @@ def create_level_data_multi_structure(original_data_level, p_dict, lock):
     lock.release()
 
 
-def create_level_data_single_structure(original_data_level, p_dict, lock):
+def create_level_data_single_structure(original_data_level, p_dict, lock, store_immediately = False):
 
     parsed_level = level_reader.parse_level(
         str(original_data_level), use_blocks = True, use_pigs = True, use_platform = True)
@@ -125,7 +126,8 @@ def create_level_data_single_structure(original_data_level, p_dict, lock):
     if use_ai:
         game_connection.startAi(start_level = 4, end_level = 4, print_ai_log = True)
 
-    ret_pictures = parsed_level.create_img(per_structure = False, dot_version = True)
+    ret_pictures = parsed_level.create_img(per_structure = False, dot_version = False)
+
     if use_ai:
         all_levels_played = game_connection.wait_till_all_level_played()
         logger.debug(f'All levels Played: {all_levels_played}')
@@ -149,32 +151,39 @@ def create_level_data_single_structure(original_data_level, p_dict, lock):
     if use_screen_shot:
         p_dict[dict_idx]['level_screenshot'] = level_screenshot,
 
-    lock.acquire()
+    if store_immediately and lock is not None:
+        lock.acquire()
+        with open(data_file, 'wb') as handle:
+            pickle.dump(dict(p_dict), handle, protocol = pickle.HIGHEST_PROTOCOL)
+        lock.release()
+
+
+def create_data_simple():
+    data_dict = dict()
+    load_data_dict(data_dict)
+
+    levels = sorted(Path(orig_level_folder).glob('*.xml'))
+
+    for level_idx, original_data_level in tqdm(enumerate(levels), total = len(levels)):
+        if level_idx < continue_at_level:
+            continue
+
+        create_level_data_single_structure(original_data_level, data_dict, None)
+
     with open(data_file, 'wb') as handle:
-        pickle.dump(dict(p_dict), handle, protocol = pickle.HIGHEST_PROTOCOL)
-    lock.release()
+        pickle.dump(data_dict, handle, protocol = pickle.HIGHEST_PROTOCOL)
 
 
-if __name__ == '__main__':
-
-    # game_manager.start_game(is_running = False)
-
+def create_data_multiprocess():
     process_manager = Manager()
     lock = process_manager.Lock()
     p_dict = process_manager.dict()
+
     pool = Pool(None)
-
-    data_dict = dict()
-    if continue_at_level > 0:
-        with open(data_file, 'rb') as f:
-            data_dict = pickle.load(f)
-            for key, value in data_dict.items():
-                p_dict[key] = value
-
+    load_data_dict(p_dict)
     levels = sorted(Path(orig_level_folder).glob('*.xml'))
     results = []
     p_bar = tqdm(enumerate(levels), total = len(levels))
-
 
     def update(*a):
         p_bar.update()
@@ -185,10 +194,21 @@ if __name__ == '__main__':
 
         # create_level_data_single_structure(original_data_level, p_dict, lock)
 
-        res = pool.apply_async(func = create_level_data_single_structure, args = (original_data_level, p_dict, lock), callback=update)
+        res = pool.apply_async(func = create_level_data_single_structure, args = (original_data_level, p_dict, lock),
+                               callback = update)
         results.append(res)
         # create_level_data(original_data_level, p_dict, lock)
-
     [result.wait() for result in results]
-
     # game_manager.stop_game()
+
+
+def load_data_dict(p_dict):
+    if continue_at_level > 0:
+        with open(data_file, 'rb') as f:
+            data_dict = pickle.load(f)
+            for key, value in data_dict.items():
+                p_dict[key] = value
+
+
+if __name__ == '__main__':
+    create_data_simple()
