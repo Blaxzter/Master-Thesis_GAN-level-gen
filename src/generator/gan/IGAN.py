@@ -35,7 +35,7 @@ class IGAN:
             random_input = seed
         generated_img = self.generator(random_input, training = False)
         probability = self.discriminator(generated_img, training = False)
-        return generated_img[0, :, :, :], round(probability.numpy().item() * 1000) / 1000
+        return generated_img, round(probability.numpy().item() * 1000) / 1000
 
     def print_summary(self):
         print('\n\n')

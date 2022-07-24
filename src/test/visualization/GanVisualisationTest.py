@@ -1,3 +1,5 @@
+from data_scripts.LevelDataset import LevelDataset
+from generator.gan.BigGans import WGANGP128128_Multilayer
 from generator.gan.SimpleGans import SimpleGAN88212
 from util.Config import Config
 from util.TrainVisualizer import TensorBoardViz
@@ -33,6 +35,17 @@ def default_graph():
             step = 0,
             profiler_outdir = log_dir)
 
+
+def test_img_decoding():
+    model = WGANGP128128_Multilayer()
+
+    dataset = LevelDataset(dataset_name = "new_encoding_filtered_128_128", batch_size = 32)
+    dataset.load_dataset()
+
+    visualizer: TensorBoardViz = TensorBoardViz(model = model, dataset = dataset, current_run = "gan_test", show_imgs = True)
+    visualizer.generate_and_save_images(model.create_random_vector_batch(9), 0)
+
+
 def create_graph_of_model():
     config = Config.get_instance()
     print(str(config))
@@ -45,4 +58,4 @@ def create_graph_of_model():
     visualizer.visualize_models()
 
 if __name__ == '__main__':
-    create_graph_of_model()
+    test_img_decoding()

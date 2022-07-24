@@ -1,4 +1,5 @@
 import io
+import pickle
 import time
 
 import numpy as np
@@ -23,18 +24,19 @@ class TensorBoardViz:
 
         self.log_dir = None
         self.train_summary_writer = None
+        self.current_run = current_run
 
         self.global_step = 0
 
         if to_file:
             Path(self.config.get_generated_image_store()).mkdir(parents=True, exist_ok=True)
 
-        self.noise_dim = self.model.input_array_size
-        self.seed = self.model.create_random_vector()
+        self.to_be_created_images = 9
+        self.seed = self.model.create_random_vector_batch(self.to_be_created_images)
+        self.train_img_data_dict = dict()
 
         # Define our metrics
         self.metric_dicts = dict()
-
 
         # self.visualize_models()
 
@@ -77,7 +79,7 @@ class TensorBoardViz:
 
     def show_image(self, img, step = 0):
         # Check if writer is enabled
-        if self.config.create_tensorflow_writer is False:
+        if self.config.create_tensorflow_writer is False or self.train_summary_writer is None:
             return
 
         with self.train_summary_writer.as_default():
@@ -114,15 +116,34 @@ class TensorBoardViz:
         # This is so all layers run in inference mode (batchnorm).
         img, pred = self.model.create_img(test_input)
 
-        fig, axs = plt.subplots(1, 2, figsize=(12, 4))
         normal_img = self.dataset.reverse_norm_layer(img)
-        plt.suptitle(f'Epoch {epoch} Probability {pred}', fontsize = 16)
-        axs[0].imshow(normal_img, cmap = 'gray')
-        axs[0].axis('off')
 
-        axs[1].imshow(np.rint(normal_img))
-        axs[1].axis('off')
-        plt.tight_layout()
+        self.train_img_data_dict[epoch] = dict(
+            imgs = normal_img,
+            predictions = pred
+        )
+
+        if normal_img.shape[-1] != 1:
+            images = np.argmax(normal_img, axis = 3)
+            fig, ax = plt.subplots(1, 1)
+
+            plt.suptitle(f'Epoch {epoch} Probability {round(pred[0].item() * 1000) / 1000}', fontsize = 16)
+            ax.imshow(images[0])
+            ax.axis('off')
+            plt.tight_layout()
+        else:
+            fig, axs = plt.subplots(1, 2, figsize=(12, 4))
+
+            plt.suptitle(f'Epoch {epoch} Probability {round(pred[0].item() * 1000) / 1000}', fontsize = 16)
+            axs[0].imshow(normal_img[0], cmap = 'gray')
+            axs[0].axis('off')
+
+            axs[1].imshow(np.rint(normal_img[0]))
+            axs[1].axis('off')
+            plt.tight_layout()
+
+        if self.show_imgs:
+            plt.show()
 
         if self.to_file:
             plt.savefig(f'{self.config.get_generated_image_store()}image_at_epoch_{epoch + self.global_step}.png')
@@ -136,9 +157,6 @@ class TensorBoardViz:
             image = tf.expand_dims(image, 0)
             self.show_image(img = image, step = epoch + self.global_step)
 
-        if self.show_imgs:
-            plt.show()
-
     def add_data(self, data_dict: dict):
         for name, value in data_dict.items():
             self.metric_dicts[name](value)
@@ -146,3 +164,8 @@ class TensorBoardViz:
     def create_aggregator(self, param):
         for name in param:
             self.metric_dicts[name] = tf.keras.metrics.Mean(name, dtype = tf.float32)
+
+    def store_data(self):
+        pickle_file = self.config.get_pickle_file(self.current_run)
+        with open(pickle_file, 'wb') as handle:
+            pickle.dump(self.train_img_data_dict, handle, protocol = pickle.HIGHEST_PROTOCOL)

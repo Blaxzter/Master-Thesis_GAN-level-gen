@@ -50,6 +50,8 @@ class NetworkTrainer:
             # Produce images for the GIF as you go
             self.visualizer.visualize(current_epoch + 1, start_time)
 
+            self.visualizer.store_data()
+
             # Save the model every 15 epochs
             if (current_epoch + 1) % self.config.save_checkpoint_every == 0:
                 self.manager.save()

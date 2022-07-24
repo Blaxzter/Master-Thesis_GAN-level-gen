@@ -69,9 +69,9 @@ def parse_single_data_example(data_example):
     padded_img_data = pad_image_to_size(img_data)
 
     if create_multi_dim_img:
-        new_img = np.zeros((max_height, max_width, 4))
-        for i in range(4):
-            new_img[:, :, i][padded_img_data.reshape((128, 128)) == i + 1] = 1
+        new_img = np.zeros((max_height, max_width, 5))
+        for i in range(5):
+            new_img[:, :, i][padded_img_data.reshape((128, 128)) == i] = 1
         new_img = new_img.astype(dtype = np.int16)
     else:
         new_img = padded_img_data
