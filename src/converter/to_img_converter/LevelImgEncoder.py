@@ -2,6 +2,7 @@ import numpy as np
 from shapely.geometry import Point
 from tqdm import tqdm
 
+from level import Constants
 from level.Constants import resolution, ObjectType
 from level.LevelUtil import calc_structure_dimensions
 from util.Config import Config
@@ -134,6 +135,31 @@ class LevelImgEncoder:
         picture = self.convert_into_img(cord_list)
 
         return self.remove_empty_line(picture)
+
+    def create_one_element_img(self, element_list, multilayer = False):
+        min_x, min_y, max_x, max_y = calc_structure_dimensions(element_list)
+
+        if multilayer:
+            picture = np.zeros((int(max_y - resolution / 2), int(max_x - resolution / 2)))
+        else:
+            picture = np.zeros((int(max_y - resolution / 2), int(max_x - resolution / 2), 4))
+
+        # logger.debug(f"New Structure {(round((max_x - min_x) / resolution), round((max_y - min_y) / resolution))}")
+        for element in element_list:
+            material_idx = Constants.materials.index(element.material) + 1
+            type_idx = list(Constants.block_names.values()).index(element.type) + 1
+            if element.is_vertical:
+                type_idx += 1
+            if multilayer:
+                picture[element.x, element.y, material_idx] = type_idx
+            else:
+                element_idx = 40
+                if element.object_type == ObjectType.Block:
+                    element_idx = type_idx * material_idx
+
+                picture[element.x, element.y] = element_idx
+
+        return picture
 
     def remove_empty_line(self, picture):
         ret_img = picture[0, :]

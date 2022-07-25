@@ -37,7 +37,7 @@ def create_encoding():
     level = test_environment.get_level(2)
 
     level_img_encoder = LevelImgEncoder()
-    encoded_calculated_orig = level_img_encoder.create_calculated_img(level.get_used_elements())
+    encoded_calculated_orig = level_img_encoder.create_one_element_img(level.get_used_elements())
     plt.imshow(encoded_calculated_orig)
     plt.show()
 
@@ -169,4 +169,4 @@ def compare_material_recs(direction = 'vertical', stacked = 3, x_offset = 0, y_o
         print(print_string)
 
 if __name__ == '__main__':
-    compare_stack_recs()
+    create_encoding()
