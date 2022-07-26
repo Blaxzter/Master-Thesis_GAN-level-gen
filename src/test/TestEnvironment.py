@@ -22,11 +22,11 @@ class TestEnvironment:
     def __len__(self):
         return
 
-    def iter_levels(self, start = 0, end_number = -1):
-        if end_number == -1:
-            end_number = len(self.levels)
+    def iter_levels(self, start = 0, end = -1):
+        if end == -1:
+            end = len(self.levels)
 
-        for level_counter, level_path in enumerate(self.levels[start:end_number]):
+        for level_counter, level_path in enumerate(self.levels[start:end]):
             level = self.level_reader.parse_level(level_path)
             level.normalize()
             level.create_polygons()

@@ -52,8 +52,9 @@ def parse_data(data: dict, out_file: str):
     for key in data.keys():
         level_data = data[key]
 
-        level_idx = np.argmax(list(map(lambda x: x.shape[0] * x.shape[1], level_data['img_data'])))
-        level_data['img_data'] = level_data['img_data'][level_idx]
+        if type(level_data['img_data']) is list:
+            level_idx = np.argmax(list(map(lambda x: x.shape[0] * x.shape[1], level_data['img_data'])))
+            level_data['img_data'] = level_data['img_data'][level_idx]
 
         if 'game_data' in level_data:
             level_data['game_data'] = json.loads(level_data['game_data'][1]['data'])[0]
@@ -292,7 +293,7 @@ def unify_level(data_dict, out_file):
 
 if __name__ == '__main__':
 
-    root_pickle_file = 'new_encoding'
+    root_pickle_file = 'one_element_encoding'
 
     config = Config.get_instance()
     file_name = config.get_pickle_file(file_name = root_pickle_file)

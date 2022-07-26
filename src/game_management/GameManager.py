@@ -34,11 +34,12 @@ class GameManager:
         logger.debug("Stop Game Components")
         self.game_connection.stop_components()
 
-    def switch_to_level_elements(self, elements):
+    def switch_to_level_elements(self, elements, element_idx = 4):
         level_reader = LevelReader()
         level = level_reader.create_level_from_structure(elements, red_birds = True)
         level_folder = self.conf.get_data_train_path(folder = 'temp')
-        level_path = f'{level_folder}/level-04.xml'
+        level_number = f'0{element_idx}' if len(str(element_idx)) == 1 else str(element_idx)
+        level_path = f'{level_folder}/level-{level_number}.xml'
         level_reader.write_xml_file(level, level_path)
         self.change_level(path = str(level_path), stopTime = True)
 

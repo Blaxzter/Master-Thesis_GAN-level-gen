@@ -61,9 +61,17 @@ class LevelReader:
 
         level.separate_structures()
 
+        def _sort_elements(_element):
+            if _element.object_type == ObjectType.Platform:
+                return 14
+            elif _element.object_type == ObjectType.Pig:
+                return 13
+            return list(Constants.block_names.values()).index(str(_element.type))
+
         game_objects = doc.createElement('GameObjects')
         for structure in level.structures:
-            for level_element in structure:
+            struct_data = calc_structure_dimensions(structure, use_original = True)
+            for level_element in sorted(structure, key = _sort_elements):
                 block_name = 'Block'
                 if level_element.object_type == ObjectType.Platform:
                     block_name = 'Platform'
@@ -77,16 +85,15 @@ class LevelReader:
                 if move_closer and level is not None:
                     current_element_doc.setAttribute(
                         "x",
-                        str(level_element.original_x - abs(level.slingshot.original_x + min_distance_to_slingshot - data[0]))
+                        str(level_element.x - abs(level.slingshot.x + min_distance_to_slingshot - data[0]))
                     )
                 else:
-                    current_element_doc.setAttribute("x", str(level_element.original_x))
+                    current_element_doc.setAttribute("x", str(level_element.x))
 
                 if move_to_ground:
-                    struct_data = calc_structure_dimensions(structure, use_original = True)
-                    current_element_doc.setAttribute("y", str(level_element.original_y - abs(Constants.absolute_ground - struct_data[1])))
+                    current_element_doc.setAttribute("y", str(level_element.y + Constants.absolute_ground - struct_data[1]))
                 else:
-                    current_element_doc.setAttribute("y", str(level_element.original_y))
+                    current_element_doc.setAttribute("y", str(level_element.y))
 
                 current_element_doc.setAttribute("rotation", str(level_element.rotation))
 

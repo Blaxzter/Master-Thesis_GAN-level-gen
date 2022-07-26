@@ -65,7 +65,7 @@ class LevelVisualizer:
             fig.show()
             plt.close()
 
-    def create_img_of_level(self, level: Level, use_grid = True, add_dots = True, element_ids = True,
+    def create_img_of_level(self, level: Level, use_grid = True, add_dots = False, element_ids = True,
                             write_to_file = None, ax = None):
         # Create figure and axes
         show = False
@@ -102,8 +102,6 @@ class LevelVisualizer:
         if use_grid or add_dots:
             self.create_dots_and_grid(element_list, ax, add_dots, use_grid)
 
-        # ax.set_xticks([])
-        # ax.set_yticks([])
         ax.axis('scaled')
 
         if show:

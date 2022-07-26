@@ -1,6 +1,5 @@
 import numpy as np
 from shapely.geometry import Point
-from tqdm import tqdm
 
 from level import Constants
 from level.Constants import resolution, ObjectType
@@ -72,7 +71,6 @@ class LevelImgEncoder:
 
         # logger.debug(f"New Structure {(round((max_x - min_x) / resolution), round((max_y - min_y) / resolution))}")
         for element in element_list:
-
             left_block_pos = element.x - element.width / 2 - min_x
             right_block_pos = element.x + element.width / 2 - min_x
             bottom_block_pos = element.y - element.height / 2 - min_y
@@ -139,27 +137,38 @@ class LevelImgEncoder:
     def create_one_element_img(self, element_list, multilayer = False):
         min_x, min_y, max_x, max_y = calc_structure_dimensions(element_list)
 
+        img_width = round(max_y / resolution)
+        img_height = round(max_x / resolution)
         if multilayer:
-            picture = np.zeros((int(max_y - resolution / 2), int(max_x - resolution / 2)))
+            picture = np.zeros((img_width, img_height, 4))
         else:
-            picture = np.zeros((int(max_y - resolution / 2), int(max_x - resolution / 2), 4))
+            picture = np.zeros((img_width, img_height))
 
         # logger.debug(f"New Structure {(round((max_x - min_x) / resolution), round((max_y - min_y) / resolution))}")
         for element in element_list:
-            material_idx = Constants.materials.index(element.material) + 1
-            type_idx = list(Constants.block_names.values()).index(element.type) + 1
-            if element.is_vertical:
-                type_idx += 1
-            if multilayer:
-                picture[element.x, element.y, material_idx] = type_idx
+
+            element_idx = 14
+
+            if element.object_type == ObjectType.Block or element.object_type == ObjectType.SpecialBlock:
+                material_idx = Constants.materials.index(element.material)
+                type_idx = list(Constants.block_names.values()).index(element.type) + 1
+                if element.is_vertical:
+                    type_idx += 1
             else:
-                element_idx = 40
-                if element.object_type == ObjectType.Block:
-                    element_idx = type_idx * material_idx
+                material_idx = 3
+                type_idx = element_idx
 
-                picture[element.x, element.y] = element_idx
+            x_pos = round(element.x / resolution)
+            y_pos = round(element.y / resolution)
 
-        return picture
+            if multilayer:
+                picture[y_pos, x_pos, material_idx] = type_idx
+            else:
+                store_idx = type_idx + 13 * material_idx if element.object_type == ObjectType.Block else 40
+
+                picture[y_pos, x_pos] = store_idx
+
+        return np.flip(picture, axis = 0).astype(np.uint8)
 
     def remove_empty_line(self, picture):
         ret_img = picture[0, :]
@@ -203,3 +212,21 @@ class LevelImgEncoder:
                 picture[x_pos, y_pos] = cords['material']
 
         return picture
+
+    @staticmethod
+    def create_multi_dim_img_from_picture(level_img, zero_included = False):
+        level_img_shape = level_img.shape
+
+        temp_img = np.copy(level_img)
+        if len(level_img_shape) == 3:
+            if level_img_shape[-1] != 1:
+                raise Exception("Only one dimension Images Pls")
+            else:
+                temp_img = temp_img.reshape(level_img_shape[:-1])
+
+        ret_img = np.zeros((level_img_shape[0], level_img_shape[1], 4 + (1 if zero_included else 0)))
+
+        for layer_idx, material_id in enumerate(range((0 if zero_included else 1), 5)):
+            ret_img[:, :, layer_idx][temp_img == material_id] = 1
+
+        return ret_img.astype(dtype = np.int16)

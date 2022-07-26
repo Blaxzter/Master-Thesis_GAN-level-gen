@@ -60,7 +60,7 @@ class LevelElement:
             self.index = list(Constants.block_names.values()).index(self.type) + 1
             if self.is_vertical:
                 self.index += 1
-            self.size = Constants.block_sizes[str(self.index)]
+            self.size = Constants.block_sizes[self.index]
             self.object_type = ObjectType.Block
 
         self.width = self.size[0]

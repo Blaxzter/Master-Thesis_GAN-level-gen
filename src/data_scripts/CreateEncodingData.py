@@ -37,7 +37,7 @@ def create_element_for_each_block(direction = 'vertical', stacked = 1, x_offset 
         index = list(Constants.block_names.values()).index(block['name']) + 1
         if block['rotated']:
             index += 1
-        size = Constants.block_sizes[str(index)]
+        size = Constants.block_sizes[index]
 
         start_x += size[0] / 2
 

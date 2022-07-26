@@ -9,6 +9,8 @@ from pathlib import Path
 import tensorflow as tf
 from matplotlib import pyplot as plt
 
+from converter.to_img_converter.LevelIdImgDecoder import LevelIdImgDecoder
+from level.LevelVisualizer import LevelVisualizer
 from util.Config import Config
 
 
@@ -37,6 +39,11 @@ class TensorBoardViz:
 
         # Define our metrics
         self.metric_dicts = dict()
+
+        self.one_encoding = True
+        self.multilayer = False
+        self.level_decoder = LevelIdImgDecoder()
+        self.level_visualizer = LevelVisualizer()
 
         # self.visualize_models()
 
@@ -123,24 +130,74 @@ class TensorBoardViz:
             predictions = pred
         )
 
-        if normal_img.shape[-1] != 1:
-            images = np.argmax(normal_img, axis = 3)
-            fig, ax = plt.subplots(1, 1)
+        if self.multilayer:
+            if self.one_encoding:
+                images = np.argmax(normal_img, axis = 3)
+                non_zero_elements = np.nonzero(np.rint(images[0]))
 
-            plt.suptitle(f'Epoch {epoch} Probability {round(pred[0].item() * 1000) / 1000}', fontsize = 16)
-            ax.imshow(images[0])
-            ax.axis('off')
-            plt.tight_layout()
+                if len(non_zero_elements[0]) > 70:
+                    fig, ax = plt.subplots(1, 1)
+                    plt.suptitle(f'Epoch {epoch} Probability {round(pred[0].item() * 1000) / 1000} amount of elements: {len(non_zero_elements[0])}', fontsize = 16)
+                    ax.imshow(images[0])
+                    ax.axis('off')
+                else:
+                    fig, axs = plt.subplots(2, 1)
+                    axs[0].imshow(images[0])
+                    axs[0].axis('off')
+
+                    try:
+                        created_level = self.level_decoder.decode_level(images[0])
+                        self.level_visualizer.create_img_of_level(
+                            created_level, use_grid = False, add_dots = False, ax = axs[1]
+                        )
+                        plt.suptitle(f'Epoch {epoch} Probability {round(pred[0].item() * 1000) / 1000}', fontsize = 16)
+                    except Exception as e:
+                        plt.suptitle(f'Epoch {epoch} Probability {round(pred[0].item() * 1000) / 1000} decoding failed', fontsize = 16)
+
+                plt.tight_layout()
+            else:
+                fig, ax = plt.subplots(1, 1)
+                images = np.argmax(normal_img, axis = 3)
+                ax.imshow(images[0])
+                ax.axis('off')
+                plt.tight_layout()
+
         else:
-            fig, axs = plt.subplots(1, 2, figsize=(12, 4))
+            if self.one_encoding:
+                non_zero_elements = np.nonzero(np.rint(normal_img[0]))
 
-            plt.suptitle(f'Epoch {epoch} Probability {round(pred[0].item() * 1000) / 1000}', fontsize = 16)
-            axs[0].imshow(normal_img[0], cmap = 'gray')
-            axs[0].axis('off')
+                if len(non_zero_elements[0]) > 70:
+                    fig, ax = plt.subplots(1, 1)
+                    plt.suptitle(
+                        f'Epoch {epoch} Probability {round(pred[0].item() * 1000) / 1000} amount of elements: {len(non_zero_elements[0])}',
+                        fontsize = 16)
+                    ax.imshow(normal_img[0])
+                    ax.axis('off')
+                else:
+                    fig, axs = plt.subplots(2, 1)
+                    axs[0].imshow(normal_img[0])
+                    axs[0].axis('off')
 
-            axs[1].imshow(np.rint(normal_img[0]))
-            axs[1].axis('off')
-            plt.tight_layout()
+                    try:
+                        created_level = self.level_decoder.decode_level(np.rint(normal_img[0]))
+                        self.level_visualizer.create_img_of_level(
+                            created_level, use_grid = False, add_dots = False, ax = axs[1]
+                        )
+                        plt.suptitle(f'Epoch {epoch} Probability {round(pred[0].item() * 1000) / 1000}', fontsize = 16)
+                    except Exception as e:
+                        plt.suptitle(f'Epoch {epoch} Probability {round(pred[0].item() * 1000) / 1000} decoding failed',
+                                     fontsize = 16)
+
+            else:
+                fig, axs = plt.subplots(1, 2, figsize=(12, 4))
+
+                plt.suptitle(f'Epoch {epoch} Probability {round(pred[0].item() * 1000) / 1000}', fontsize = 16)
+                axs[0].imshow(normal_img[0], cmap = 'gray')
+                axs[0].axis('off')
+
+                axs[1].imshow(np.rint(normal_img[0]))
+                axs[1].axis('off')
+                plt.tight_layout()
 
         if self.show_imgs:
             plt.show()

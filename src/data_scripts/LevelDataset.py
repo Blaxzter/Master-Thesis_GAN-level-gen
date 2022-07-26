@@ -16,8 +16,9 @@ class LevelDataset:
         self.batch_size = batch_size
 
         self.norm_layer = None
-        self.reverse_norm_layer = None
         self.steps = -1
+
+        self.max_element = 0
 
     def get_data_amount(self):
         return len(list(self.dataset))
@@ -39,9 +40,13 @@ class LevelDataset:
 
     def normalize(self):
         images = np.concatenate([x for x, y in self.dataset], axis = 0)
-        self.norm_layer = tf.keras.layers.Rescaling(1. / images.max())
-        self.reverse_norm_layer = tf.keras.layers.Rescaling(images.max())
-        return self.dataset.map(lambda x, y: (self.norm_layer(x), y))
+        self.max_element = np.max(images)
+        self.norm_layer = tf.keras.layers.Rescaling(1. / (self.max_element / 2))
+        return self.dataset.map(lambda x, y: (self.norm_layer(x - (self.max_element / 2)), y))
+
+    def reverse_norm_layer(self, img):
+        ret_img = img + 1
+        return tf.keras.layers.Rescaling(self.max_element / 2)(ret_img)
 
     def parse_tfr_element(self, element):
         # use the same structure as above; it's kinda an outline of the structure we now want to create

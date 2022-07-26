@@ -1,9 +1,5 @@
-import numpy as np
-from pathlib import Path
-from time import sleep
-
 import matplotlib.pyplot as plt
-from icecream import ic
+import numpy as np
 
 from converter.to_img_converter.LevelImgDecoder import LevelImgDecoder
 from converter.to_img_converter.LevelImgEncoder import LevelImgEncoder
@@ -19,6 +15,7 @@ def img_encoding_test():
         if level_idx > 0:
             break
 
+
 def create_encodings():
     test_environment = TestEnvironment('generated/single_structure')
 
@@ -32,14 +29,47 @@ def create_encodings():
 
     plt.show()
 
-def create_encoding():
+
+def create_img_encoding(multilayer = True):
     test_environment = TestEnvironment('generated/single_structure')
     level = test_environment.get_level(2)
 
     level_img_encoder = LevelImgEncoder()
-    encoded_calculated_orig = level_img_encoder.create_one_element_img(level.get_used_elements())
-    plt.imshow(encoded_calculated_orig)
-    plt.show()
+    level_img = level_img_encoder.create_calculated_img(level.get_used_elements())
+
+    if multilayer:
+        # Plot figure
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+
+        multilayer_level_img = level_img_encoder.create_multi_dim_img_from_picture(level_img)
+        # surf = mlab.surf(multilayer_level_img, warp_scale = "auto")
+        # mlab.show()
+        ax.voxels(multilayer_level_img)
+        plt.show()
+    else:
+        plt.imshow(level_img)
+        plt.show()
+
+
+def create_one_element_encoding(multilayer = True):
+    test_environment = TestEnvironment('generated/single_structure')
+    level = test_environment.get_level(2)
+
+    level_img_encoder = LevelImgEncoder()
+    encoded_calculated_orig = level_img_encoder.create_one_element_img(level.get_used_elements(), multilayer)
+
+    if multilayer:
+        # Plot figure
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection = '3d')
+
+        ax.voxels(encoded_calculated_orig, edgecolors = 'grey')
+        plt.show()
+    else:
+        plt.imshow(encoded_calculated_orig)
+        plt.show()
+
 
 def compare_encodings(level, test_environment):
     level_img_encoder = LevelImgEncoder()
@@ -60,7 +90,8 @@ def compare_encodings(level, test_environment):
 
     encoded_calculated = encoded_calculated_orig
     if no_size_check.shape != encoded_calculated_orig.shape:
-        paddig = (no_size_check.shape[0] - encoded_calculated_orig.shape[0], 0), (no_size_check.shape[1] - encoded_calculated_orig.shape[1], 0)
+        paddig = (no_size_check.shape[0] - encoded_calculated_orig.shape[0], 0), (
+        no_size_check.shape[1] - encoded_calculated_orig.shape[1], 0)
         encoded_calculated = np.pad(encoded_calculated_orig, paddig)
 
     axs_1 = subfigs[1].subplots(nrows = 2, ncols = 1)
@@ -168,5 +199,6 @@ def compare_material_recs(direction = 'vertical', stacked = 3, x_offset = 0, y_o
 
         print(print_string)
 
+
 if __name__ == '__main__':
-    create_encoding()
+    create_img_encoding()

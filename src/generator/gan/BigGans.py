@@ -1,4 +1,3 @@
-import numpy as np
 import tensorflow as tf
 from matplotlib import pyplot as plt
 
@@ -140,16 +139,7 @@ class WGANGP128128_Multilayer(IGAN):
 
         self.discriminator = model
 
-    def create_img(self, seed = None):
-        if seed is None:
-            random_input = self.create_random_vector()
-        else:
-            random_input = seed
 
-        generated_img = self.generator(random_input, training = False)
-        probability = self.discriminator(generated_img, training = False)
-
-        return generated_img, np.round(probability * 1000) / 1000
 
 if __name__ == '__main__':
     gan = WGANGP128128_Multilayer()

@@ -270,7 +270,8 @@ class LevelImgDecoder:
         # We tested everything and nothing worked :(
         return None
 
-    def create_level_elements(self, blocks, pig_position):
+    @staticmethod
+    def create_level_elements(blocks, pig_position):
         ret_level_elements = []
         block_idx = 0
         for block_idx, block in enumerate(blocks):
@@ -611,3 +612,6 @@ class LevelImgDecoder:
             ret_list += rect_data
 
         return ret_list
+
+
+

@@ -9,19 +9,19 @@ sys.path.append(os.path.dirname(SCRIPT_DIR))
 from trainer.TrainerWrapper import NetworkTrainer
 from util.Config import Config
 from data_scripts.LevelDataset import LevelDataset
-from generator.gan.BigGans import WGANGP128128_Multilayer
+from generator.gan.BigGans import WGANGP128128_Multilayer, WGANGP128128
 
 if __name__ == '__main__':
     with tf.device('/GPU:0'):
         config = Config.get_instance()
-        config.tag = "wasserstein-gan_GP_128_128_multilayer"
+        config.tag = "wasserstein-gan_GP_128_128_one_encoding"
         print(str(config))
 
-        dataset = LevelDataset(dataset_name = "new_encoding_filtered_128_128", batch_size = 32)
+        dataset = LevelDataset(dataset_name = "one_element_encoding128_128", batch_size = 32)
         dataset.load_dataset()
 
-        gan = WGANGP128128_Multilayer()
-        run_name = "wasserstein-gan_GP_128_128_multilayer"
+        gan = WGANGP128128()
+        run_name = "wgan_gp_128_128_one_encoding"
         trainer = NetworkTrainer(run_name = run_name, dataset = dataset, model = gan, epochs = 15000)
         # trainer.continue_training(run_name = run_name, checkpoint_date = "20220623-015436")
 
