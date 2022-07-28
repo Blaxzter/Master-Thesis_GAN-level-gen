@@ -40,8 +40,8 @@ class TensorBoardViz:
         # Define our metrics
         self.metric_dicts = dict()
 
-        self.one_encoding = True
-        self.multilayer = False
+        self.one_encoding = self.config.one_encoding
+        self.multilayer = self.config.multilayer
         self.level_decoder = LevelIdImgDecoder()
         self.level_visualizer = LevelVisualizer()
 
@@ -157,6 +157,7 @@ class TensorBoardViz:
                 plt.tight_layout()
             else:
                 fig, ax = plt.subplots(1, 1)
+                plt.suptitle(f'Epoch {epoch} Probability {round(pred[0].item() * 1000) / 1000}', fontsize = 16)
                 images = np.argmax(normal_img, axis = 3)
                 ax.imshow(images[0])
                 ax.axis('off')
@@ -222,7 +223,8 @@ class TensorBoardViz:
         for name in param:
             self.metric_dicts[name] = tf.keras.metrics.Mean(name, dtype = tf.float32)
 
-    def store_data(self):
-        pickle_file = self.config.get_pickle_file(self.current_run)
+    def store_data(self, epoch):
+        pickle_file = self.config.get_epoch_run_data(self.current_run, epoch = epoch)
         with open(pickle_file, 'wb') as handle:
             pickle.dump(self.train_img_data_dict, handle, protocol = pickle.HIGHEST_PROTOCOL)
+        self.train_img_data_dict = dict()

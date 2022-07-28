@@ -72,6 +72,10 @@ class Config:
 
         # Ml stuff
         self.create_tensorflow_writer = True
+        self.one_encoding = False
+
+        self.inner_tqdm = False
+        self.outer_tqdm = True
 
         self.source_file_root = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/source_files/')
@@ -85,6 +89,9 @@ class Config:
         )
         self.pickle_folder = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/pickles')
+        )
+        self.epoch_run_data = os.path.normpath(
+            os.path.join(self.current_path, 'resources/data/pickles/run_data')
         )
         self.encoding_folder = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/encoding_data')
@@ -195,6 +202,16 @@ class Config:
         if '.pickle' not in file_name:
             file_name += '.pickle'
         return os.path.join(self.pickle_folder, file_name)
+
+    def get_epoch_run_data(self, file_name, epoch):
+        Path(self.epoch_run_data).mkdir(parents = True, exist_ok = True)
+
+        if '.pickle' not in file_name:
+            file_name = f'{file_name}_{epoch}_{self.strftime}.pickle'
+        else:
+            file_name = f'{file_name.replace(".pickle", "")}_{epoch}_{self.strftime}.pickle'
+
+        return os.path.join(self.epoch_run_data, file_name)
 
     def get_data_root(self):
         return self.data_root

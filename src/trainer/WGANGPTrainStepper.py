@@ -19,6 +19,8 @@ class WGANGPTrainStepper:
 
         self.config: Config = Config.get_instance()
 
+        self.inner_tqdm = self.config.inner_tqdm
+
         self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4, beta_1 = 0, beta_2 = 0.9)
         self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4, beta_1 = 0, beta_2 = 0.9)
 
@@ -41,7 +43,13 @@ class WGANGPTrainStepper:
                 'fake_probabilities']
 
     def train_batch(self):
-        for image_batch, data in tqdm(self.dataset.get_dataset(), total = self.dataset.steps, leave = False):
+
+        if self.inner_tqdm:
+            iter_data = tqdm(self.dataset.get_dataset(), total = self.dataset.steps, leave = True)
+        else:
+            iter_data = self.dataset.get_dataset()
+
+        for image_batch, data in iter_data:
             disc_data = self.train_discriminator(image_batch)
             self.visualizer.add_data(disc_data)
 

@@ -83,7 +83,7 @@ class WGANGP128128_Multilayer(IGAN):
         self.channel_amount = 64
 
         self.input_shape = (1, 1, 128)
-        self.output_shape = (128, 128, 5)
+        self.output_shape = (128, 128, 4)
 
         self.data_augmentation = data_augmentation
 
@@ -117,7 +117,7 @@ class WGANGP128128_Multilayer(IGAN):
             model.add(layers.LayerNormalization())
             model.add(layers.ReLU())
 
-        model.add(layers.Conv2DTranspose(5, 4, strides = 2, padding = 'same'))
+        model.add(layers.Conv2DTranspose(self.output_shape[2], 4, strides = 2, padding = 'same'))
         model.add(layers.Activation(activations.tanh))
 
         self.generator = model
@@ -125,7 +125,7 @@ class WGANGP128128_Multilayer(IGAN):
     def create_discriminator_model(self):
         model = tf.keras.Sequential(name = 'Discriminator')
 
-        model.add(layers.InputLayer(input_shape = [self.output_shape[0], self.output_shape[1], 5]))
+        model.add(layers.InputLayer(input_shape = [self.output_shape[0], self.output_shape[1], self.output_shape[2]]))
         model.add(layers.Conv2D(self.channel_amount, (4, 4), strides = (2, 2), padding = 'same', use_bias = False))
         model.add(layers.LeakyReLU(0.2))
 

@@ -4,6 +4,7 @@ import time
 import tensorflow as tf
 from loguru import logger
 from tensorflow.core.util import event_pb2
+from tqdm.auto import tqdm
 
 from data_scripts.LevelDataset import LevelDataset
 from generator.gan.IGAN import IGAN
@@ -32,6 +33,7 @@ class NetworkTrainer:
 
         self.epochs = epochs
         self.continue_run = False
+        self.outer_tqdm = self.config.outer_tqdm
 
     def train(self):
         if not self.continue_run:
@@ -42,7 +44,12 @@ class NetworkTrainer:
             logger.debug(f'Continue Training of {self.run_name} for {self.epochs} epochs at {self.visualizer.global_step}')
 
         current_epoch = 0
-        for _ in range(self.epochs):
+        if self.outer_tqdm:
+            iter_data = tqdm(range(self.epochs), total = self.epochs)
+        else:
+            iter_data = range(self.epochs)
+
+        for _ in iter_data:
             start_time = time.time()
 
             self.train_stepper.train_batch()
@@ -50,11 +57,10 @@ class NetworkTrainer:
             # Produce images for the GIF as you go
             self.visualizer.visualize(current_epoch + 1, start_time)
 
-            self.visualizer.store_data()
-
             # Save the model every 15 epochs
             if (current_epoch + 1) % self.config.save_checkpoint_every == 0:
                 self.manager.save()
+                self.visualizer.store_data(current_epoch)
             current_epoch += 1
 
         # Generate after the final epoch
