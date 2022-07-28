@@ -174,7 +174,7 @@ class TensorBoardViz:
                     ax.imshow(normal_img[0])
                     ax.axis('off')
                 else:
-                    fig, axs = plt.subplots(2, 1)
+                    fig, axs = plt.subplots(1, 2)
                     axs[0].imshow(normal_img[0])
                     axs[0].axis('off')
 

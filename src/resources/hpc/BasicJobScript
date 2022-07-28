@@ -1,0 +1,17 @@
+#!/usr/local_rwth/bin/zsh
+
+# ask for eight tasks
+#SBATCH --ntasks=8
+
+# ask for less tahn 4 GB memory per task=MPI rank
+#SBATCH --mem-per-cpu=3900M   #M is the default and can therefore be omitted, but could also be K(ilo)|G(iga)|T(era)
+
+# name the job
+SBATCH --job-name=MPI_JOB
+
+# declare the merged STDOUT/STDERR file
+SBATCH --output=output.%J.txt
+
+
+### beginning of executable commands
+$MPIEXEC $FLAGS_MPI_BATCH ./a.out

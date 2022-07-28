@@ -42,7 +42,9 @@ class LevelDataset:
         images = np.concatenate([x for x, y in self.dataset], axis = 0)
         self.max_element = np.max(images)
         self.norm_layer = tf.keras.layers.Rescaling(1. / (self.max_element / 2))
-        return self.dataset.map(lambda x, y: (self.norm_layer(x - (self.max_element / 2)), y))
+        return self.dataset.map(
+            lambda x, y: (self.norm_layer(x - (self.max_element / 2)), y)
+        )
 
     def reverse_norm_layer(self, img):
         ret_img = img + 1
@@ -93,7 +95,7 @@ class LevelDataset:
         # get our 'feature'-- our image -- and reshape it appropriately
         image = tf.io.parse_tensor(raw_image, out_type = tf.int16)
         image = tf.reshape(image, shape = [height, width, depth])
-        tf.cast(image, tf.float32)
+        image = tf.cast(image, tf.float32)
         return image, data_dict
 
 
