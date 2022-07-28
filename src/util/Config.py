@@ -203,15 +203,13 @@ class Config:
             file_name += '.pickle'
         return os.path.join(self.pickle_folder, file_name)
 
-    def get_epoch_run_data(self, file_name, epoch):
-        Path(self.epoch_run_data).mkdir(parents = True, exist_ok = True)
+    def get_epoch_run_data(self, run_name, epoch):
+        folder_name = os.path.join(self.epoch_run_data, run_name.replace('.pickle'))
+        Path(folder_name).mkdir(parents = True, exist_ok = True)
 
-        if '.pickle' not in file_name:
-            file_name = f'{file_name}_{epoch}_{self.strftime}.pickle'
-        else:
-            file_name = f'{file_name.replace(".pickle", "")}_{epoch}_{self.strftime}.pickle'
+        file_name = f'epoch_{epoch}_{self.strftime}.pickle'
 
-        return os.path.join(self.epoch_run_data, file_name)
+        return os.path.join(folder_name, file_name)
 
     def get_data_root(self):
         return self.data_root
