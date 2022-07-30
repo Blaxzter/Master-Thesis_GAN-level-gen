@@ -4,7 +4,7 @@ import numpy as np
 
 # blocks number and size
 block_sizes = {
-    1: (0.84, 0.84),
+    1: (0.85, 0.85),
     2: (0.85, 0.43),
     3: (0.43, 0.85),
     4: (0.43, 0.43),

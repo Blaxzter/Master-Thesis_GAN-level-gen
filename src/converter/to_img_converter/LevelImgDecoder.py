@@ -4,9 +4,10 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import patches
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, Point
 
 from converter import MathUtil
+from converter.to_img_converter.DecoderUtils import recalibrate_blocks
 from level import Constants
 from level.LevelElement import LevelElement
 from level.LevelVisualizer import LevelVisualizer
@@ -25,13 +26,12 @@ class LevelImgDecoder:
         self.level_viz = LevelVisualizer()
 
     def decode_level(self, level_img):
-        level_img_8 = level_img.astype(np.uint8)
+        flipped = np.flip(level_img, axis = 0)
+        level_img_8 = flipped.astype(np.uint8)
         top_value = np.max(level_img_8)
         bottom_value = np.min(level_img_8)
 
-        no_birds = False
-        if top_value == bottom_value + 1:
-            no_birds = True
+        no_birds = top_value != 4
 
         ret_blocks = []
         # Go over each contour color
@@ -49,12 +49,13 @@ class LevelImgDecoder:
                 return dict(
                     contour = _contour_reshaped,
                     poly = _poly,
-                    required_area = _required_area
+                    required_area = _required_area,
+                    min_x = _contour_reshaped[:, 0].min()
                 )
 
             # Create the contour data list and sort by required area
             contour_data_list = [create_contour_dict(contour) for contour in contours]
-            contour_data_list = sorted(contour_data_list, key = lambda x: x['required_area'])
+            contour_data_list = sorted(contour_data_list, key = lambda x: x['min_x'])
 
             # Go over each found contour
             for contour_idx, contour_data in enumerate(contour_data_list):
@@ -80,11 +81,19 @@ class LevelImgDecoder:
                     rect_dict[rec_idx] = rec
 
                 # Select the blocks and designate the correct contour color as material
-                selected_blocks = self.select_blocks(rectangles = rect_dict, used_blocks = [],
-                                                     required_area = contour_data['required_area'])
+                selected_blocks = self.select_blocks(
+                    rectangles = rect_dict,
+                    used_blocks = [],
+                    required_area = contour_data['required_area'],
+                    poly = poly
+                )
                 if selected_blocks is None:
-                    selected_blocks = self.select_blocks(rectangles = rect_dict, used_blocks = [],
-                                                         required_area = contour_data['required_area'])
+                    selected_blocks = self.select_blocks(
+                        rectangles = rect_dict,
+                        used_blocks = [],
+                        required_area = contour_data['required_area'],
+                        poly = poly
+                    )
                     raise Exception('No Block Selected')
 
                 if selected_blocks is not None:
@@ -99,12 +108,14 @@ class LevelImgDecoder:
 
         pig_positions = []
         if not no_birds:
-            pig_positions = self.get_pig_position(level_img)
+            pig_positions = self.get_pig_position(flipped)
 
         # Create block elements out of the possible blocks and the rectangle
         level_elements = self.create_level_elements(flattend_blocks, pig_positions)
 
-        return level_elements
+        created_level_elements = recalibrate_blocks(level_elements)
+
+        return created_level_elements
 
     def get_pig_position(self, level_img):
 
@@ -123,9 +134,9 @@ class LevelImgDecoder:
             bird_positions.append(pos)
         return bird_positions
 
-    def select_blocks(self, rectangles, used_blocks, required_area, occupied_area = 0):
+    def select_blocks(self, rectangles, used_blocks, required_area, poly, occupied_area = 0):
         # Break condition
-        if occupied_area != 0 and abs(required_area / occupied_area - 1) < 0.05:
+        if occupied_area != 0 and abs(required_area / occupied_area - 1) < 0.01:
             return used_blocks
 
         # Go over each rectangle
@@ -165,11 +176,27 @@ class LevelImgDecoder:
 
                 next_used_blocks = used_blocks.copy()
                 next_used_blocks.append(new_block)
+
+                def _get_direct_vectors():
+                    return [
+                        (np.array([rec['width'] / 2 + 1, 0]), rec['height']),
+                        (np.array([-rec['width'] / 2 - 1, 0]), rec['height']),
+                        (np.array([0, rec['height'] / 2 + 1]), rec['width']),
+                        (np.array([0, - rec['height'] / 2 - 1]), rec['width']),
+                    ]
+
+                dots_outside = [(Point(rec['center_pos'] + c_vec), add_amount) for c_vec, add_amount in _get_direct_vectors()]
+                sum_add_amount = np.sum(list(
+                    map(lambda x: x[1],  # Map to the amount to be added if the dot is inside the poly
+                        filter(lambda dot_outside: poly.intersects(dot_outside[0]), dots_outside)
+                        )))
+
                 selected_blocks = self.select_blocks(
                     rectangles = next_rectangles,
                     used_blocks = next_used_blocks,
                     required_area = required_area,
-                    occupied_area = occupied_area + rec['area']
+                    occupied_area = occupied_area + rec['area'] + sum_add_amount,
+                    poly = poly
                 )
 
                 if selected_blocks is not None:
@@ -187,31 +214,33 @@ class LevelImgDecoder:
                 # Only work with fitting blocks
                 fitting_blocks = {
                     k: _block for k, _block in self.block_data.items()
-                    if _block[primary_orientation] + 2 / rec[primary_orientation] - 1 < 0.001
+                    if (_block[primary_orientation] + 2) / rec[primary_orientation] - 1 < 0.001 and \
+                       abs((_block[secondary_orientation]) / rec[secondary_orientation] - 1) < 0.001
                 }
 
                 # No combination found for this block
                 if len(fitting_blocks) == 0:
                     continue
 
-
                 for combination_amount in range(2, 5):
-                    combinations = itertools.product(fitting_blocks.items(), repeat = 2)
+                    combinations = itertools.product(fitting_blocks.items(), repeat = combination_amount)
                     to_big_counter = 0
                     for combination in combinations:
 
-                        secondary_size = combination[0][1][secondary_orientation]
+                        secondary_size = rec[secondary_orientation]
 
                         # Only elements with the same secondary_orientation
-                        if np.sum(list(map(lambda block: block[1][secondary_orientation] - secondary_size,
-                                           combination))) > 0.01:
-                            continue
+                        # secondary_direction_difference = np.sum(
+                        #     list(map(lambda block: abs(block[1][secondary_orientation] - secondary_size), combination)))
+                        # if secondary_direction_difference > 0.01:
+                        #     continue
 
                         # Check if the two blocks combined can fit in the space
-                        combined_height = np.sum(list(map(lambda block: block[1][primary_orientation], combination)))
+                        combined_height = np.sum(list(map(lambda block: block[1][primary_orientation], combination))) \
+                                          + (combination_amount - 1)
 
-                        height_difference = rec[primary_orientation] / combined_height
-                        if abs(height_difference - 1) < 1 / rec[primary_orientation]:
+                        height_difference = rec[primary_orientation] / (combined_height) - 1
+                        if abs(height_difference) < 0.001:
                             # the two blocks fit in the space
 
                             next_rectangles = rectangles.copy()
@@ -245,7 +274,7 @@ class LevelImgDecoder:
                                 )
                                 next_used_blocks.append(new_block)
                                 used_area += block['area']
-                                start_value += block[f'{primary_orientation}']
+                                start_value += block[f'{primary_orientation}'] + 1
 
                             # Remove the current big rectangle
                             del next_rectangles[rec_idx]
@@ -254,6 +283,7 @@ class LevelImgDecoder:
                                 rectangles = next_rectangles,
                                 used_blocks = next_used_blocks,
                                 required_area = required_area,
+                                poly = poly,
                                 occupied_area = occupied_area + (rec['area'] if all_space_used else used_area)
                             )
 
@@ -261,7 +291,8 @@ class LevelImgDecoder:
                                 return selected_blocks
 
                         # This means the block were to big which means doesnt fit
-                        to_big_counter += 1
+                        if height_difference < 0:
+                            to_big_counter += 1
 
                     # If all blocks combined were to big, we dont need to check more block combinations
                     if to_big_counter > len(list(combinations)):
@@ -279,10 +310,11 @@ class LevelImgDecoder:
                 type = block['block_type']['name'],
                 material = Constants.materials[block['material'] - 1],
                 x = np.average(block['rec']['rectangle'][:, 0]) * Constants.resolution,
-                y = np.average(block['rec']['rectangle'][:, 1]) * Constants.resolution * -1,
+                y = np.average(block['rec']['rectangle'][:, 1]) * Constants.resolution,
                 rotation = 90 if block['block_type']['rotated'] else 0
             )
             element = LevelElement(id = block_idx, **block_attribute)
+            element.create_set_geometry()
             ret_level_elements.append(element)
         block_idx += 1
 
@@ -290,11 +322,12 @@ class LevelImgDecoder:
             pig_attribute = dict(
                 type = "BasicSmall",
                 material = None,
-                x = np.average(pig[0]) * Constants.resolution,
-                y = np.average(pig[1]) * Constants.resolution * -1,
+                x = pig[0] * Constants.resolution,
+                y = pig[1] * Constants.resolution,
                 rotation = 0
             )
             element = LevelElement(id = pig_idx + block_idx, **pig_attribute)
+            element.create_set_geometry()
             ret_level_elements.append(element)
         return ret_level_elements
 
@@ -307,8 +340,8 @@ class LevelImgDecoder:
         return ret_dict
 
     def visualize_contours(self, level_img):
-
-        level_img_8 = level_img.astype(np.uint8)
+        flipped = np.flip(level_img, axis = 0)
+        level_img_8 = flipped.astype(np.uint8)
         top_value = np.max(level_img_8)
         bottom_value = np.min(level_img_8)
 
@@ -347,8 +380,8 @@ class LevelImgDecoder:
         plt.show()
 
     def visualize_one_decoding(self, level_img, material_id = 0, axs = None):
-
-        level_img_8 = level_img.astype(np.uint8)
+        flipped = np.flip(level_img, axis = 0)
+        level_img_8 = flipped.astype(np.uint8)
         original_img = level_img_8.copy()
 
         skip_first = True
@@ -358,7 +391,7 @@ class LevelImgDecoder:
             fig, axs = plt.subplots(1, 4, figsize = (10, 3), dpi = 300)
 
         if not skip_first:
-            axs[axs_idx].imshow(level_img_8)
+            axs[axs_idx].imshow(level_img_8, origin='lower')
             axs[axs_idx].axis('off')
             axs_idx += 1
 
@@ -367,7 +400,7 @@ class LevelImgDecoder:
 
         contour_viz = level_img_8.copy()
         cv2.drawContours(contour_viz, contours, -1, 8, 1)
-        axs[axs_idx].imshow(contour_viz)
+        axs[axs_idx].imshow(contour_viz, origin='lower')
         axs_idx += 1
 
         blocks = []
@@ -411,7 +444,7 @@ class LevelImgDecoder:
 
                 rectangle_data.append(self.create_rect_dict(rectangle.reshape((4, 2))))
 
-            axs[axs_idx].imshow(original_img)
+            axs[axs_idx].imshow(original_img, origin='lower')
 
             # Sort by rectangle size
             rectangles = sorted(rectangle_data, key = lambda x: x['area'], reverse = True)
@@ -421,14 +454,21 @@ class LevelImgDecoder:
                 rect_dict[rec_idx] = rec
 
             selected_blocks = self.select_blocks(
-                rectangles = rect_dict.copy(), used_blocks = [], required_area = required_area
+                rectangles = rect_dict.copy(),
+                used_blocks = [],
+                required_area = required_area,
+                poly = poly
             )
-
 
             if selected_blocks is None:
                 print(rect_dict)
                 print(len(contour))
-                selected_blocks = self.select_blocks(rectangles = rect_dict, used_blocks = [], required_area = required_area)
+                selected_blocks = self.select_blocks(
+                    rectangles = rect_dict,
+                    used_blocks = [],
+                    required_area = required_area,
+                    poly = poly
+                )
                 raise Exception("No Block Selected")
             if selected_blocks is not None:
                 for selected_block in selected_blocks:
@@ -442,7 +482,7 @@ class LevelImgDecoder:
         axs_idx += 1
         # Create block elements out of the possible blocks and the rectangle
         level_elements = self.create_level_elements(flattend_blocks, [])
-        axs[axs_idx].imshow(level_img_8)
+        axs[axs_idx].imshow(level_img_8, origin='lower')
         self.level_viz.create_img_of_structure(level_elements, ax = axs[axs_idx], scaled = True)
 
         if not skip_first:
@@ -612,6 +652,3 @@ class LevelImgDecoder:
             ret_list += rect_data
 
         return ret_list
-
-
-
