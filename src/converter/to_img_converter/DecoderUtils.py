@@ -2,6 +2,9 @@ import numpy as np
 
 
 def recalibrate_blocks(created_level_elements):
+    if len(created_level_elements) == 0:
+        return []
+
     # Post process
     sorted_elements = sorted(created_level_elements, key = lambda _element: (_element.y, _element.x))
     for element_idx, element in enumerate(sorted_elements):

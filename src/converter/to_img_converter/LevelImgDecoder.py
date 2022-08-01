@@ -9,6 +9,7 @@ from shapely.geometry import Polygon, Point
 from converter import MathUtil
 from converter.to_img_converter.DecoderUtils import recalibrate_blocks
 from level import Constants
+from level.Level import Level
 from level.LevelElement import LevelElement
 from level.LevelVisualizer import LevelVisualizer
 from util.Config import Config
@@ -70,9 +71,11 @@ class LevelImgDecoder:
                 # Calc data for each rectangle required in the find blocks method
                 rectangles_with_data = []
                 for rectangle in rectangles:
-                    rectangles_with_data.append(
-                        self.create_rect_dict(rectangle.reshape((4, 2)))
-                    )
+                    rect_data = self.create_rect_dict(rectangle.reshape((4, 2)))
+                    if rect_data['width'] <= 1 or rect_data['height'] <= 1:
+                        continue
+
+                    rectangles_with_data.append(rect_data)
 
                 # Sort the rectangles by area and create a dictionary out of them
                 sorted_rectangles = sorted(rectangles_with_data, key = lambda x: x['area'], reverse = True)
@@ -87,14 +90,6 @@ class LevelImgDecoder:
                     required_area = contour_data['required_area'],
                     poly = poly
                 )
-                if selected_blocks is None:
-                    selected_blocks = self.select_blocks(
-                        rectangles = rect_dict,
-                        used_blocks = [],
-                        required_area = contour_data['required_area'],
-                        poly = poly
-                    )
-                    raise Exception('No Block Selected')
 
                 if selected_blocks is not None:
                     for selected_block in selected_blocks:
@@ -115,7 +110,7 @@ class LevelImgDecoder:
 
         created_level_elements = recalibrate_blocks(level_elements)
 
-        return created_level_elements
+        return Level.create_level_from_structure(created_level_elements)
 
     def get_pig_position(self, level_img):
 
