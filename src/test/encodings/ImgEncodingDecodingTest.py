@@ -121,5 +121,5 @@ def visualize_encoding(level):
 
 if __name__ == '__main__':
     # decode_test_level()
-    img_encoding_decoding_test()
-    # get_rectangles()
+    # img_encoding_decoding_test()
+    get_rectangles()

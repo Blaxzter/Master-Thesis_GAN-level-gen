@@ -171,7 +171,7 @@ class LevelVisualizer:
 
     def get_patch(self, ax, bottom_left, element, height, width):
         if "Basic" in element.type or "Circle" in element.type:
-            new_patch = patches.Circle((element.x, element.y), radius = element.size[0] / 2)
+            new_patch = patches.Circle(np.array(bottom_left) + width / 2, radius = width / 2)
         elif "Platform" in element.type:
             new_patch = patches.Rectangle(bottom_left, width, height)
             platform_transform = mpl.transforms.Affine2D().rotate_deg_around(element.x, element.y,

@@ -33,3 +33,41 @@ def recalibrate_blocks(created_level_elements):
         element.y -= lowest_value
 
     return sorted_elements
+
+
+def get_img_trim(level_img):
+
+    left_space = 0
+    for row_idx in range(level_img.shape[0]):
+        if len(np.nonzero(level_img[:, row_idx])[0]) == 0:
+            left_space += 1
+        else:
+            break
+
+    right_space = 0
+    for row_idx in range(level_img.shape[0]):
+        if len(np.nonzero(level_img[:, -row_idx])[0]) == 0:
+            right_space += 1
+        else:
+            break
+
+    top_space = 0
+    for cloumn_idx in range(level_img.shape[1]):
+        if len(np.nonzero(level_img[cloumn_idx, :])[0]) == 0:
+            top_space += 1
+        else:
+            break
+
+    bottom_space = 0
+    for cloumn_idx in range(level_img.shape[1]):
+        if len(np.nonzero(level_img[-cloumn_idx, :])[0]) == 0:
+            bottom_space += 1
+        else:
+            break
+
+    return top_space, bottom_space, left_space, right_space
+
+def trim_img(level_img):
+    top_space, bottom_space, left_space, right_space = get_img_trim(level_img)
+
+    return level_img[top_space: -bottom_space + 1, left_space: -right_space + 1]
