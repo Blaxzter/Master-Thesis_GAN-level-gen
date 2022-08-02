@@ -275,6 +275,7 @@ class LevelImgDecoder:
         # Divide the area into divisions of possible blocks
 
         for rec_idx, rec in rectangles.items():
+            rx_1, rx_2, ry_1, ry_2 = (rec['min_x'], rec['max_x'], rec['min_y'], rec['max_y'])
             # Go over both orientations
             for (idx_1, primary_orientation), (idx_2, secondary_orientation) in \
                     [((1, 'height'), (0, 'width')), ((0, 'width'), (1, 'height'))]:
