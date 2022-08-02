@@ -8,6 +8,7 @@ from shapely.affinity import translate
 from shapely.geometry import Polygon
 
 from converter import MathUtil
+from converter.to_img_converter import DecoderUtils
 from level import Constants
 from level.Level import Level
 from level.LevelElement import LevelElement
@@ -52,7 +53,7 @@ class LevelImgDecoder:
 
         self.level_viz = LevelVisualizer()
 
-    def decode_level(self, level_img):
+    def decode_level(self, level_img, recalibrate_blocks = False):
         if level_img.shape[0] == 0 or level_img.shape[1] == 0:
             return None
 
@@ -115,6 +116,8 @@ class LevelImgDecoder:
         # Only required between selected blocks i guess :D
 
         flattend_blocks = list(itertools.chain(*ret_blocks))
+        for block in flattend_blocks:
+            print(f"Block: {block['block_type']['name']} from: {block['rec_idx']}")
 
         pig_positions = []
         if not no_birds:
@@ -123,7 +126,8 @@ class LevelImgDecoder:
         # Create block elements out of the possible blocks and the rectangle
         level_elements = self.create_level_elements(flattend_blocks, pig_positions)
 
-        # created_level_elements = recalibrate_blocks(level_elements)
+        if recalibrate_blocks:
+            level_elements = DecoderUtils.recalibrate_blocks(level_elements)
 
         return Level.create_level_from_structure(level_elements)
 
@@ -183,33 +187,33 @@ class LevelImgDecoder:
         if occupied_area > required_area or len(rectangles) == 0:
             return None
 
-        overlapps = 0
-        next_rectangles = rectangles.copy()
+        # Filter rectangles for existing blocks
+        # check if rec overlaps a existing block significantly
+        for rec_idx, rec in rectangles.copy().items():
+            for used_block in used_blocks:
+                block_rec = used_block['rec']
+
+                overlapping = rec['poly'].intersection(block_rec['poly']).area
+                if overlapping > 0:
+                    del rectangles[rec_idx]
+                    break
+
+                distance = rec['poly'].distance(block_rec['poly'])
+                if distance == 0:
+                    del rectangles[rec_idx]
+                    break
+
+        if len(rectangles) == 0:
+            return None
+
+        # check if remaining rectangles are able to fill the shape approximetly
+        combined_area = np.sum([rec['poly'].area for rec in rectangles.values()])
+        if abs((combined_area + occupied_area) / required_area) < 0.8:
+            return None
 
         # Go over each rectangle
         for rec_idx, rec in rectangles.items():
             rx_1, rx_2, ry_1, ry_2 = (rec['min_x'], rec['max_x'], rec['min_y'], rec['max_y'])
-
-            # check if rec overlaps a existing block significantly
-            overlap = False
-            for used_block in used_blocks:
-                block_rec = used_block['rec']
-                bx_1, bx_2, by_1, by_2 = (
-                    block_rec['min_x'], block_rec['max_x'], block_rec['min_y'], block_rec['max_y'])
-                dx = np.min([rx_2, bx_2]) - np.max([rx_1, bx_1])
-                dy = np.min([ry_2, by_2]) - np.max([ry_1, by_1])
-                if (dx > 0) and (dy > 0):
-                    overlap = True
-                    del next_rectangles[rec_idx]
-                    break
-
-                if used_block['rec']['poly'].distance(rec['poly']) == 0:
-                    del next_rectangles[rec_idx]
-                    break
-
-            if overlap:
-                overlapps += 1
-                continue
 
             if rec['height'] in self.original_possible_height and rec['width'] in self.original_possible_width:
                 # Search for matching block sizes
@@ -221,10 +225,12 @@ class LevelImgDecoder:
                     if width_diff > 0.001 or height_diff > 0.001:
                         continue
 
+                    next_rectangles = rectangles.copy()
                     del next_rectangles[rec_idx]
                     new_block = dict(
                         block_type = block,
-                        rec = rec
+                        rec = rec,
+                        rec_idx = rec_idx
                     )
 
                     next_used_blocks = used_blocks.copy()
@@ -262,13 +268,11 @@ class LevelImgDecoder:
 
                     if selected_blocks is not None:
                         return selected_blocks
+                    else: break
 
-            # The rectangle is bigger than any available block
-            # That means it consists out of multiple smaller one
-            # Divide the area into divisions of possible blocks
-
-        if overlapps == len(rectangles):
-            return None
+        # The rectangle is bigger than any available block
+        # That means it consists out of multiple smaller one
+        # Divide the area into divisions of possible blocks
 
         for rec_idx, rec in rectangles.items():
             # Go over both orientations
@@ -335,7 +339,8 @@ class LevelImgDecoder:
                                 block_rectangle[3][idx_1] = start_value + block[f'{primary_orientation}']
                                 new_block = dict(
                                     block_type = block,
-                                    rec = self.create_rect_dict(block_rectangle)
+                                    rec = self.create_rect_dict(block_rectangle),
+                                    rec_idx = rec_idx
                                 )
                                 next_used_blocks.append(new_block)
                                 used_area += block['area']
