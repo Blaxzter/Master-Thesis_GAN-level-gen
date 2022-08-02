@@ -27,7 +27,10 @@ def get_rectangle(img):
 
     more_left = 0 if min(big_conts[0][1][:, :, 0:1]).item() > min(big_conts[1][1][:, :, 0:1]).item() else 1
 
-    cords = big_conts[more_left][1]
+    selected_cont = big_conts[more_left]
+    if selected_cont[0] < 10000:
+        selected_cont = big_conts[1 if more_left == 0 else 0]
+    cords = selected_cont[1]
 
     left_bound, right_bound, upper_bound, lower_bound = \
         (min(cords[:, :, 0:1]).item(), max(cords[:, :, 0:1]).item(), min(cords[:, :, 1:2]).item(), max(cords[:, :, 1:2]).item())
@@ -99,15 +102,18 @@ def create_run_img(run_name):
         data = pickle.load(f)
 
     fig, axd = plt.subplot_mosaic([['generator_loss', 'discriminator_loss', 'img', 'img'],
-                                   ['real_prediction', 'fake_prediction', 'img', 'img']],
+                                   ['real_probabilities', 'fake_probabilities', 'img', 'img']],
                                   figsize = (14, 6))
 
     for name, c_data in data.items():
         if name == 'image':
             continue
 
-        axd[name].plot(c_data.keys(), c_data.values())
-        axd[name].set_title(name)
+        clean_run_name = name.replace(run_name + '/', '')
+        print(clean_run_name)
+        if clean_run_name in axd.keys():
+            axd[clean_run_name].plot(c_data.keys(), c_data.values())
+            axd[clean_run_name].set_title(clean_run_name)
 
     axd['img'].imshow(data['image'])
     axd['img'].set_title("Last generated img")
@@ -117,39 +123,11 @@ def create_run_img(run_name):
     plt.tight_layout()
     plt.show()
 
-
-def create_wgan_run_img(run_name):
-    data_file = config.get_run_data(run_name)
-    if not os.path.isfile(data_file):
-        logger.debug(f"Pickle file {data_file} doesn't exists")
-        return
-
-    with open(data_file, 'rb') as f:
-        data = pickle.load(f)
-
-    fig, axd = plt.subplot_mosaic([['generator_loss', 'discriminator_loss', 'img', 'img'],
-                                   ['real_prediction', 'fake_prediction', 'img', 'img']],
-                                  figsize = (14, 6))
-
-    for name, c_data in data.items():
-        if name == 'image':
-            continue
-
-        axd[name].plot(c_data.keys(), c_data.values())
-        axd[name].set_title(name)
-
-    axd['img'].imshow(data['image'])
-    axd['img'].set_title("Last generated img")
-
-    fig.suptitle(run_name)
-
-    plt.tight_layout()
-    plt.show()
 
 if __name__ == '__main__':
     config: Config = Config.get_instance()
     img_folder = config.get_img_path("generated")
-    log_file, run_name = config.get_log_file("events.out.tfevents.1656354301.ubuntu.474168.0.v2")
+    log_file, run_name = config.get_log_file("events.out.tfevents.1659021612.ncg26.hpc.itc.rwth-aachen.de.117655.0.v2")
 
     logger.debug(f'Extract data: run_name: {run_name}, log_file: {log_file}')
 

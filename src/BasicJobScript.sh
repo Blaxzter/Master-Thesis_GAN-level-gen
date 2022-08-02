@@ -40,3 +40,7 @@ python3 -c "import tensorflow as tf; print('Num GPUs Available: ', len(tf.config
 
 ### Execute your application
 python3 trainer/TrainNeuralNetwork.py
+
+
+### TO RUN sbatch < BasicJobScript.sh
+### TO View in QUEUE squeue -u $USER

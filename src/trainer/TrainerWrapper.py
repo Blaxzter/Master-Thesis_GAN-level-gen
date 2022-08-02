@@ -41,7 +41,8 @@ class NetworkTrainer:
             self.create_checkpoint_manager(self.run_name)
             logger.debug(f'Start Training of {self.run_name} for {self.epochs} epochs')
         else:
-            logger.debug(f'Continue Training of {self.run_name} for {self.epochs} epochs at {self.visualizer.global_step}')
+            logger.debug(
+                f'Continue Training of {self.run_name} for {self.epochs} epochs at {self.visualizer.global_step}')
 
         current_epoch = 0
         if self.outer_tqdm:
@@ -61,6 +62,7 @@ class NetworkTrainer:
             if (current_epoch + 1) % self.config.save_checkpoint_every == 0:
                 self.manager.save()
                 self.visualizer.store_data(current_epoch)
+
             current_epoch += 1
 
         # Generate after the final epoch
@@ -111,10 +113,3 @@ class NetworkTrainer:
 
         self.load(run_name = run_name, checkpoint_date = checkpoint_date)
         self.continue_run = True
-
-
-
-
-
-
-

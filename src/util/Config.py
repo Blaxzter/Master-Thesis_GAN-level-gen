@@ -204,7 +204,7 @@ class Config:
         return os.path.join(self.pickle_folder, file_name)
 
     def get_epoch_run_data(self, run_name, epoch):
-        folder_name = os.path.join(self.epoch_run_data, run_name.replace('.pickle'))
+        folder_name = os.path.join(self.epoch_run_data, run_name.replace('.pickle', ''))
         Path(folder_name).mkdir(parents = True, exist_ok = True)
 
         file_name = f'epoch_{epoch}_{self.strftime}.pickle'

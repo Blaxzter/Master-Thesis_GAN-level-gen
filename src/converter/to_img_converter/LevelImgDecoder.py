@@ -180,10 +180,11 @@ class LevelImgDecoder:
         if occupied_area != 0 and abs(required_area / occupied_area - 1) < 0.1:
             return used_blocks
 
-        if occupied_area > required_area:
+        if occupied_area > required_area or len(rectangles) == 0:
             return None
 
         overlapps = 0
+        next_rectangles = rectangles.copy()
 
         # Go over each rectangle
         for rec_idx, rec in rectangles.items():
@@ -199,6 +200,11 @@ class LevelImgDecoder:
                 dy = np.min([ry_2, by_2]) - np.max([ry_1, by_1])
                 if (dx > 0) and (dy > 0):
                     overlap = True
+                    del next_rectangles[rec_idx]
+                    break
+
+                if used_block['rec']['poly'].distance(rec['poly']) == 0:
+                    del next_rectangles[rec_idx]
                     break
 
             if overlap:
@@ -215,7 +221,6 @@ class LevelImgDecoder:
                     if width_diff > 0.001 or height_diff > 0.001:
                         continue
 
-                    next_rectangles = rectangles.copy()
                     del next_rectangles[rec_idx]
                     new_block = dict(
                         block_type = block,

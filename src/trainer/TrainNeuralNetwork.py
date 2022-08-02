@@ -14,16 +14,16 @@ from generator.gan.BigGans import WGANGP128128_Multilayer, WGANGP128128
 if __name__ == '__main__':
     with tf.device('/GPU:0'):
         config = Config.get_instance()
-        config.tag = "wasserstein-gan_GP_128_128_multi_layer_fixed"
-        config.one_encoding = False
-        config.multilayer = True
+        config.tag = "wasserstein-gan_GP_128_128_one_element_encoding_fixed"
+        config.one_encoding = True
+        config.multilayer = False
         print(str(config))
 
-        dataset = LevelDataset(dataset_name = "new_encoding_unified_128_128", batch_size = 32)
+        dataset = LevelDataset(dataset_name = "one_element_encoding_unified_128_128", batch_size = 32)
         dataset.load_dataset()
 
-        gan = WGANGP128128_Multilayer()
-        run_name = "wgan_gp_128_128_one_encoding_fixed"
+        gan = WGANGP128128()
+        run_name = "wgan_gp_128_128_one_element_encoding_fixed"
 
         trainer = NetworkTrainer(run_name = run_name, dataset = dataset, model = gan, epochs = 15000)
         # trainer.continue_training(run_name = run_name, checkpoint_date = "20220623-015436")
