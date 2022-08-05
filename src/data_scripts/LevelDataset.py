@@ -29,13 +29,14 @@ class LevelDataset:
     def get_dataset(self):
         return self.dataset.shuffle(buffer_size = 60000).batch(self.batch_size, drop_remainder=True)
 
-    def load_dataset(self):
+    def load_dataset(self, normalize = True):
         # Load the dataset from the tf record file
         self.dataset = tf.data.TFRecordDataset(self.filename)
 
         # pass every single feature through our mapping function
         self.dataset = self.dataset.map(self.parse_tfr_element)
-        self.dataset = self.normalize()
+        if normalize:
+            self.dataset = self.normalize()
         self.steps = self.get_steps()
 
     def normalize(self):

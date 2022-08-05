@@ -1,10 +1,12 @@
 from tkinter import *
 
 import numpy as np
+from loguru import logger
 from matplotlib import pyplot as plt
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+from applications.GridDrawer import GridDrawer
 from converter.to_img_converter import DecoderUtils
 from converter.to_img_converter.LevelImgDecoder import LevelImgDecoder
 from converter.to_img_converter.LevelImgEncoder import LevelImgEncoder
@@ -12,6 +14,7 @@ from game_management.GameManager import GameManager
 from level import Constants
 from level.LevelVisualizer import LevelVisualizer
 from test.TestEnvironment import TestEnvironment
+from test.visualization.LevelImgDecoderVisualization import LevelImgDecoderVisualization
 from util.Config import Config
 
 
@@ -23,17 +26,6 @@ class LevelDrawer:
         self.draw_area_width = 600
         self.draw_area_height = 600
 
-        self.level_height = 50
-        self.level_width = 50
-
-        self.canvas = np.zeros((self.level_height + 1, self.level_width + 1))
-        self.rects = [[None for _ in range(self.canvas.shape[0])] for _ in range(self.canvas.shape[1])]
-
-        self.rec_height = self.draw_area_height / self.level_height
-        self.rec_width = self.draw_area_width / self.level_width
-
-        self.myrect = None
-
         self.master = Tk()
         self.master.title("Painting using Ovals")
         self.master.bind('<Key>', lambda event: self.key_event(event))
@@ -41,16 +33,22 @@ class LevelDrawer:
         self.selected_block = None
 
         self.create_frames()
-        self.create_button()
-        self.create_draw_canvas()
+
+        self.grid_drawer = GridDrawer(
+            self.left_frame,
+            draw_area_width = self.draw_area_width,
+            draw_area_height = self.draw_area_height,
+            level_height = 50,
+            level_width = 50,
+        )
+
+        self.create_cursor_button()
         self.create_img_canvas()
 
         self.level_img_decoder = LevelImgDecoder()
+        self.level_img_decoder_visualization = LevelImgDecoderVisualization()
         self.level_visualizer = LevelVisualizer()
-
-        self.create_grid()
-        self.material_id = 1
-        self.colors = ['#a8d399', '#aacdf6', '#f98387', '#dbcc81']
+        self.game_manager = GameManager(Config.get_instance())
 
         self.bottom_buttons()
 
@@ -59,16 +57,6 @@ class LevelDrawer:
         self.img_canvas.pack(expand = NO, side = RIGHT)
         self.figure_canvas = None
         self.fig, self.ax = None, None
-
-    def create_draw_canvas(self):
-        self.draw_canvas = Canvas(self.left_frame, width = self.draw_area_width, height = self.draw_area_height)
-        self.draw_canvas.pack(expand = YES, side = LEFT, pady = (30, 30), padx = (30, 30))
-
-        self.draw_canvas.bind("<B1-Motion>", self.paint)
-        self.draw_canvas.bind("<Button-1>", self.paint)
-        self.draw_canvas.bind("<Motion>", self.hover)
-        self.draw_canvas.bind("<B3-Motion>", lambda event: self.paint(event, clear = True))
-        self.draw_canvas.bind("<Button-3>", lambda event: self.paint(event, clear = True))
 
     def create_frames(self):
         self.top_frame = Frame(self.master, width = self.canvas_width, height = 50, pady = 3)
@@ -128,19 +116,47 @@ class LevelDrawer:
         plot_button.pack(side = LEFT)
 
         # button that displays the plot
+        select_viz = Button(
+            master = self.btm_frame,
+            command = lambda: self.level_img_decoder_visualization.create_tree_of_one_encoding(self.grid_drawer.canvas),
+            height = 2,
+            width = 15,
+            text = "Visualize Block Selection"
+        )
+        select_viz.pack(side = LEFT, padx = (10, 10))
+
+        # button that displays the plot
         plot_button = Button(
             master = self.btm_frame,
-            command = lambda: self.delete_drawing(),
+            command = lambda: self.grid_drawer.delete_drawing(),
             height = 2,
             width = 10,
             text = "Delete"
         )
         plot_button.pack(side = LEFT, padx = (10, 10))
 
-    def create_button(self):
+        start_game_button = Button(
+            master = self.btm_frame,
+            command = lambda: self.start_game(),
+            height = 2,
+            width = 15,
+            text = "Start Game"
+        )
+        start_game_button.pack(side = LEFT)
+
+        play_level = Button(
+            master = self.btm_frame,
+            command = lambda: self.run_level_in_game(),
+            height = 2,
+            width = 15,
+            text = "Send To Game"
+        )
+        play_level.pack(side = LEFT)
+
+    def create_cursor_button(self):
         temp_button = Button(
             master = self.top_frame,
-            command = lambda: self.block_cursor(dict(width = 1, height = 1, name = '1x1')),
+            command = lambda: self.grid_drawer.block_cursor(dict(width = 1, height = 1, name = '1x1')),
             height = 2,
             width = 10,
             text = '1 x 1'
@@ -153,7 +169,7 @@ class LevelDrawer:
             temp_button = Button(
                 master = self.top_frame,
                 command = lambda block = dict(width = block['width'] + 1, height = block['height'] + 1,
-                                              name = block['name']): self.block_cursor(block),
+                                              name = block['name']): self.grid_drawer.block_cursor(block),
                 height = 2,
                 width = 10,
                 text = block['name']
@@ -162,181 +178,80 @@ class LevelDrawer:
 
         temp_button = Button(
             master = self.top_frame,
-            command = lambda: self.block_cursor(dict(width = 7, height = 7, name = 'bird')),
+            command = lambda: self.grid_drawer.block_cursor(dict(width = 7, height = 7, name = 'bird')),
             height = 2,
             width = 10,
             text = 'Bird'
         )
         temp_button.pack(side = LEFT, pady = (10, 10), padx = (2, 2))
 
-        self.block_cursor(dict(width = 1, height = 1, name = '1x1'))
+        self.grid_drawer.block_cursor(dict(width = 1, height = 1, name = '1x1'))
 
     def key_event(self, event):
         print(event.char)
         if event.char in ['1', '2', '3', '4']:
-            self.material_id = int(event.char)
-            print(self.material_id)
-
-    def create_grid(self):
-        for i in range(self.level_height):
-            self.draw_canvas.create_line(
-                self.rec_height * i, self.rec_height,
-                self.rec_height * i, self.draw_area_height - self.rec_height,
-                width = 1)
-
-        for i in range(self.level_width):
-            self.draw_canvas.create_line(
-                self.rec_width, self.rec_width * i,
-                                self.draw_area_width - self.rec_width, self.rec_width * i,
-                width = 1)
-
-    def paint(self, event, clear = False):
-        self.hover(event)
-
-        fill_color = self.colors[self.material_id - 1]
-
-        x_index = round((event.x + (self.rec_width / 2) - 0) / self.rec_width)
-        y_index = round((event.y + (self.rec_height / 2) - 0) / self.rec_height)
-
-        block_width, block_height, block_name = self.selected_block
-
-        x_axis = np.array([x for x in range(x_index, x_index + block_width)])
-        y_axis = np.array([y for y in range(y_index, y_index + block_height)])
-        x_pos = x_axis * self.rec_width - self.rec_width / 2
-        y_pos = y_axis * self.rec_height - self.rec_height / 2
-
-        if not clear:
-            for x, x_idx in zip(x_pos, x_axis):
-                for y, y_idx in zip(y_pos, y_axis):
-                    x1, y1 = int(x - self.rec_width / 2), int(y - self.rec_width / 2)
-                    x2, y2 = int(x + self.rec_height / 2), int(y + self.rec_height / 2)
-
-                    if y_idx > 1 and y_idx < self.level_height and x_idx > 1 and x_idx < self.level_width:
-
-                        if block_name == 'bird':
-                            x_center = np.average(x_pos)
-                            y_center = np.average(y_pos)
-                            r = np.sqrt((x - x_center) ** 2 + (y - y_center) ** 2) / np.max(
-                                [x_pos - x_center, y_pos - y_center])
-                            if r > 1.2:
-                                continue
-
-                        if self.rects[y_idx][x_idx] is None:
-                            self.rects[y_idx][x_idx] = \
-                                self.draw_canvas.create_rectangle(x1, y1, x2, y2, fill = fill_color, tag = f'rectangle',
-                                                                  outline = fill_color)
-                            self.canvas[y_idx, x_idx] = self.material_id
-
-        if clear:
-            for x, x_idx in zip(x_pos, x_axis):
-                for y, y_idx in zip(y_pos, y_axis):
-                    if y_idx > 1 and y_idx < self.level_height and x_idx > 1 and x_idx < self.level_width:
-
-                        if block_name == 'bird':
-                            x_center = np.average(x_pos)
-                            y_center = np.average(y_pos)
-                            r = np.sqrt((x - x_center) ** 2 + (y - y_center) ** 2) / np.max(
-                                [x_pos - x_center, y_pos - y_center])
-                            if r > 1.2:
-                                continue
-
-                        self.canvas[y_idx, x_idx] = 0
-                        self.draw_canvas.delete(self.rects[y_idx][x_idx])
-                        self.rects[y_idx][x_idx] = None
-
-    def hover(self, event):
-        self.draw_canvas.delete('hover')
-        fill_color = self.colors[self.material_id - 1]
-
-        x_index = round((event.x + (self.rec_width / 2) - 0) / self.rec_width)
-        y_index = round((event.y + (self.rec_height / 2) - 0) / self.rec_height)
-
-        block_width, block_height, block_name = self.selected_block
-
-        x_axis = np.array([x for x in range(x_index, x_index + block_width)])
-        y_axis = np.array([y for y in range(y_index, y_index + block_height)])
-        x_pos = x_axis * self.rec_width - self.rec_width / 2
-        y_pos = y_axis * self.rec_height - self.rec_height / 2
-
-        for x, x_idx in zip(x_pos, x_axis):
-            for y, y_idx in zip(y_pos, y_axis):
-                if y_idx > 1 and y_idx < self.level_height and x_idx > 1 and x_idx < self.level_width:
-
-                    if block_name == 'bird':
-                        x_center = np.average(x_pos)
-                        y_center = np.average(y_pos)
-                        r = np.sqrt((x - x_center) ** 2 + (y - y_center) ** 2) / np.max([x_pos - x_center, y_pos - y_center])
-                        if r > 1.2:
-                            continue
-
-                    x1, y1 = int(x - self.rec_width / 2), int(y - self.rec_width / 2)
-                    x2, y2 = int(x + self.rec_height / 2), int(y + self.rec_height / 2)
-                    self.draw_canvas.create_rectangle(x1, y1, x2, y2, fill = fill_color, tag = f'hover')
+            self.grid_drawer.material_id = int(event.char)
 
     def create_level(self):
-        if self.figure_canvas is not None:
-            plt.close(self.fig)
-            self.figure_canvas.get_tk_widget().destroy()
-            self.img_canvas.delete(self.figure_canvas)
-            if self.toolbar is not None:
-                self.toolbar.destroy()
+        self.clear_figure_canvas()
 
         self.fig, self.ax = plt.subplots(1, 1, dpi = 100)
 
-        temp_level_img = DecoderUtils.trim_img(self.canvas)
+        temp_level_img = DecoderUtils.trim_img(self.grid_drawer.canvas)
 
-        level = self.level_img_decoder.decode_level(temp_level_img)
-
-        # game_manager = GameManager(Config.get_instance())
-        # game_manager.start_game()
-        # game_manager.switch_to_level_elements(level.get_used_elements(), 4)
+        self.level = self.level_img_decoder.decode_level(temp_level_img)
 
         self.ax.imshow(np.flip(temp_level_img, axis = 0), origin = 'lower')
         self.level_visualizer.create_img_of_structure(
-            level.get_used_elements(), use_grid = False, ax = self.ax, scaled = True
+            self.level.get_used_elements(), use_grid = False, ax = self.ax, scaled = True
         )
 
-        # self.level_visualizer.create_img_of_level(level, use_grid = False, ax = self.ax)
-
-        if len(level.get_used_elements()) == 0:
+        if len(self.level.get_used_elements()) == 0:
             self.ax.set_title("No Level Decoded")
 
-        self.figure_canvas = FigureCanvasTkAgg(self.fig, master = self.img_canvas)
-        self.figure_canvas.draw()
-        self.figure_canvas.get_tk_widget().pack(fill = BOTH, expand = 1)
+        self.draw_img_to_fig_canvas()
 
-        self.toolbar = NavigationToolbar2Tk(self.figure_canvas, self.img_canvas)
-        self.toolbar.update()
-
-    def visualize_rectangle(self):
+    def clear_figure_canvas(self):
         if self.figure_canvas is not None:
             plt.close(self.fig)
             self.figure_canvas.get_tk_widget().destroy()
             self.img_canvas.delete(self.figure_canvas)
             if self.toolbar is not None:
                 self.toolbar.destroy()
+
+    def visualize_rectangle(self):
+        self.clear_figure_canvas()
 
         self.fig, self.ax = plt.subplots(1, 1, dpi = 100)
 
         material_id = int(self.rec_idx.get('0.0', 'end'))
 
-        self.level_img_decoder.visualize_rectangle(DecoderUtils.trim_img(self.canvas), material_id, ax = self.ax)
+        trimmed_img = DecoderUtils.trim_img(self.grid_drawer.canvas)
+        self.level_img_decoder_visualization.visualize_rectangle(
+            trimmed_img, material_id, ax = self.ax
+        )
 
+        self.draw_img_to_fig_canvas()
+
+    def draw_img_to_fig_canvas(self):
         self.figure_canvas = FigureCanvasTkAgg(self.fig, master = self.img_canvas)
         self.figure_canvas.draw()
         self.figure_canvas.get_tk_widget().pack(fill = BOTH, expand = 1)
-
         self.toolbar = NavigationToolbar2Tk(self.figure_canvas, self.img_canvas)
         self.toolbar.update()
 
+    def start_game(self):
+        self.game_manager.start_game()
 
-    def block_cursor(self, block):
-        self.selected_block = (block['width'], block['height'], block['name'])
-        if block['name'] == 'bird':
-            self.material_id = 4
+    def run_level_in_game(self):
+        if self.level is None:
+            logger.debug("No level decoded")
+            return
+
+        self.game_manager.switch_to_level(self.level)
 
     def load_level(self):
-        self.delete_drawing()
+        self.grid_drawer.delete_drawing()
 
         load_level = int(self.level_select.get('0.0', 'end'))
 
@@ -346,34 +261,33 @@ class LevelDrawer:
         elements = level.get_used_elements()
         encoded_img = level_img_encoder.create_calculated_img(elements)
 
-        pad_left = int((self.level_width - encoded_img.shape[1]) / 2)
-        pad_right = int((self.level_width - encoded_img.shape[1]) / 2)
-        pad_top = self.level_height - encoded_img.shape[0]
+        if self.grid_drawer.level_width < encoded_img.shape[1] or self.grid_drawer.level_height < encoded_img.shape[0]:
+            max_dim = np.max(encoded_img.shape) + 2
+            self.grid_drawer.set_level_dims(max_dim, max_dim)
+            self.grid_drawer.create_grid()
 
-        if pad_left + encoded_img.shape[1] + pad_right < self.level_width:
-            pad_right += 1
+        pad_left = int((self.grid_drawer.level_width - encoded_img.shape[1]) / 2)
+        pad_right = int((self.grid_drawer.level_width - encoded_img.shape[1]) / 2)
+        pad_top = self.grid_drawer.level_height - encoded_img.shape[0]
 
         padded_img = np.pad(encoded_img, ((pad_top, 0), (pad_left, pad_right)), 'constant')
 
         for x_idx in range(padded_img.shape[1]):
             for y_idx in range(padded_img.shape[0]):
 
+                use_x_idx = x_idx + 1
+
                 if padded_img[y_idx, x_idx] != 0:
-                    x = x_idx * self.rec_width - self.rec_width / 2
-                    y = y_idx * self.rec_height - self.rec_height / 2
+                    x = use_x_idx * self.grid_drawer.rec_width - self.grid_drawer.rec_width / 2
+                    y = y_idx * self.grid_drawer.rec_height - self.grid_drawer.rec_height / 2
 
-                    x1, y1 = int(x - self.rec_width / 2), int(y - self.rec_width / 2)
-                    x2, y2 = int(x + self.rec_height / 2), int(y + self.rec_height / 2)
-                    fill_color = self.colors[int(padded_img[y_idx, x_idx]) - 1]
-                    self.rects[y_idx][x_idx] = \
-                        self.draw_canvas.create_rectangle(x1, y1, x2, y2, fill = fill_color, tag = f'rectangle',
-                                                          outline = fill_color)
-                    self.canvas[y_idx, x_idx] = int(padded_img[y_idx, x_idx])
-
-    def delete_drawing(self):
-        self.draw_canvas.delete('rectangle')
-        self.rects = [[None for _ in range(self.canvas.shape[0])] for _ in range(self.canvas.shape[1])]
-        self.canvas = np.zeros((self.level_height + 1, self.level_width + 1))
+                    x1, y1 = int(x - self.grid_drawer.rec_width / 2), int(y - self.grid_drawer.rec_width / 2)
+                    x2, y2 = int(x + self.grid_drawer.rec_height / 2), int(y + self.grid_drawer.rec_height / 2)
+                    fill_color = self.grid_drawer.colors[int(padded_img[y_idx, x_idx]) - 1]
+                    self.grid_drawer.rects[y_idx][use_x_idx] = \
+                        self.grid_drawer.draw_canvas.create_rectangle(
+                            x1, y1, x2, y2, fill = fill_color, tag = f'rectangle', outline = fill_color)
+                    self.grid_drawer.canvas[y_idx, use_x_idx] = int(padded_img[y_idx, x_idx])
 
 
 if __name__ == '__main__':

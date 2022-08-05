@@ -18,21 +18,38 @@ class GameManager:
         self.rescue_level = conf.rescue_level
         self.rescue_level_path = conf.rescue_level_path
 
+        self.game_is_running = False
+        self.level_reader = LevelReader()
+
         if game_connection is not None:
             self.game_connection = game_connection
         else:
             self.game_connection = GameConnection(self.conf)
 
     def start_game(self, is_running = False):
-        logger.debug("Start Game and Game Connection Server")
+        if self.game_is_running:
+            if self.game_connection.client != None:
+                logger.debug("Game is allready running")
+                return
+            else:
+                logger.debug("Restart the game.")
+                self.game_connection.stop_components()
+                self.game_connection = GameConnection(self.conf)
+        else:
+            logger.debug("Start Game and Game Connection Server")
+
         self.game_connection.start()
         if not is_running:
             self.game_connection.start_game(self.conf.game_path)
         self.game_connection.wait_for_game_window()
+        self.game_is_running = True
 
     def stop_game(self):
         logger.debug("Stop Game Components")
         self.game_connection.stop_components()
+
+    def switch_to_level(self, level, element_idx = 4):
+        self.switch_to_level_elements(level.get_used_elements(), element_idx)
 
     def switch_to_level_elements(self, elements, element_idx = 4):
         level_reader = LevelReader()

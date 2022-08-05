@@ -24,7 +24,7 @@ max_height = 128
 max_width = 128
 
 
-create_multi_dim_img = False
+create_multi_dim_img = True
 
 # Take from tensorflow simple_gan tutorial
 def _bytes_feature(value):
@@ -116,11 +116,11 @@ def parse_single_data_example(data_example):
 def create_tensorflow_data():
     config = Config.get_instance()
 
-    data_pickle = config.get_pickle_file(f"one_element_encoding_unified.pickle")
+    data_pickle = config.get_pickle_file(f"new_encoding_unified.pickle")
     with open(data_pickle, 'rb') as f:
         data_dict = pickle.load(f)
 
-    record_file = config.get_tf_records(dataset_name = f'one_element_encoding_unified_{max_width}_{max_height}')
+    record_file = config.get_tf_records(dataset_name = f'new_encoding_multilayer_unified_{max_width}_{max_height}')
     with tf.io.TFRecordWriter(record_file) as writer:
         for date_name, data_example in data_dict.items():
             tf_example = parse_single_data_example(data_example)

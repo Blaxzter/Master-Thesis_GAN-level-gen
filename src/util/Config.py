@@ -93,6 +93,9 @@ class Config:
         self.epoch_run_data = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/pickles/run_data')
         )
+        self.eval_root = os.path.normpath(
+            os.path.join(self.current_path, 'resources/data/eval/')
+        )
         self.encoding_folder = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/encoding_data')
         )
@@ -211,6 +214,10 @@ class Config:
 
         return os.path.join(folder_name, file_name)
 
+    def get_epoch_run_data_files(self, run_name):
+        folder_name = os.path.join(self.epoch_run_data, run_name.replace('.pickle', ''))
+        return Path(folder_name).glob('*.pickle')
+
     def get_data_root(self):
         return self.data_root
 
@@ -242,6 +249,10 @@ class Config:
     def get_text_data(self, file):
         text_folder = os.path.join(self.data_root, "text")
         return os.path.join(text_folder, file) + ".txt"
+
+    def get_eval_file(self, file_name):
+        text_folder = os.path.join(self.eval_root, file_name)
+        return text_folder + ".json"
 
     def get_event_file(self, log_dir):
         for path in Path(log_dir).rglob('events.out.tfevents.*'):
