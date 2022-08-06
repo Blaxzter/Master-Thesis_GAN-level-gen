@@ -11,121 +11,129 @@ sys.path.append(os.path.dirname(SCRIPT_DIR))
 from converter.to_img_converter.LevelImgEncoder import LevelImgEncoder
 from util.Config import Config
 
-# max_height = 86 + 2
-# max_width = 212
 
-# max_height = 99 + 1
-# max_width = 110 + 2
+class TensorflowDataCreation:
 
-max_height = 99 + 1
-max_width = 115 + 1
+    def __init__(self, max_width = 128, max_height = 128):
+        self.config = Config.get_instance()
 
-max_height = 128
-max_width = 128
+        # max_height = 86 + 2
+        # max_width = 212
 
+        # max_height = 99 + 1
+        # max_width = 110 + 2
 
-create_multi_dim_img = True
+        # max_height = 99 + 1
+        # max_width = 115 + 1
 
-# Take from tensorflow simple_gan tutorial
-def _bytes_feature(value):
-    """Returns a bytes_list from a string / byte."""
-    if isinstance(value, type(tf.constant(0))):  # if value ist tensor
-        value = value.numpy()  # get value of tensor
-    return tf.train.Feature(bytes_list = tf.train.BytesList(value = [value]))
+        self.max_width = max_width
+        self.max_height = max_height
 
+        self.convert_to_multi_dim = True
 
-def _float_feature(value):
-    """Returns a floast_list from a float / double."""
-    return tf.train.Feature(float_list = tf.train.FloatList(value = [value]))
+    # Take from tensorflow simple_gan tutorial
+    def _bytes_feature(self, value):
+        """Returns a bytes_list from a string / byte."""
+        if isinstance(value, type(tf.constant(0))):  # if value ist tensor
+            value = value.numpy()  # get value of tensor
+        return tf.train.Feature(bytes_list = tf.train.BytesList(value = [value]))
 
+    def _float_feature(self, value):
+        """Returns a floast_list from a float / double."""
+        return tf.train.Feature(float_list = tf.train.FloatList(value = [value]))
 
-def _int64_feature(value):
-    """Returns an int64_list from a bool / enum / int / uint."""
-    return tf.train.Feature(int64_list = tf.train.Int64List(value = [value]))
+    def _int64_feature(self, value):
+        """Returns an int64_list from a bool / enum / int / uint."""
+        return tf.train.Feature(int64_list = tf.train.Int64List(value = [value]))
 
+    def serialize_array(self, array):
+        array = tf.io.serialize_tensor(array)
+        return array
 
-def serialize_array(array):
-    array = tf.io.serialize_tensor(array)
-    return array
+    def pad_image_to_size(self, image_data):
+        pad_left = int((self.max_width - image_data.shape[1]) / 2)
+        pad_right = int((self.max_width - image_data.shape[1]) / 2)
+        pad_top = self.max_height - image_data.shape[0]
 
+        if pad_left + image_data.shape[1] + pad_right < self.max_width:
+            pad_right += 1
 
-def pad_image_to_size(image_data):
-    pad_left = int((max_width - image_data.shape[1]) / 2)
-    pad_right = int((max_width - image_data.shape[1]) / 2)
-    pad_top = max_height - image_data.shape[0]
+        if len(image_data.shape) == 3:
+            padded_img = np.zeros((self.max_height, self.max_width, image_data.shape[-1]))
+            for dim in range(padded_img.shape[-1]):
+                padded_img[:, :, dim] = np.pad(image_data[:, :, dim], ((pad_top, 0), (pad_left, pad_right)), 'constant')
+        else:
+            padded_img = np.pad(image_data, ((pad_top, 0), (pad_left, pad_right)), 'constant')
+            new_shape = (padded_img.shape[0], padded_img.shape[1], 1)
+            padded_img = padded_img.reshape(new_shape)
+        # plt.imshow(padded_img)
+        # plt.show()
 
-    if pad_left + image_data.shape[1] + pad_right < max_width:
-        pad_right += 1
+        return padded_img.astype(dtype = np.int16)
 
-    padded_img = np.pad(image_data, ((pad_top, 0), (pad_left, pad_right)), 'constant')
+    def parse_single_data_example(self, data_example):
+        # define the dictionary -- the structure -- of our single example
 
-    # plt.imshow(padded_img)
-    # plt.show()
+        meta_data = data_example['meta_data']
+        img_data = data_example['img_data']
+        game_data = data_example['game_data'] if 'game_data' in data_example else None
 
-    return padded_img.reshape((padded_img.shape[0], padded_img.shape[1], 1)).astype(dtype = np.int16)
+        padded_img_data = self.pad_image_to_size(img_data)
 
+        if self.convert_to_multi_dim and img_data.shape[-1] == 1:
+            new_img = LevelImgEncoder.create_multi_dim_img_from_picture(padded_img_data)
+        else:
+            new_img = padded_img_data
 
-def parse_single_data_example(data_example):
-    # define the dictionary -- the structure -- of our single example
+        data = {
+            # Img data
+            'height': self._int64_feature(new_img.shape[0]),
+            'width': self._int64_feature(new_img.shape[1]),
+            'depth': self._int64_feature(new_img.shape[2]),
+            'raw_image': self._bytes_feature(self.serialize_array(new_img)),
 
-    meta_data = data_example['meta_data']
-    img_data = data_example['img_data']
-    game_data = data_example['game_data'] if 'game_data' in data_example else None
+            # Meta data
+            'level_height': self._float_feature(meta_data.height),
+            'level_width': self._float_feature(meta_data.width),
+            'pixel_height': self._int64_feature(img_data.shape[0]),
+            'pixel_width': self._int64_feature(img_data.shape[1]),
+            'block_amount': self._int64_feature(meta_data.block_amount),
+            'pig_amount': self._int64_feature(meta_data.pig_amount),
+            'platform_amount': self._int64_feature(meta_data.platform_amount),
+            'special_block_amount': self._int64_feature(meta_data.special_block_amount),
+        }
 
-    padded_img_data = pad_image_to_size(img_data)
+        if game_data is not None:
+            # level data from playing
+            data['cumulative_damage'] = self._float_feature(game_data['cumulative_damage'])
+            data['initial_damage'] = self._float_feature(game_data['initial_damage'])
+            data['is_stable'] = self._int64_feature(game_data['is_stable'])
+            data['death'] = self._int64_feature(game_data['death'])
+            data['birds_used'] = self._int64_feature(game_data['birds_used'])
+            data['won'] = self._int64_feature(game_data['won'])
+            data['score'] = self._int64_feature(game_data['score'])
 
-    if create_multi_dim_img:
-        new_img = LevelImgEncoder.create_multi_dim_img_from_picture(padded_img_data)
-    else:
-        new_img = padded_img_data
+        # create an Example, wrapping the single features
+        out = tf.train.Example(features = tf.train.Features(feature = data))
 
-    data = {
-        # Img data
-        'height': _int64_feature(new_img.shape[0]),
-        'width': _int64_feature(new_img.shape[1]),
-        'depth': _int64_feature(new_img.shape[2]),
-        'raw_image': _bytes_feature(serialize_array(new_img)),
+        return out
 
-        # Meta data
-        'level_height': _float_feature(meta_data.height),
-        'level_width': _float_feature(meta_data.width),
-        'pixel_height': _int64_feature(img_data.shape[0]),
-        'pixel_width': _int64_feature(img_data.shape[1]),
-        'block_amount': _int64_feature(meta_data.block_amount),
-        'pig_amount': _int64_feature(meta_data.pig_amount),
-        'platform_amount': _int64_feature(meta_data.platform_amount),
-        'special_block_amount': _int64_feature(meta_data.special_block_amount),
-    }
+    def create_tensorflow_data(self):
 
-    if game_data is not None:
-        # level data from playing
-        data['cumulative_damage'] = _float_feature(game_data['cumulative_damage'])
-        data['initial_damage'] = _float_feature(game_data['initial_damage'])
-        data['is_stable'] = _int64_feature(game_data['is_stable'])
-        data['death'] = _int64_feature(game_data['death'])
-        data['birds_used'] = _int64_feature(game_data['birds_used'])
-        data['won'] = _int64_feature(game_data['won'])
-        data['score'] = _int64_feature(game_data['score'])
+        data_set = self.config.get_data_set(folder_name = 'one_element_multilayer', file_name = "unified")
+        with open(data_set, 'rb') as f:
+            data_dict = pickle.load(f)
 
-    # create an Example, wrapping the single features
-    out = tf.train.Example(features = tf.train.Features(feature = data))
+        record_file = self.config.get_tf_records(
+            dataset_name = f'one_element_multilayer_{self.max_width}_{self.max_height}'
+        )
 
-    return out
-
-
-def create_tensorflow_data():
-    config = Config.get_instance()
-
-    data_pickle = config.get_pickle_file(f"new_encoding_unified.pickle")
-    with open(data_pickle, 'rb') as f:
-        data_dict = pickle.load(f)
-
-    record_file = config.get_tf_records(dataset_name = f'new_encoding_multilayer_unified_{max_width}_{max_height}')
-    with tf.io.TFRecordWriter(record_file) as writer:
-        for date_name, data_example in data_dict.items():
-            tf_example = parse_single_data_example(data_example)
-            writer.write(tf_example.SerializeToString())
+        with tf.io.TFRecordWriter(record_file) as writer:
+            for date_name, data_example in data_dict.items():
+                tf_example = self.parse_single_data_example(data_example)
+                writer.write(tf_example.SerializeToString())
 
 
 if __name__ == '__main__':
-    create_tensorflow_data()
+    data_creation = TensorflowDataCreation()
+    data_creation.create_tensorflow_data()

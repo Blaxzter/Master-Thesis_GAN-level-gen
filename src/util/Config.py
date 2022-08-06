@@ -30,6 +30,12 @@ class Config:
         if self.generator not in GeneratorOptions:
             raise ParameterException(f"The selected generator is not an option: {GeneratorOptions}")
 
+        # Tensorflow data creation setting
+        self.max_height = 128
+        self.max_width = 128
+
+        self.convert_to_multi_dim = False
+
         self.current_path = Path(".")
         found_src = False
         while not found_src:
@@ -89,6 +95,9 @@ class Config:
         )
         self.pickle_folder = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/pickles')
+        )
+        self.dataset_folder = os.path.normpath(
+            os.path.join(self.current_path, 'resources/data/pickles/dataset/')
         )
         self.epoch_run_data = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/pickles/run_data')
@@ -201,10 +210,21 @@ class Config:
     def get_pickle_folder(self):
         return self.pickle_folder
 
+    def get_data_set(self, folder_name, file_name):
+        if '.pickle' not in file_name:
+            file_name += '.pickle'
+        folder = os.path.join(self.dataset_folder, folder_name)
+        Path(folder).mkdir(parents = True, exist_ok = True)
+        file = os.path.normpath(os.path.join(folder, file_name))
+        return file
+
     def get_pickle_file(self, file_name):
         if '.pickle' not in file_name:
             file_name += '.pickle'
-        return os.path.join(self.pickle_folder, file_name)
+
+        for path in Path(self.pickle_folder).rglob(file_name):
+            return str(path)
+        return None
 
     def get_epoch_run_data(self, run_name, epoch):
         folder_name = os.path.join(self.epoch_run_data, run_name.replace('.pickle', ''))

@@ -79,3 +79,17 @@ class LevelIdImgDecoder:
         )
 
         return block_attribute
+
+    @staticmethod
+    def create_single_layer_img(multilayer_img):
+        stacked_img = np.dstack((np.zeros(multilayer_img.shape[:2]) + 0.5, multilayer_img))
+
+        arg_max = np.argmax(stacked_img, axis = 2)
+        ret_img = np.zeros(multilayer_img.shape[:2])
+
+        for dim in range(1, multilayer_img.shape[-1]):
+            ret_img[arg_max == dim] = np.rint(stacked_img[arg_max == dim, dim]) + (dim - 1) * 13
+
+        ret_img[arg_max == 4] = 40
+
+        return ret_img

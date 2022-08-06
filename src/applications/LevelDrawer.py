@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter import ttk
 
 import numpy as np
 from loguru import logger
@@ -8,6 +9,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from applications.GridDrawer import GridDrawer
 from converter.to_img_converter import DecoderUtils
+from converter.to_img_converter.LevelIdImgDecoder import LevelIdImgDecoder
 from converter.to_img_converter.LevelImgDecoder import LevelImgDecoder
 from converter.to_img_converter.LevelImgEncoder import LevelImgEncoder
 from game_management.GameManager import GameManager
@@ -46,6 +48,7 @@ class LevelDrawer:
         self.create_img_canvas()
 
         self.level_img_decoder = LevelImgDecoder()
+        self.level_id_img_decoder = LevelIdImgDecoder()
         self.level_img_decoder_visualization = LevelImgDecoderVisualization()
         self.level_visualizer = LevelVisualizer()
         self.game_manager = GameManager(Config.get_instance())
@@ -153,6 +156,13 @@ class LevelDrawer:
         )
         play_level.pack(side = LEFT)
 
+        self.selected_decoding = StringVar()
+        combobox = ttk.Combobox(self.btm_frame, textvariable = self.selected_decoding)
+        combobox['values'] = ('LevelImg', 'OneElement')
+        combobox.set('LevelImg')
+        combobox['state'] = 'readonly'
+        combobox.pack(side = LEFT)
+
     def create_cursor_button(self):
         temp_button = Button(
             master = self.top_frame,
@@ -199,7 +209,10 @@ class LevelDrawer:
 
         temp_level_img = DecoderUtils.trim_img(self.grid_drawer.canvas)
 
-        self.level = self.level_img_decoder.decode_level(temp_level_img)
+        if self.selected_decoding.get() == 'LevelImg':
+            self.level = self.level_img_decoder.decode_level(temp_level_img)
+        else:
+            self.level = self.level_id_img_decoder.decode_level(temp_level_img)
 
         self.ax.imshow(np.flip(temp_level_img, axis = 0), origin = 'lower')
         self.level_visualizer.create_img_of_structure(
@@ -248,7 +261,7 @@ class LevelDrawer:
             logger.debug("No level decoded")
             return
 
-        self.game_manager.switch_to_level(self.level)
+        self.game_manager.switch_to_level(self.level, stop_time = False)
 
     def load_level(self):
         self.grid_drawer.delete_drawing()

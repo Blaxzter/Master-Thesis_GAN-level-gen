@@ -30,7 +30,11 @@ if test_on_live_game:
     game_manager = GameManager(conf = config, game_connection = game_connection)
     game_manager.start_game(is_running = False)
 
-data_file = f'{config.get_pickle_folder()}/multilayer_one_element_encoding.pickle'
+data_file = config.get_data_set('one_element_multilayer', 'original.pickle')
+
+level_encoder = LevelImgEncoder()
+
+encoding_algorithm = level_encoder.create_one_element_img_multilayer
 
 
 def create_level_data_multi_structure(original_data_level, p_dict, lock):
@@ -105,7 +109,6 @@ def create_level_data_multi_structure(original_data_level, p_dict, lock):
 
 
 def create_level_data_single_structure(original_data_level, p_dict, lock, store_immediately = False):
-    level_encoder = LevelImgEncoder()
 
     parsed_level = level_reader.parse_level(
         str(original_data_level), use_blocks = True, use_pigs = True, use_platform = True)
@@ -128,7 +131,7 @@ def create_level_data_single_structure(original_data_level, p_dict, lock, store_
     if use_ai:
         game_connection.startAi(start_level = 4, end_level = 4, print_ai_log = True)
 
-    ret_pictures = level_encoder.create_one_element_img(parsed_level.get_used_elements(), multilayer = True)
+    ret_pictures = encoding_algorithm(parsed_level.get_used_elements())
 
     if use_ai:
         all_levels_played = game_connection.wait_till_all_level_played()

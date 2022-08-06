@@ -18,7 +18,7 @@ class GridDrawer:
         self.create_draw_canvas()
         self.create_grid()
 
-        self.material_id = 0
+        self.material_id = 1
 
     def create_draw_canvas(self):
         self.draw_canvas = Canvas(self.left_frame, width = self.draw_area_width, height = self.draw_area_height)

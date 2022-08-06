@@ -1,7 +1,6 @@
 import json
 import os
 import pickle
-from collections import defaultdict
 from copy import copy
 from pathlib import Path
 
@@ -33,7 +32,6 @@ def get_level_from_data(data_key, data_example):
     level = level_reader.parse_level(path = str(level_names[position]), use_platform = True)
 
     return level
-
 
 
 def strip_screenshot_from_data(data: dict, out_file):
@@ -191,7 +189,6 @@ def view_files_with_prop(data, amount = -1, min_width = -1, max_width = -1, min_
 
 
 def filter_level(data, out_file):
-
     meta_data_list = []
     temp_data = []
 
@@ -230,8 +227,6 @@ def filter_level(data, out_file):
 
 
 def unify_level(data_dict, out_file):
-
-
     fig, axs = plt.subplots(1, 3, dpi = 300, figsize = (12, 4))
 
     height_groups = dict()
@@ -245,7 +240,6 @@ def unify_level(data_dict, out_file):
             height_groups[height].append((key, level_data))
         else:
             height_groups[height] = [(key, level_data)]
-
 
     # merge close groups
     axs[0].bar(list(height_groups.keys()), list(map(len, height_groups.values())))
@@ -291,27 +285,34 @@ def unify_level(data_dict, out_file):
         pickle.dump(save_dict, handle, protocol = pickle.HIGHEST_PROTOCOL)
 
 
-if __name__ == '__main__':
-
-    root_pickle_file = 'one_element_encoding'
-
+def create_filtered_dataset():
     config = Config.get_instance()
-    file_name = config.get_pickle_file(file_name = root_pickle_file)
-
+    file_name = config.get_data_set(folder_name = 'one_element_multilayer', file_name = 'original')
     # data_dict = load_data("../resources/data/pickles/level_data_with_screenshot")
     # strip_screenshot_from_data(data_dict)
-
     data_dict = load_data(file_name)
-    file_name = config.get_pickle_file(f"{root_pickle_file}_out")
+    file_name = config.get_data_set(folder_name = 'one_element_multilayer', file_name = "parsed")
     parse_data(data_dict, file_name)
 
     data_dict = load_data(file_name)
-    out_file_filtered = config.get_pickle_file(f"{root_pickle_file}_filtered")
+    out_file_filtered = config.get_data_set(
+        folder_name = 'one_element_multilayer',
+        file_name = "filtered"
+    )
     filter_level(data_dict, out_file = out_file_filtered)
-
-    data_dict = load_data(config.get_pickle_file(file_name = f'{root_pickle_file}_filtered'))
-    out_file_filtered = config.get_pickle_file(f"{root_pickle_file}_unified")
+    data_set = config.get_data_set(folder_name = 'one_element_multilayer', file_name = f'filtered')
+    data_dict = load_data(data_set)
+    out_file_filtered = config.get_data_set(folder_name = 'one_element_multilayer',
+                                            file_name = "unified")
     unify_level(data_dict, out_file = out_file_filtered)
+
+
+if __name__ == '__main__':
+    # create_filtered_dataset()
+
+    root_pickle_file = 'original'
+    config = Config.get_instance()
+    file_name = config.get_data_set(folder_name = 'one_element_multilayer', file_name = root_pickle_file)
 
     # file_filtered = config.get_pickle_file(f"{root_pickle_file}_unified")
     # data_dict = load_data(file_filtered)

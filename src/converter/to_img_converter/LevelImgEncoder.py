@@ -134,6 +134,9 @@ class LevelImgEncoder:
 
         return self.remove_empty_line(picture)
 
+    def create_one_element_img_multilayer(self, element_list):
+        return self.create_one_element_img(element_list, multilayer = True)
+
     def create_one_element_img(self, element_list, multilayer = False):
         min_x, min_y, max_x, max_y = calc_structure_dimensions(element_list)
 

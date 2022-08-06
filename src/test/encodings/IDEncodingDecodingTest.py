@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import numpy as np
+from loguru import logger
 
 from converter.to_img_converter.LevelIdImgDecoder import LevelIdImgDecoder
 from converter.to_img_converter.LevelImgEncoder import LevelImgEncoder
@@ -8,7 +10,8 @@ from test.TestEnvironment import TestEnvironment
 from util.Config import Config
 
 
-def encode_decode_test(test_with_game):
+def encode_decode_test(test_with_game, multi_layer = False):
+    level_id_img_decoder = LevelIdImgDecoder()
     test_environment = TestEnvironment('generated/single_structure')
     level_visualizer = LevelVisualizer()
 
@@ -26,11 +29,16 @@ def encode_decode_test(test_with_game):
             img = game_manager.get_img(structure = True)
             axs[0].imshow(img)
 
-        img_rep = create_encoding(level)
-        decoded_level = get_decoding(img_rep)
+        img_rep = create_encoding(level, multi_layer)
+        if multi_layer:
+            ret_img = level_id_img_decoder.create_single_layer_img(img_rep)
+        else:
+            ret_img = img_rep
 
-        level_visualizer.create_img_of_level(level, ax = axs[2], use_grid = False)
-        level_visualizer.create_img_of_level(decoded_level, ax = axs[3], use_grid = False)
+        decoded_level = level_id_img_decoder.decode_level(ret_img)
+
+        level_visualizer.create_img_of_level(level, ax = axs[2 if test_with_game else 0], use_grid = False)
+        level_visualizer.create_img_of_level(decoded_level, ax = axs[3 if test_with_game else 1], use_grid = False)
 
         if level == decoded_level:
             print(f'Not equal {level_idx}')
@@ -46,15 +54,33 @@ def encode_decode_test(test_with_game):
         game_manager.stop_game()
 
 
+def compare_multilayer_with_single_layer():
+    level_id_img_decoder = LevelIdImgDecoder()
+    test_environment = TestEnvironment('generated/single_structure')
+    level = test_environment.get_level(0)
+
+    single_layer = create_encoding(level, multilayer = False)
+    multilayer = create_encoding(level, multilayer = True)
+
+    reconstructed_single_layer = level_id_img_decoder.create_single_layer_img(multilayer)
+
+    fig, axs = plt.subplots(1, 2)
+    axs[0].imshow(single_layer)
+    axs[1].imshow(reconstructed_single_layer)
+
+    if np.alltrue(np.equal(single_layer, reconstructed_single_layer)):
+        logger.debug("All the same")
+    else:
+        logger.debug("False")
+
+    plt.show()
+
+
 def create_encoding(level, multilayer = False):
     level_img_encoder = LevelImgEncoder()
     return level_img_encoder.create_one_element_img(level.get_used_elements(), multilayer)
 
 
-def get_decoding(img_rep):
-    level_img_decoder = LevelIdImgDecoder()
-    return level_img_decoder.decode_level(img_rep)
-
-
 if __name__ == '__main__':
-    encode_decode_test(test_with_game = True)
+    # encode_decode_test(test_with_game = False, multi_layer = True)
+    compare_multilayer_with_single_layer()

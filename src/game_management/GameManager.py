@@ -48,17 +48,18 @@ class GameManager:
         logger.debug("Stop Game Components")
         self.game_connection.stop_components()
 
-    def switch_to_level(self, level, element_idx = 4):
-        self.switch_to_level_elements(level.get_used_elements(), element_idx)
+    def switch_to_level(self, level, element_idx = 4, stop_time = False):
+        self.switch_to_level_elements(level.get_used_elements(), element_idx, stop_time)
 
-    def switch_to_level_elements(self, elements, element_idx = 4):
+    def switch_to_level_elements(self, elements, element_idx = 4, stop_time = False):
         level_reader = LevelReader()
         level = level_reader.create_level_from_structure(elements, red_birds = True)
         level_folder = self.conf.get_data_train_path(folder = 'temp')
         level_number = f'0{element_idx}' if len(str(element_idx)) == 1 else str(element_idx)
         level_path = f'{level_folder}/level-{level_number}.xml'
         level_reader.write_xml_file(level, level_path)
-        self.change_level(path = str(level_path), stopTime = True)
+
+        self.change_level(path = str(level_path), stopTime = stop_time)
 
     def copy_game_levels(self, level_path = None, rescue_level = None):
         if rescue_level is None:

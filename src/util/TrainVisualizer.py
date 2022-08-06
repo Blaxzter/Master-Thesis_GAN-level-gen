@@ -132,21 +132,21 @@ class TensorBoardViz:
 
         if self.multilayer:
             if self.one_encoding:
-                images = np.argmax(normal_img, axis = 3)
-                non_zero_elements = np.nonzero(np.rint(images[0]))
+                created_img = LevelIdImgDecoder.create_single_layer_img(normal_img[0])
+                non_zero_elements = np.count_nonzero(created_img)
 
                 if len(non_zero_elements[0]) > 70:
                     fig, ax = plt.subplots(1, 1)
                     plt.suptitle(f'Epoch {epoch} Probability {round(pred[0].item() * 1000) / 1000} amount of elements: {len(non_zero_elements[0])}', fontsize = 16)
-                    ax.imshow(images[0])
+                    ax.imshow(created_img)
                     ax.axis('off')
                 else:
                     fig, axs = plt.subplots(2, 1)
-                    axs[0].imshow(images[0])
+                    axs[0].imshow(created_img)
                     axs[0].axis('off')
 
                     try:
-                        created_level = self.level_decoder.decode_level(images[0])
+                        created_level = self.level_decoder.decode_level(created_img)
                         self.level_visualizer.create_img_of_level(
                             created_level, use_grid = False, add_dots = False, ax = axs[1]
                         )
@@ -158,8 +158,11 @@ class TensorBoardViz:
             else:
                 fig, ax = plt.subplots(1, 1)
                 plt.suptitle(f'Epoch {epoch} Probability {round(pred[0].item() * 1000) / 1000}', fontsize = 16)
-                images = np.argmax(normal_img, axis = 3)
-                ax.imshow(images[0])
+
+                stacked_img = np.dstack((np.zeros((128, 128)) + 0.5, normal_img[0].numpy()))
+                img = np.argmax(stacked_img, axis = 2)
+
+                ax.imshow(img)
                 ax.axis('off')
                 plt.tight_layout()
 
