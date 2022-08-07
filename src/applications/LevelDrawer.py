@@ -33,11 +33,17 @@ class LevelDrawer:
         self.master.bind('<Key>', lambda event: self.key_event(event))
 
         self.selected_block = None
+        self.draw_mode = StringVar()
+
+        self.block_data = Config.get_instance().get_encoding_data(f"encoding_res_{Constants.resolution}")
+        del self.block_data['resolution']
 
         self.create_frames()
 
         self.grid_drawer = GridDrawer(
-            self.left_frame,
+            level_drawer = self,
+            frame = self.draw_canvas,
+            draw_mode = self.draw_mode,
             draw_area_width = self.draw_area_width,
             draw_area_height = self.draw_area_height,
             level_height = 50,
@@ -53,149 +59,140 @@ class LevelDrawer:
         self.level_visualizer = LevelVisualizer()
         self.game_manager = GameManager(Config.get_instance())
 
-        self.bottom_buttons()
+        self.control_buttons()
 
     def create_img_canvas(self):
-        self.img_canvas = Canvas(self.right_frame, width = self.draw_area_width, height = self.draw_area_height, bd = 0)
-        self.img_canvas.pack(expand = NO, side = RIGHT)
+        self.img_canvas = Canvas(self.right_frame, bg = "white", height = self.draw_area_width, width = self.draw_area_width)
+        self.img_canvas.pack(fill = BOTH)
+
         self.figure_canvas = None
         self.fig, self.ax = None, None
 
     def create_frames(self):
-        self.top_frame = Frame(self.master, width = self.canvas_width, height = 50, pady = 3)
-        self.left_frame = Frame(self.master, width = int(self.canvas_width / 2), height = self.canvas_height - 100,
-                                pady = 3)
-        self.right_frame = Frame(self.master, width = int(self.canvas_width), height = self.canvas_height - 100,
-                                 pady = 3)
-        self.btm_frame = Frame(self.master, width = self.canvas_width, height = 50, pady = 3)
+
+        # Layout Frames
+        self.top_frame = Frame(self.master, width = self.canvas_width, height = 50, pady = 3, padx = 3)
+        self.center_frame = Frame(self.master, width = self.canvas_width, height = self.canvas_height - 100, pady = 3, padx = 3)
+        # self.btm_frame = Frame(self.master, width = self.canvas_width, height = 50, pady = 3, padx = 3)
+
+        # Element Frames
+        self.left_frame = Frame(self.center_frame, width = int(self.canvas_width / 2), height = self.canvas_height - 100,
+                                pady = 3, padx = 3)
+        self.right_frame = Frame(self.center_frame, width = int(self.canvas_width), height = self.canvas_height - 100,
+                                 pady = 3, padx = 3)
+        self.button_frame = Frame(self.center_frame, width = 40, height = self.canvas_height, pady = 3, padx = 3)
 
         # layout all of the main containers
         self.master.grid_rowconfigure(1, weight = 1)
         self.master.grid_columnconfigure(0, weight = 1)
 
         self.top_frame.grid(row = 0, sticky = "n")
-        self.left_frame.grid(row = 1, sticky = "w")
-        self.right_frame.grid(row = 1, sticky = "e")
-        self.btm_frame.grid(row = 2, sticky = "s")
+        self.center_frame.grid(row = 1, sticky = "news")
+        # self.btm_frame.grid(row = 2, sticky = "s")
 
-    def bottom_buttons(self):
+        self.button_frame.pack(side = LEFT)
+        self.left_frame.pack(side = LEFT)
+        self.right_frame.pack(side = RIGHT)
+
+        self.draw_canvas = Canvas(self.left_frame, bg="white", height=self.draw_area_width, width=self.draw_area_width)
+        self.draw_canvas.pack(fill = BOTH)
+
+    def control_buttons(self):
 
         # button that displays the plot
-        plot_button = Button(
-            master = self.btm_frame,
-            command = lambda: self.create_level(),
-            height = 2,
-            width = 15,
-            text = "Decode Drawing"
-        )
-        plot_button.pack(side = LEFT)
+        self.decode_level = Button(self.top_frame, command = lambda: self.create_level(), height = 2,
+                                   width = 15, text = "Decode Drawing")
+        self.decode_level.pack(side = LEFT, padx = (20, 10))
 
-        self.rec_idx = Text(self.btm_frame, height = 1, width = 3)
+        self.rec_idx = Text(self.top_frame, height = 1, width = 3)
         self.rec_idx.insert('0.0', '1')
-        self.rec_idx.pack(side = LEFT, padx = (10, 10))
+        self.rec_idx.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
 
         # button that displays the plot
-        plot_button = Button(
-            master = self.btm_frame,
-            command = lambda: self.visualize_rectangle(),
-            height = 2,
-            width = 18,
-            text = "Visualize Rectangles"
-        )
-        plot_button.pack(side = LEFT)
+        self.viz_rectangles = Button(self.top_frame, command = lambda: self.visualize_rectangle(), height = 2,
+                                     width = 18, text = "Visualize Rectangles")
+        self.viz_rectangles.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
 
-        self.level_select = Text(self.btm_frame, height = 1, width = 3)
+        self.level_select = Text(self.top_frame, height = 1, width = 3)
         self.level_select.insert('0.0', '0')
-        self.level_select.pack(side = LEFT, padx = (10, 10))
+        self.level_select.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
 
         # button that displays the plot
-        plot_button = Button(
-            master = self.btm_frame,
-            command = lambda: self.load_level(),
-            height = 2,
-            width = 10,
-            text = "Load Level"
-        )
-        plot_button.pack(side = LEFT)
+        self.plot_button = Button(self.top_frame, command = lambda: self.load_level(), height = 2, width = 10,
+                                  text = "Load Level")
+        self.plot_button.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
 
         # button that displays the plot
-        select_viz = Button(
-            master = self.btm_frame,
-            command = lambda: self.level_img_decoder_visualization.create_tree_of_one_encoding(self.grid_drawer.canvas),
-            height = 2,
-            width = 15,
-            text = "Visualize Block Selection"
-        )
-        select_viz.pack(side = LEFT, padx = (10, 10))
+        self.select_viz = Button(self.top_frame,
+                                 command = lambda: self.level_img_decoder_visualization.create_tree_of_one_encoding(
+                                     self.grid_drawer.canvas), height = 2, width = 15,
+                                 text = "Visualize Block Selection")
+        self.select_viz.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
 
         # button that displays the plot
-        plot_button = Button(
-            master = self.btm_frame,
-            command = lambda: self.grid_drawer.delete_drawing(),
-            height = 2,
-            width = 10,
-            text = "Delete"
-        )
-        plot_button.pack(side = LEFT, padx = (10, 10))
+        self.plot_button = Button(self.top_frame, command = lambda: self.grid_drawer.delete_drawing(),
+                                  height = 2, width = 10, text = "Delete")
+        self.plot_button.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
 
-        start_game_button = Button(
-            master = self.btm_frame,
-            command = lambda: self.start_game(),
-            height = 2,
-            width = 15,
-            text = "Start Game"
-        )
-        start_game_button.pack(side = LEFT)
+        self.start_game_button = Button(self.top_frame, command = lambda: self.start_game(), height = 2, width = 15, text = "Start Game")
+        self.start_game_button.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
 
-        play_level = Button(
-            master = self.btm_frame,
-            command = lambda: self.run_level_in_game(),
-            height = 2,
-            width = 15,
-            text = "Send To Game"
-        )
-        play_level.pack(side = LEFT)
+        self.play_level = Button(self.top_frame, command = lambda: self.run_level_in_game(), height = 2, width = 15, text = "Send To Game")
+        self.play_level.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
 
-        self.selected_decoding = StringVar()
-        combobox = ttk.Combobox(self.btm_frame, textvariable = self.selected_decoding)
-        combobox['values'] = ('LevelImg', 'OneElement')
-        combobox.set('LevelImg')
-        combobox['state'] = 'readonly'
-        combobox.pack(side = LEFT)
+        wrapper = Canvas(self.top_frame)
+        wrapper.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
+        label = Label(wrapper, text = "Decoding Mode:")
+        label.pack(side = TOP)
+
+        self.combobox = ttk.Combobox(wrapper, textvariable = self.draw_mode)
+        self.combobox['values'] = ('LevelImg', 'OneElement')
+        self.combobox.set('LevelImg')
+        self.combobox['state'] = 'readonly'
+        self.combobox.bind('<<ComboboxSelected>>', lambda event: self.grid_drawer.delete_drawing())
+        self.combobox.pack(side = TOP)
 
     def create_cursor_button(self):
+
+        self.selected_button = dict()
+
         temp_button = Button(
-            master = self.top_frame,
-            command = lambda: self.grid_drawer.block_cursor(dict(width = 1, height = 1, name = '1x1')),
+            master = self.button_frame,
+            command = lambda: self.grid_drawer.block_cursor(
+                dict(width = 1, height = 1, name = '1x1', button = '1x1')
+            ),
             height = 2,
             width = 10,
             text = '1 x 1'
         )
-        temp_button.pack(side = LEFT, pady = (10, 10), padx = (2, 2))
+        temp_button.pack(side = TOP, pady = (10, 2), padx = (10, 10))
+        self.selected_button['1x1'] = temp_button
 
-        self.block_data = Config.get_instance().get_encoding_data(f"encoding_res_{Constants.resolution}")
-        del self.block_data['resolution']
         for block_idx, block in self.block_data.items():
+            rotated_string = '\n Rotated' if block['rotated'] else ''
             temp_button = Button(
-                master = self.top_frame,
+                master = self.button_frame,
                 command = lambda block = dict(width = block['width'] + 1, height = block['height'] + 1,
-                                              name = block['name']): self.grid_drawer.block_cursor(block),
+                                              name = block['name'], button = f"{block['name']}_{rotated_string}"):
+                                    self.grid_drawer.block_cursor(block),
                 height = 2,
                 width = 10,
-                text = block['name']
+                text = f"{block['name']} {rotated_string}"
             )
-            temp_button.pack(side = LEFT, pady = (10, 10), padx = (2, 2))
+            temp_button.pack(side = TOP, pady = (2, 2), padx = (2, 2))
+            self.selected_button[f"{block['name']}_{rotated_string}"] = temp_button
 
         temp_button = Button(
-            master = self.top_frame,
-            command = lambda: self.grid_drawer.block_cursor(dict(width = 7, height = 7, name = 'bird')),
+            master = self.button_frame,
+            command = lambda: self.grid_drawer.block_cursor(dict(width = 7, height = 7, name = 'bird', button = 'bird')),
             height = 2,
             width = 10,
             text = 'Bird'
         )
-        temp_button.pack(side = LEFT, pady = (10, 10), padx = (2, 2))
+        temp_button.pack(side = TOP, pady = (2, 10), padx = (2, 2))
+        self.selected_button['bird'] = temp_button
 
-        self.grid_drawer.block_cursor(dict(width = 1, height = 1, name = '1x1'))
+        self.grid_drawer.block_cursor(dict(width = 1, height = 1, name = '1x1', button = '1x1'))
 
     def key_event(self, event):
         print(event.char)
@@ -209,7 +206,7 @@ class LevelDrawer:
 
         temp_level_img = DecoderUtils.trim_img(self.grid_drawer.canvas)
 
-        if self.selected_decoding.get() == 'LevelImg':
+        if self.draw_mode.get() == 'LevelImg':
             self.level = self.level_img_decoder.decode_level(temp_level_img)
         else:
             self.level = self.level_id_img_decoder.decode_level(temp_level_img)
