@@ -4,6 +4,7 @@ import sys
 
 import numpy as np
 import tensorflow as tf
+from tqdm import tqdm
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
@@ -120,16 +121,16 @@ class TensorflowDataCreation:
 
     def create_tensorflow_data(self):
 
-        data_set = self.config.get_data_set(folder_name = 'one_element_multilayer', file_name = "unified")
+        data_set = self.config.get_data_set(folder_name = 'one_element_true_one_hot', file_name = "unified")
         with open(data_set, 'rb') as f:
             data_dict = pickle.load(f)
 
         record_file = self.config.get_tf_records(
-            dataset_name = f'one_element_multilayer_{self.max_width}_{self.max_height}'
+            dataset_name = f'one_element_true_one_hot_{self.max_width}_{self.max_height}'
         )
 
         with tf.io.TFRecordWriter(record_file) as writer:
-            for date_name, data_example in data_dict.items():
+            for date_name, data_example in tqdm(data_dict.items()):
                 tf_example = self.parse_single_data_example(data_example)
                 writer.write(tf_example.SerializeToString())
 

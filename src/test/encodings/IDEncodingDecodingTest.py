@@ -10,7 +10,7 @@ from test.TestEnvironment import TestEnvironment
 from util.Config import Config
 
 
-def encode_decode_test(test_with_game, multi_layer = False):
+def encode_decode_test(test_with_game, multi_layer = False, true_one_hot = False):
     level_id_img_decoder = LevelIdImgDecoder()
     test_environment = TestEnvironment('generated/single_structure')
     level_visualizer = LevelVisualizer()
@@ -29,8 +29,8 @@ def encode_decode_test(test_with_game, multi_layer = False):
             img = game_manager.get_img(structure = True)
             axs[0].imshow(img)
 
-        img_rep = create_encoding(level, multi_layer)
-        if multi_layer:
+        img_rep = create_encoding(level, multi_layer, true_one_hot)
+        if multi_layer and not true_one_hot:
             ret_img = level_id_img_decoder.create_single_layer_img(img_rep)
         else:
             ret_img = img_rep
@@ -76,11 +76,11 @@ def compare_multilayer_with_single_layer():
     plt.show()
 
 
-def create_encoding(level, multilayer = False):
+def create_encoding(level, multilayer = False, true_one_hot = False):
     level_img_encoder = LevelImgEncoder()
-    return level_img_encoder.create_one_element_img(level.get_used_elements(), multilayer)
+    return level_img_encoder.create_one_element_img(level.get_used_elements(), multilayer, true_one_hot)
 
 
 if __name__ == '__main__':
-    # encode_decode_test(test_with_game = False, multi_layer = True)
-    compare_multilayer_with_single_layer()
+    encode_decode_test(test_with_game = False, multi_layer = True, true_one_hot = True)
+    #compare_multilayer_with_single_layer()

@@ -133,7 +133,7 @@ class GridDrawer:
 
                     next_color = fill_color
                     if single_element:
-                        if x_pos_idx == int(len(x_axis) / 2) and y_pos_idx == int(len(y_axis) - 1):
+                        if x_pos_idx == int(len(x_axis) / 2) and y_pos_idx == int(len(y_axis) / 2):
                             next_color = lighten_fill_color
 
                     self.draw_canvas.create_rectangle(x1, y1, x2, y2, fill = next_color, tag = f'hover')
@@ -151,7 +151,7 @@ class GridDrawer:
         single_element = self.draw_mode.get() != '' and self.draw_mode.get() != 'LevelImg'
         lighten_fill_color = Utils.lighten_color(fill_color, 0.6)
 
-        centerpos = (x_axis[int(len(x_axis) / 2)], y_axis[int(len(y_axis) - 1)])
+        centerpos = (x_axis[int(len(x_axis) / 2)], y_axis[int(len(y_axis) / 2)])
 
         for x, x_idx in zip(x_pos, x_axis):
             for y, y_idx in zip(y_pos, y_axis):

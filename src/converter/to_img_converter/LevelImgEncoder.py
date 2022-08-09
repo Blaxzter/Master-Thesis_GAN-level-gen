@@ -137,13 +137,16 @@ class LevelImgEncoder:
     def create_one_element_img_multilayer(self, element_list):
         return self.create_one_element_img(element_list, multilayer = True)
 
-    def create_one_element_img(self, element_list, multilayer = False):
+    def create_one_element_true_one_hot(self, element_list):
+        return self.create_one_element_img(element_list, multilayer = True, true_one_hot = True)
+
+    def create_one_element_img(self, element_list, multilayer = False, true_one_hot = False):
         min_x, min_y, max_x, max_y = calc_structure_dimensions(element_list)
 
         img_width = round(max_y / resolution)
         img_height = round(max_x / resolution)
         if multilayer:
-            picture = np.zeros((img_width, img_height, 4))
+            picture = np.zeros((img_width, img_height, 40 if true_one_hot else 4))
         else:
             picture = np.zeros((img_width, img_height))
 
@@ -165,7 +168,11 @@ class LevelImgEncoder:
             y_pos = round(element.y / resolution)
 
             if multilayer:
-                picture[y_pos, x_pos, material_idx] = type_idx
+                if true_one_hot:
+                    store_idx = type_idx + 13 * material_idx if element.object_type == ObjectType.Block else 40
+                    picture[y_pos, x_pos, store_idx - 1] = 1
+                else:
+                    picture[y_pos, x_pos, material_idx] = type_idx
             else:
                 store_idx = type_idx + 13 * material_idx if element.object_type == ObjectType.Block else 40
 
@@ -198,9 +205,11 @@ class LevelImgEncoder:
     def convert_into_img(self, cord_list):
         min_x = np.min(list(map(lambda x: x['min_x'], cord_list)))
         min_y = np.min(list(map(lambda x: x['min_y'], cord_list)))
+
         img_width = np.max(list(map(lambda x: x['max_x'] - min_x, cord_list)))
         img_height = np.max(list(map(lambda x: x['max_y'] - min_y, cord_list)))
         picture = np.zeros((img_height + 1, img_width + 1))
+
         for cords in cord_list:
             cords['y_cords'] -= min_y
             cords['x_cords'] -= min_x

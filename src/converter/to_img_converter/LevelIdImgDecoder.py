@@ -11,6 +11,7 @@ from util.Config import Config
 class LevelIdImgDecoder:
 
     def __init__(self):
+        self.threshold = 0.4
         self.config = Config.get_instance()
         self.block_data = self.config.get_encoding_data(f"encoding_res_{Constants.resolution}")
         if type(self.block_data) is not str:
@@ -19,7 +20,7 @@ class LevelIdImgDecoder:
 
         self.level_viz = LevelVisualizer()
 
-    def decode_level(self, level_img):
+    def decode_level(self, level_img, recalibrate = True):
 
         # Helper function that takes a img layer and creates
         # blocks based on the position of the pixel and the id
@@ -28,8 +29,10 @@ class LevelIdImgDecoder:
             used_blocks = np.unique(img_layer)
 
             for color_idx, material_idx in enumerate(used_blocks):
+
                 if material_idx == 0:
                     continue
+
                 current_img = img_layer == material_idx
                 not_null = np.nonzero(current_img)
                 for y, x in zip(not_null[0], not_null[1]):
@@ -37,9 +40,15 @@ class LevelIdImgDecoder:
                     block_typ['x'] = x * Constants.resolution
                     block_typ['y'] = y * Constants.resolution * -1
                     ret_elements.append(block_typ)
+
             return ret_elements
 
         created_elements = []
+
+        # preprocess true one hot
+        if len(level_img.shape) == 3 and level_img.shape[-1] == 40:
+            stacked_img = np.dstack((np.zeros(level_img.shape[0:2]) + self.threshold, level_img))
+            level_img = np.argmax(stacked_img, axis = 2)
 
         if len(level_img.shape) == 2:
             created_elements += _create_elements_of_layer(level_img, layer = -1)
@@ -55,7 +64,8 @@ class LevelIdImgDecoder:
                 new_level_element
             )
 
-        created_level_elements = recalibrate_blocks(created_level_elements)
+        if recalibrate:
+            created_level_elements = recalibrate_blocks(created_level_elements)
 
         return Level.create_level_from_structure(created_level_elements)
 

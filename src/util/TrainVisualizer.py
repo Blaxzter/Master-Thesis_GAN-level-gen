@@ -21,6 +21,7 @@ class TensorBoardViz:
         self.model = model
         self.dataset = dataset
 
+        self.create_imgs = False
         self.show_imgs = show_imgs
         self.to_file = to_file
 
@@ -97,7 +98,8 @@ class TensorBoardViz:
         if self.config.create_tensorflow_writer is False:
             return
 
-        self.generate_and_save_images(self.seed, epoch)
+        if self.create_imgs:
+            self.generate_and_save_images(self.seed, epoch)
 
         with self.train_summary_writer.as_default():
             for name, aggregator in self.metric_dicts.items():

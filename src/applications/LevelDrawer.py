@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+from applications.GeneratorApplication import GeneratorApplication
 from applications.GridDrawer import GridDrawer
 from converter.to_img_converter import DecoderUtils
 from converter.to_img_converter.LevelIdImgDecoder import LevelIdImgDecoder
@@ -34,6 +35,8 @@ class LevelDrawer:
 
         self.selected_block = None
         self.draw_mode = StringVar()
+        self.draw_mode.set('LevelImg')
+        self.recalibrate = IntVar()
 
         self.block_data = Config.get_instance().get_encoding_data(f"encoding_res_{Constants.resolution}")
         del self.block_data['resolution']
@@ -61,6 +64,8 @@ class LevelDrawer:
 
         self.control_buttons()
 
+        self.generator_application = GeneratorApplication(self.btm_frame, self)
+
     def create_img_canvas(self):
         self.img_canvas = Canvas(self.right_frame, bg = "white", height = self.draw_area_width, width = self.draw_area_width)
         self.img_canvas.pack(fill = BOTH)
@@ -73,7 +78,7 @@ class LevelDrawer:
         # Layout Frames
         self.top_frame = Frame(self.master, width = self.canvas_width, height = 50, pady = 3, padx = 3)
         self.center_frame = Frame(self.master, width = self.canvas_width, height = self.canvas_height - 100, pady = 3, padx = 3)
-        # self.btm_frame = Frame(self.master, width = self.canvas_width, height = 50, pady = 3, padx = 3)
+        self.btm_frame = Frame(self.master, width = self.canvas_width, height = 50, pady = 3, padx = 3)
 
         # Element Frames
         self.left_frame = Frame(self.center_frame, width = int(self.canvas_width / 2), height = self.canvas_height - 100,
@@ -88,7 +93,7 @@ class LevelDrawer:
 
         self.top_frame.grid(row = 0, sticky = "n")
         self.center_frame.grid(row = 1, sticky = "news")
-        # self.btm_frame.grid(row = 2, sticky = "s")
+        self.btm_frame.grid(row = 2, sticky = "s")
 
         self.button_frame.pack(side = LEFT)
         self.left_frame.pack(side = LEFT)
@@ -99,23 +104,36 @@ class LevelDrawer:
 
     def control_buttons(self):
 
+        self.recalibrate_button = Checkbutton(self.top_frame, text = "Recalibrate", variable = self.recalibrate)
+        self.recalibrate_button.pack()
+
         # button that displays the plot
         self.decode_level = Button(self.top_frame, command = lambda: self.create_level(), height = 2,
                                    width = 15, text = "Decode Drawing")
         self.decode_level.pack(side = LEFT, padx = (20, 10))
 
-        self.rec_idx = Text(self.top_frame, height = 1, width = 3)
+        wrapper = Canvas(self.top_frame)
+        wrapper.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
+        label = Label(wrapper, text = "Material Rectangle:")
+        label.pack(side = TOP)
+
+        self.rec_idx = Text(wrapper, height = 1, width = 3)
         self.rec_idx.insert('0.0', '1')
-        self.rec_idx.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
+        self.rec_idx.pack(side = TOP)
 
         # button that displays the plot
         self.viz_rectangles = Button(self.top_frame, command = lambda: self.visualize_rectangle(), height = 2,
                                      width = 18, text = "Visualize Rectangles")
         self.viz_rectangles.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
 
-        self.level_select = Text(self.top_frame, height = 1, width = 3)
+        wrapper = Canvas(self.top_frame)
+        wrapper.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
+        label = Label(wrapper, text = "Load level ID:")
+        label.pack(side = TOP)
+
+        self.level_select = Text(wrapper, height = 1, width = 3)
         self.level_select.insert('0.0', '0')
-        self.level_select.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
+        self.level_select.pack(side = TOP)
 
         # button that displays the plot
         self.plot_button = Button(self.top_frame, command = lambda: self.load_level(), height = 2, width = 10,
@@ -147,7 +165,7 @@ class LevelDrawer:
 
         self.combobox = ttk.Combobox(wrapper, textvariable = self.draw_mode)
         self.combobox['values'] = ('LevelImg', 'OneElement')
-        self.combobox.set('LevelImg')
+        self.combobox.set(self.draw_mode.get())
         self.combobox['state'] = 'readonly'
         self.combobox.bind('<<ComboboxSelected>>', lambda event: self.grid_drawer.delete_drawing())
         self.combobox.pack(side = TOP)
@@ -209,7 +227,7 @@ class LevelDrawer:
         if self.draw_mode.get() == 'LevelImg':
             self.level = self.level_img_decoder.decode_level(temp_level_img)
         else:
-            self.level = self.level_id_img_decoder.decode_level(temp_level_img)
+            self.level = self.level_id_img_decoder.decode_level(temp_level_img, recalibrate = self.recalibrate.get())
 
         self.ax.imshow(np.flip(temp_level_img, axis = 0), origin = 'lower')
         self.level_visualizer.create_img_of_structure(
@@ -220,6 +238,10 @@ class LevelDrawer:
             self.ax.set_title("No Level Decoded")
 
         self.draw_img_to_fig_canvas()
+
+    def new_fig(self):
+        self.fig, self.ax = plt.subplots(1, 1, dpi = 100)
+        return self.fig, self.ax
 
     def clear_figure_canvas(self):
         if self.figure_canvas is not None:
@@ -243,6 +265,57 @@ class LevelDrawer:
 
         self.draw_img_to_fig_canvas()
 
+    def load_level(self):
+        load_level = int(self.level_select.get('0.0', 'end'))
+
+        test_environment = TestEnvironment('generated/single_structure')
+        level = test_environment.get_level(load_level)
+        level_img_encoder = LevelImgEncoder()
+        elements = level.get_used_elements()
+
+        if self.draw_mode.get() == 'LevelImg':
+            encoded_img = level_img_encoder.create_calculated_img(elements)
+        else:
+            encoded_img = level_img_encoder.create_one_element_img(elements)
+
+        self.draw_level(encoded_img)
+
+    def draw_level(self, encoded_img):
+        self.grid_drawer.delete_drawing()
+
+        logger.debug(np.unique(encoded_img))
+
+        if self.grid_drawer.level_width < encoded_img.shape[1] or self.grid_drawer.level_height < encoded_img.shape[0]:
+            max_dim = np.max(encoded_img.shape) + 2
+            self.grid_drawer.set_level_dims(max_dim, max_dim)
+            self.grid_drawer.create_grid()
+
+        pad_left = int((self.grid_drawer.level_width - encoded_img.shape[1]) / 2)
+        pad_right = int((self.grid_drawer.level_width - encoded_img.shape[1]) / 2)
+        pad_top = self.grid_drawer.level_height - encoded_img.shape[0]
+        padded_img = np.pad(encoded_img, ((pad_top, 0), (pad_left, pad_right)), 'constant')
+        for x_idx in range(padded_img.shape[1]):
+            for y_idx in range(padded_img.shape[0]):
+
+                use_x_idx = x_idx + 1
+
+                if padded_img[y_idx, x_idx] != 0:
+                    x = use_x_idx * self.grid_drawer.rec_width - self.grid_drawer.rec_width / 2
+                    y = y_idx * self.grid_drawer.rec_height - self.grid_drawer.rec_height / 2
+
+                    x1, y1 = int(x - self.grid_drawer.rec_width / 2), int(y - self.grid_drawer.rec_width / 2)
+                    x2, y2 = int(x + self.grid_drawer.rec_height / 2), int(y + self.grid_drawer.rec_height / 2)
+
+                    if self.draw_mode.get() == 'LevelImg':
+                        fill_color = self.grid_drawer.colors[int(padded_img[y_idx, x_idx]) - 1]
+                    else:
+                        fill_color = self.grid_drawer.colors[int((padded_img[y_idx, x_idx] - 1) / 13)]
+
+                    self.grid_drawer.rects[y_idx][use_x_idx] = \
+                        self.grid_drawer.draw_canvas.create_rectangle(
+                            x1, y1, x2, y2, fill = fill_color, tag = f'rectangle', outline = fill_color)
+                    self.grid_drawer.canvas[y_idx, use_x_idx] = int(padded_img[y_idx, x_idx])
+
     def draw_img_to_fig_canvas(self):
         self.figure_canvas = FigureCanvasTkAgg(self.fig, master = self.img_canvas)
         self.figure_canvas.draw()
@@ -259,45 +332,6 @@ class LevelDrawer:
             return
 
         self.game_manager.switch_to_level(self.level, stop_time = False)
-
-    def load_level(self):
-        self.grid_drawer.delete_drawing()
-
-        load_level = int(self.level_select.get('0.0', 'end'))
-
-        test_environment = TestEnvironment('generated/single_structure')
-        level = test_environment.get_level(load_level)
-        level_img_encoder = LevelImgEncoder()
-        elements = level.get_used_elements()
-        encoded_img = level_img_encoder.create_calculated_img(elements)
-
-        if self.grid_drawer.level_width < encoded_img.shape[1] or self.grid_drawer.level_height < encoded_img.shape[0]:
-            max_dim = np.max(encoded_img.shape) + 2
-            self.grid_drawer.set_level_dims(max_dim, max_dim)
-            self.grid_drawer.create_grid()
-
-        pad_left = int((self.grid_drawer.level_width - encoded_img.shape[1]) / 2)
-        pad_right = int((self.grid_drawer.level_width - encoded_img.shape[1]) / 2)
-        pad_top = self.grid_drawer.level_height - encoded_img.shape[0]
-
-        padded_img = np.pad(encoded_img, ((pad_top, 0), (pad_left, pad_right)), 'constant')
-
-        for x_idx in range(padded_img.shape[1]):
-            for y_idx in range(padded_img.shape[0]):
-
-                use_x_idx = x_idx + 1
-
-                if padded_img[y_idx, x_idx] != 0:
-                    x = use_x_idx * self.grid_drawer.rec_width - self.grid_drawer.rec_width / 2
-                    y = y_idx * self.grid_drawer.rec_height - self.grid_drawer.rec_height / 2
-
-                    x1, y1 = int(x - self.grid_drawer.rec_width / 2), int(y - self.grid_drawer.rec_width / 2)
-                    x2, y2 = int(x + self.grid_drawer.rec_height / 2), int(y + self.grid_drawer.rec_height / 2)
-                    fill_color = self.grid_drawer.colors[int(padded_img[y_idx, x_idx]) - 1]
-                    self.grid_drawer.rects[y_idx][use_x_idx] = \
-                        self.grid_drawer.draw_canvas.create_rectangle(
-                            x1, y1, x2, y2, fill = fill_color, tag = f'rectangle', outline = fill_color)
-                    self.grid_drawer.canvas[y_idx, use_x_idx] = int(padded_img[y_idx, x_idx])
 
 
 if __name__ == '__main__':

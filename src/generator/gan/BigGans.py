@@ -77,13 +77,13 @@ class WGANGP128128(IGAN):
 
 class WGANGP128128_Multilayer(IGAN):
 
-    def __init__(self, data_augmentation = None):
+    def __init__(self, data_augmentation = None, last_dim = 4):
         super().__init__()
         self.input_array_size = 128
         self.channel_amount = 64
 
         self.input_shape = (1, 1, 128)
-        self.output_shape = (128, 128, 4)
+        self.output_shape = (128, 128, last_dim)
 
         self.data_augmentation = data_augmentation
 
