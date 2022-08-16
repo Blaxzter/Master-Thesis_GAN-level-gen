@@ -30,7 +30,7 @@ class TensorflowDataCreation:
         self.max_width = max_width
         self.max_height = max_height
 
-        self.convert_to_multi_dim = True
+        self.air_layer = True
 
     # Take from tensorflow simple_gan tutorial
     def _bytes_feature(self, value):
@@ -62,7 +62,17 @@ class TensorflowDataCreation:
         if len(image_data.shape) == 3:
             padded_img = np.zeros((self.max_height, self.max_width, image_data.shape[-1]))
             for dim in range(padded_img.shape[-1]):
-                padded_img[:, :, dim] = np.pad(image_data[:, :, dim], ((pad_top, 0), (pad_left, pad_right)), 'constant')
+                if self.air_layer and dim == 0:
+                    constant_values = 1
+                else:
+                    constant_values = 0
+
+                padded_img[:, :, dim] = np.pad(
+                    image_data[:, :, dim],
+                    ((pad_top, 0), (pad_left, pad_right)),
+                    'constant',
+                    constant_values = constant_values
+                )
         else:
             padded_img = np.pad(image_data, ((pad_top, 0), (pad_left, pad_right)), 'constant')
             new_shape = (padded_img.shape[0], padded_img.shape[1], 1)
@@ -79,12 +89,7 @@ class TensorflowDataCreation:
         img_data = data_example['img_data']
         game_data = data_example['game_data'] if 'game_data' in data_example else None
 
-        padded_img_data = self.pad_image_to_size(img_data)
-
-        if self.convert_to_multi_dim and img_data.shape[-1] == 1:
-            new_img = LevelImgEncoder.create_multi_dim_img_from_picture(padded_img_data)
-        else:
-            new_img = padded_img_data
+        new_img = self.pad_image_to_size(img_data)
 
         data = {
             # Img data
@@ -121,12 +126,12 @@ class TensorflowDataCreation:
 
     def create_tensorflow_data(self):
 
-        data_set = self.config.get_data_set(folder_name = 'one_element_true_one_hot', file_name = "unified")
+        data_set = self.config.get_data_set(folder_name = 'multilayer_with_air', file_name = "unified")
         with open(data_set, 'rb') as f:
             data_dict = pickle.load(f)
 
         record_file = self.config.get_tf_records(
-            dataset_name = f'one_element_true_one_hot_{self.max_width}_{self.max_height}'
+            dataset_name = f'multilayer_with_air_{self.max_width}_{self.max_height}'
         )
 
         with tf.io.TFRecordWriter(record_file) as writer:

@@ -62,33 +62,6 @@ class LevelImgEncoder:
 
         return picture
 
-    def create_calculated_img_no_size_check(self, element_list):
-        min_x, min_y, max_x, max_y = calc_structure_dimensions(element_list)
-
-        cord_list = []
-
-        print(f'\n')
-
-        # logger.debug(f"New Structure {(round((max_x - min_x) / resolution), round((max_y - min_y) / resolution))}")
-        for element in element_list:
-            left_block_pos = element.x - element.width / 2 - min_x
-            right_block_pos = element.x + element.width / 2 - min_x
-            bottom_block_pos = element.y - element.height / 2 - min_y
-            top_block_pos = element.y + element.height / 2 - min_y
-
-            x_cord_range = np.linspace(left_block_pos + resolution / 2, right_block_pos - resolution / 2) + 0.001
-            y_cord_range = np.linspace(bottom_block_pos + resolution / 2, top_block_pos - resolution / 2) + 0.001
-
-            x_cords = np.unique(np.round(x_cord_range / resolution)).astype(np.int)
-            y_cords = np.unique(np.round(y_cord_range / resolution)).astype(np.int)
-
-            # print(f'ID: {element.id} -> ({len(x_cords)}, {len(y_cords)})')
-            cord_list.append(self.extract_element_data(element, x_cords, y_cords))
-
-        picture = self.convert_into_img(cord_list)
-
-        return self.remove_empty_line(picture)
-
     def create_calculated_img(self, element_list):
         min_x, min_y, max_x, max_y = calc_structure_dimensions(element_list)
 
@@ -134,21 +107,25 @@ class LevelImgEncoder:
 
         return self.remove_empty_line(picture)
 
-    def create_one_element_img_multilayer(self, element_list):
-        return self.create_one_element_img(element_list, multilayer = True)
-
-    def create_one_element_true_one_hot(self, element_list):
-        return self.create_one_element_img(element_list, multilayer = True, true_one_hot = True)
-
-    def create_one_element_img(self, element_list, multilayer = False, true_one_hot = False):
+    def create_one_element_img(self, element_list, air_layer = False, multilayer = False, true_one_hot = False):
         min_x, min_y, max_x, max_y = calc_structure_dimensions(element_list)
+
+        pig_index = 14
 
         img_width = round(max_y / resolution)
         img_height = round(max_x / resolution)
         if multilayer:
-            picture = np.zeros((img_width, img_height, 40 if true_one_hot else 4))
+            last_layer = 14 if true_one_hot else 4 # Only wood run
+            # last_layer = 40 if true_one_hot else 4
+            if air_layer:
+                last_layer += 1
+            picture = np.zeros((img_width, img_height, last_layer))
         else:
             picture = np.zeros((img_width, img_height))
+
+        # Set the first layer is zero
+        if air_layer and multilayer:
+            picture[:, :, 0] = 1
 
         # logger.debug(f"New Structure {(round((max_x - min_x) / resolution), round((max_y - min_y) / resolution))}")
         for element in element_list:
@@ -168,13 +145,16 @@ class LevelImgEncoder:
             y_pos = round(element.y / resolution)
 
             if multilayer:
+                if air_layer:
+                    picture[y_pos, x_pos, 0] = 0
+
                 if true_one_hot:
-                    store_idx = type_idx + 13 * material_idx if element.object_type == ObjectType.Block else 40
-                    picture[y_pos, x_pos, store_idx - 1] = 1
+                    store_idx = type_idx + 13 * material_idx if element.object_type == ObjectType.Block else pig_index
+                    picture[y_pos, x_pos, store_idx - (0 if air_layer else 1)] = 1
                 else:
-                    picture[y_pos, x_pos, material_idx] = type_idx
+                    picture[y_pos, x_pos, material_idx + (1 if air_layer else 0)] = type_idx
             else:
-                store_idx = type_idx + 13 * material_idx if element.object_type == ObjectType.Block else 40
+                store_idx = type_idx + 13 * material_idx if element.object_type == ObjectType.Block else pig_index
 
                 picture[y_pos, x_pos] = store_idx
 
@@ -226,7 +206,7 @@ class LevelImgEncoder:
         return picture
 
     @staticmethod
-    def create_multi_dim_img_from_picture(level_img, zero_included = False):
+    def create_multi_dim_img_from_picture(level_img, with_air_layer = False):
         level_img_shape = level_img.shape
 
         temp_img = np.copy(level_img)
@@ -236,9 +216,51 @@ class LevelImgEncoder:
             else:
                 temp_img = temp_img.reshape(level_img_shape[:-1])
 
-        ret_img = np.zeros((level_img_shape[0], level_img_shape[1], 4 + (1 if zero_included else 0)))
+        ret_img = np.zeros((level_img_shape[0], level_img_shape[1], 4 + (1 if with_air_layer else 0)))
 
-        for layer_idx, material_id in enumerate(range((0 if zero_included else 1), 5)):
+        for layer_idx, material_id in enumerate(range((0 if with_air_layer else 1), 5)):
             ret_img[:, :, layer_idx][temp_img == material_id] = 1
 
         return ret_img.astype(dtype = np.int16)
+
+    def create_calculated_img_no_size_check(self, element_list):
+        min_x, min_y, max_x, max_y = calc_structure_dimensions(element_list)
+
+        cord_list = []
+
+        print(f'\n')
+
+        # logger.debug(f"New Structure {(round((max_x - min_x) / resolution), round((max_y - min_y) / resolution))}")
+        for element in element_list:
+            left_block_pos = element.x - element.width / 2 - min_x
+            right_block_pos = element.x + element.width / 2 - min_x
+            bottom_block_pos = element.y - element.height / 2 - min_y
+            top_block_pos = element.y + element.height / 2 - min_y
+
+            x_cord_range = np.linspace(left_block_pos + resolution / 2, right_block_pos - resolution / 2) + 0.001
+            y_cord_range = np.linspace(bottom_block_pos + resolution / 2, top_block_pos - resolution / 2) + 0.001
+
+            x_cords = np.unique(np.round(x_cord_range / resolution)).astype(np.int)
+            y_cords = np.unique(np.round(y_cord_range / resolution)).astype(np.int)
+
+            # print(f'ID: {element.id} -> ({len(x_cords)}, {len(y_cords)})')
+            cord_list.append(self.extract_element_data(element, x_cords, y_cords))
+
+        picture = self.convert_into_img(cord_list)
+
+        return self.remove_empty_line(picture)
+
+    # Wrapper function
+
+    def create_one_element_img_multilayer(self, element_list):
+        return self.create_one_element_img(element_list, multilayer = True)
+
+    def create_one_element_true_one_hot(self, element_list):
+        return self.create_one_element_img(element_list, multilayer = True, true_one_hot = True)
+
+    def create_one_element_true_one_hot_with_air(self, element_list):
+        return self.create_one_element_img(element_list, multilayer = True, true_one_hot = True, air_layer = True)
+
+    def create_multilayer_with_air(self, element_list):
+        level_img = self.create_calculated_img(element_list)
+        return self.create_multi_dim_img_from_picture(level_img, with_air_layer = True)

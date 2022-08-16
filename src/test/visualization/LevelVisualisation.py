@@ -60,13 +60,17 @@ def level_visualisation():
     game_manager.stop_game()
 
 
-def create_plotly_data(img):
+def create_plotly_data(img, true_one_hot = False):
 
-    color_mode = np.max(img) > 5
-    if color_mode:
-        color_range = [matplotlib.colors.to_hex(color) for color in plt.get_cmap("Pastel1")(np.linspace(0., 1., len(np.unique(img))))]
+    if true_one_hot:
+        color_range = [matplotlib.colors.to_hex(color) for color in
+                       plt.get_cmap("Pastel1")(np.linspace(0., 1., img.shape[-1]))]
     else:
-        color_range = ['#a8d399', '#aacdf6', '#f98387', '#dbcc81', 'white']
+        color_mode = np.max(img) > 5
+        if color_mode:
+            color_range = [matplotlib.colors.to_hex(color) for color in plt.get_cmap("Pastel1")(np.linspace(0., 1., len(np.unique(img))))]
+        else:
+            color_range = ['#a8d399', '#aacdf6', '#f98387', '#dbcc81', 'white']
 
     def _create_box(x, y, layer):
         sx = x - 0.5
@@ -118,14 +122,14 @@ def create_plotly_data(img):
             current_img = img == material_idx
             boxes.append(_create_boxes(current_img, color = color_idx))
 
-        return [_combine(box_data) for box_data in boxes]
+        return [_combine(box_data) for box_data in boxes if len(box_data['boxes']) != 0]
 
     ret_boxs = []
     iter_range = img.shape[-1]
     for last_axis in range(iter_range):
         ret_boxs.append(_create_boxes(img[:, :, last_axis], axis = last_axis, color = last_axis))
 
-    return [_combine(box_data) for box_data in ret_boxs]
+    return [_combine(box_data) for box_data in ret_boxs if len(box_data['boxes']) != 0]
 
 
 def test_plotly():

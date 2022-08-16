@@ -268,7 +268,7 @@ class LevelDrawer:
     def load_level(self):
         load_level = int(self.level_select.get('0.0', 'end'))
 
-        test_environment = TestEnvironment('generated/single_structure')
+        test_environment = TestEnvironment('generated/single_structure_small')
         level = test_environment.get_level(load_level)
         level_img_encoder = LevelImgEncoder()
         elements = level.get_used_elements()

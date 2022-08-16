@@ -71,8 +71,7 @@ class BaselineGenerator:
 
         self.min_ground_width = 4.5  # minimum amount of space allocated to ground structure
         # desired height limit of ground structures
-        self.ground_structure_height_limit = ((
-                                                      self.level_height_max - self.minimum_height_gap) - self.absolute_ground) / 1.5
+        self.ground_structure_height_limit = ((self.level_height_max - self.minimum_height_gap) - self.absolute_ground) / 1.5
 
         self.max_attempts = 100  # number of times to attempt to place a platform before abandoning it
 
@@ -103,7 +102,10 @@ class BaselineGenerator:
         self.restricted_blocks = []
 
     def settings(self, number_levels = 1, pig_range = "1,5", use_triangles = False, use_circles = False,
-                 restricted_combination = "", ground_structure_range = (1, 1), air_structure_range = (1, 1)):
+                 restricted_combination = "", ground_structure_range = (1, 1), air_structure_range = (1, 1),
+                 level_width_min = -3.0, level_width_max = 3.0, level_height_min = -2.0, level_height_max = 4.0,
+                 materials = None, min_ground_width = 4.5):
+
         self.use_triangles = use_triangles
         self.use_circles = use_circles
         self.number_levels = number_levels
@@ -111,6 +113,13 @@ class BaselineGenerator:
         self.restricted_combination = restricted_combination
         self.ground_structure_range = ground_structure_range
         self.air_structure_range = air_structure_range
+
+        self.level_width_min = level_width_min
+        self.level_width_max = level_width_max
+        self.level_height_min = level_height_min
+        self.level_height_max = level_height_max
+        self.min_ground_width = min_ground_width
+        self.materials = ["wood", "stone", "ice"] if materials is None else materials
 
     def generate_level_init(self, folder_path = "./", start_level_index = 4):
         # generate levels using input parameters

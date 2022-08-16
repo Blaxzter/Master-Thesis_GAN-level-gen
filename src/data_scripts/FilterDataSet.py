@@ -307,7 +307,7 @@ def create_filtered_dataset(data_set_name):
 
 
 if __name__ == '__main__':
-    create_filtered_dataset(data_set_name = 'one_element_true_one_hot')
+    create_filtered_dataset(data_set_name = 'multilayer_with_air')
 
     # root_pickle_file = 'original'
     # config = Config.get_instance()

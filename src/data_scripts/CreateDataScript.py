@@ -30,11 +30,11 @@ if test_on_live_game:
     game_manager = GameManager(conf = config, game_connection = game_connection)
     game_manager.start_game(is_running = False)
 
-data_file = config.get_data_set('one_element_true_one_hot', 'original.pickle')
+data_file = config.get_data_set('multilayer_with_air', 'original.pickle')
 
 level_encoder = LevelImgEncoder()
 
-encoding_algorithm = level_encoder.create_one_element_true_one_hot
+encoding_algorithm = level_encoder.create_multilayer_with_air
 
 
 def create_level_data_multi_structure(original_data_level, p_dict, lock):
