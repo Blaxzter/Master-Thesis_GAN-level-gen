@@ -4,8 +4,10 @@ from tkinter import ttk
 import matplotlib
 import numpy as np
 from loguru import logger
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from converter.to_img_converter import DecoderUtils
+from converter.to_img_converter.LevelIdImgDecoder import LevelIdImgDecoder
 
 matplotlib.use("TkAgg")
 
@@ -32,7 +34,6 @@ class GeneratorApplication:
         self.top_frame = frame
 
         self.single_element = False
-        self.multilayer = False
         self.rescaling = None
         self.seed = None
 
@@ -42,8 +43,14 @@ class GeneratorApplication:
             'W-GAN SGD': self.load_model_2,
             'W-GAN ADAM': self.load_model_3,
             'Big Gan Multilayer': self.load_multilayer_encoding,
-            'Single Element': self.load_single_element_encoding
+            'Single Element': self.load_single_element_encoding,
+            'One Encoding': self.load_one_encoding,
+            'One Element Multilayer': self.load_one_element_multilayer,
+            'True One Hot': self.load_true_one_hot,
+            'Small True One Hot With Air': self.small_true_one_hot_with_air
         }
+
+        self.img_decoding = self.default_rint_rescaling
 
         if frame is None:
             self.create_window()
@@ -61,7 +68,6 @@ class GeneratorApplication:
     def generate_img(self):
 
         if self.level_drawer is None:
-
             if self.canvas:
                 self.canvas.get_tk_widget().destroy()
 
@@ -75,22 +81,21 @@ class GeneratorApplication:
 
         orig_img, pred = self.gan.create_img(seed = self.seed)
 
-        if self.multilayer:
-            threshold = float(self.threshold_text.get('0.0', 'end'))
+        # Use the defined decoding algorithm
+        img = self.img_decoding(orig_img[0])
 
-            norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
-            stacked_img = np.dstack((np.zeros((128, 128)) + threshold, norm_img[0]))
-            img = np.argmax(stacked_img, axis = 2)
+        if len(orig_img[0].shape) == 3:
+            viz_img = np.max(orig_img[0], axis = 2)
         else:
-            norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
-            img = np.rint(norm_img)
+            viz_img = orig_img[1].numpy()
 
-        orig_img_reshaped = orig_img[0].numpy().reshape(orig_img[0].shape[0:2])
-        reshaped_img = img[0].reshape(img[0].shape[0:2])
-        trimmed_img = DecoderUtils.trim_img(reshaped_img)
+        trimmed_img = DecoderUtils.trim_img(img.reshape(img.shape[0:2]))
 
-        ax.imshow(orig_img_reshaped)
+        im = ax.imshow(viz_img)
         ax.set_title(f'Probability {pred.item()}')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes('right', size = '5%', pad = 0.05)
+        fig.colorbar(im, cax = cax, orientation = 'vertical')
 
         if self.level_drawer is None:
             self.canvas = FigureCanvasTkAgg(fig, master = self.window)
@@ -104,6 +109,43 @@ class GeneratorApplication:
             self.level_drawer.draw_img_to_fig_canvas()
 
             self.level_drawer.draw_level(trimmed_img)
+
+    def default_rint_rescaling(self, orig_img):
+        norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
+        return np.rint(norm_img)
+
+    def threshold_rint_rescaling(self, orig_img):
+        threshold = float(self.threshold_text.get('0.0', 'end'))
+
+        norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
+        norm_img[norm_img < threshold] = 0
+
+        return np.rint(norm_img)
+
+    def default_rint_rescaling(self, orig_img):
+        norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
+        return np.rint(norm_img)
+
+    def argmax_multilayer_decoding(self, orig_img):
+        threshold = float(self.threshold_text.get('0.0', 'end'))
+
+        norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
+        stacked_img = np.dstack((np.zeros((128, 128)) + threshold, norm_img))
+        return np.argmax(stacked_img, axis = 2)
+
+    def argmax_multilayer_decoding_with_air(self, orig_img):
+        norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
+
+        threshold = float(self.threshold_text.get('0.0', 'end'))
+        norm_img[norm_img[:, :, 0] < threshold, 0] = 0
+
+        return np.argmax(norm_img, axis = 2)
+
+    def one_element_multilayer(self, orig_img):
+        threshold = float(self.threshold_text.get('0.0', 'end'))
+
+        norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
+        return LevelIdImgDecoder.create_single_layer_img(multilayer_img = norm_img, air_threshold = threshold)
 
     def load_gan(self):
         import tensorflow as tf
@@ -192,8 +234,9 @@ class GeneratorApplication:
         self.gan = SimpleGAN100112()
         self.max_value = 4
         self.shift_value = 0
-        self.multilayer = False
         self.single_element = False
+        self.small_version = False
+        self.img_decoding = self.default_rint_rescaling
 
     def load_model_1(self):
         from generator.gan.SimpleGans import SimpleGAN100116
@@ -201,8 +244,9 @@ class GeneratorApplication:
         self.gan = SimpleGAN100116()
         self.max_value = 4
         self.shift_value = 0
-        self.multilayer = False
         self.single_element = False
+        self.small_version = False
+        self.img_decoding = self.default_rint_rescaling
 
     def load_model_2(self):
         from generator.gan.SimpleGans import SimpleGAN100116
@@ -210,8 +254,9 @@ class GeneratorApplication:
         self.gan = SimpleGAN100116()
         self.max_value = 4
         self.shift_value = 0
-        self.multilayer = False
         self.single_element = False
+        self.small_version = False
+        self.img_decoding = self.default_rint_rescaling
 
     def load_model_3(self):
         from generator.gan.SimpleGans import SimpleGAN100116
@@ -219,8 +264,9 @@ class GeneratorApplication:
         self.gan = SimpleGAN100116()
         self.max_value = 4
         self.shift_value = 0
-        self.multilayer = False
         self.single_element = False
+        self.small_version = False
+        self.img_decoding = self.default_rint_rescaling
 
     def load_multilayer_encoding(self):
         from generator.gan.BigGans import WGANGP128128_Multilayer
@@ -228,8 +274,9 @@ class GeneratorApplication:
         self.gan = WGANGP128128_Multilayer()
         self.max_value = 1
         self.shift_value = 1
-        self.multilayer = True
         self.single_element = False
+        self.small_version = False
+        self.img_decoding = self.argmax_multilayer_decoding
 
     def load_single_element_encoding(self):
         from generator.gan.BigGans import WGANGP128128
@@ -237,8 +284,50 @@ class GeneratorApplication:
         self.max_value = 40
         self.shift_value = 1
         self.gan = WGANGP128128()
-        self.multilayer = False
         self.single_element = True
+        self.small_version = False
+        self.img_decoding = self.threshold_rint_rescaling
+
+    def load_one_encoding(self):
+        from generator.gan.BigGans import WGANGP128128_Multilayer
+        self.checkpoint_dir = self.config.get_checkpoint_dir('wgan_gp_128_128_one_encoding_fixed', '20220728-172004')
+        self.max_value = 1
+        self.shift_value = 1
+        self.gan = WGANGP128128_Multilayer()
+        self.single_element = True
+        self.small_version = False
+        self.img_decoding = self.one_element_multilayer
+
+    def load_one_element_multilayer(self):
+        from generator.gan.BigGans import WGANGP128128_Multilayer
+        self.checkpoint_dir = self.config.get_checkpoint_dir('wgan_gp_128_128_one_element_multilayer_fixed', '20220806-145814')
+        self.max_value = 14
+        self.shift_value = 1
+        self.gan = WGANGP128128_Multilayer()
+        self.single_element = True
+        self.small_version = False
+        self.img_decoding = self.one_element_multilayer
+
+    def load_true_one_hot(self):
+        from generator.gan.BigGans import WGANGP128128_Multilayer
+        self.checkpoint_dir = self.config.get_checkpoint_dir('wgan_gp_128_128_true_one_hot', '20220808-192940')
+        self.max_value = 1
+        self.shift_value = 1
+        self.gan = WGANGP128128_Multilayer(last_dim = 40)
+        self.single_element = True
+        self.small_version = False
+        self.img_decoding = self.argmax_multilayer_decoding
+
+    def small_true_one_hot_with_air(self):
+        from generator.gan.BigGans import WGANGP128128_Multilayer
+        self.checkpoint_dir = self.config.get_checkpoint_dir('wgan_gp_128_128_small_one_element_true_one_hot_with_air', '20220813-182630')
+        self.max_value = 1
+        self.shift_value = 1
+        self.gan = WGANGP128128_Multilayer(last_dim = 15)
+        self.single_element = True
+        self.small_version = True
+        self.img_decoding = self.argmax_multilayer_decoding_with_air
+
 
 if __name__ == '__main__':
     generator_application = GeneratorApplication()

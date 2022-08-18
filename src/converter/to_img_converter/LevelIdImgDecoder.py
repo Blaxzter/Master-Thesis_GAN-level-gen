@@ -20,7 +20,7 @@ class LevelIdImgDecoder:
 
         self.level_viz = LevelVisualizer()
 
-    def decode_level(self, level_img, recalibrate = True):
+    def decode_level(self, level_img, recalibrate = True, small_version = False):
 
         # Helper function that takes a img layer and creates
         # blocks based on the position of the pixel and the id
@@ -36,7 +36,7 @@ class LevelIdImgDecoder:
                 current_img = img_layer == material_idx
                 not_null = np.nonzero(current_img)
                 for y, x in zip(not_null[0], not_null[1]):
-                    block_typ = self.get_element_of_id_encoding(material_idx, layer = layer)
+                    block_typ = self.get_element_of_id_encoding(material_idx, layer = layer, small_version = small_version)
                     block_typ['x'] = x * Constants.resolution
                     block_typ['y'] = y * Constants.resolution * -1
                     ret_elements.append(block_typ)
@@ -69,12 +69,16 @@ class LevelIdImgDecoder:
 
         return Level.create_level_from_structure(created_level_elements)
 
-    def get_element_of_id_encoding(self, element_id, layer = -1):
+    def get_element_of_id_encoding(self, element_id, layer = -1, small_version = False):
         if layer < 0:
             material = int((element_id - 1) / 13)
 
-            if element_id == 40:
-                return dict(type = 'BasicSmall')
+            if small_version:
+                if element_id == 14:
+                    return dict(type = 'BasicSmall')
+            else:
+                if element_id == 40:
+                    return dict(type = 'BasicSmall')
         else:
             material = layer
             if element_id == 14:
@@ -91,8 +95,8 @@ class LevelIdImgDecoder:
         return block_attribute
 
     @staticmethod
-    def create_single_layer_img(multilayer_img):
-        stacked_img = np.dstack((np.zeros(multilayer_img.shape[:2]) + 0.5, multilayer_img))
+    def create_single_layer_img(multilayer_img, air_threshold = 0.5):
+        stacked_img = np.dstack((np.zeros(multilayer_img.shape[:2]) + air_threshold, multilayer_img))
 
         arg_max = np.argmax(stacked_img, axis = 2)
         ret_img = np.zeros(multilayer_img.shape[:2])

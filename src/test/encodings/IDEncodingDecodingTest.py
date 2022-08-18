@@ -78,9 +78,14 @@ def compare_multilayer_with_single_layer():
 
 def create_encoding(level, multilayer = False, true_one_hot = False):
     level_img_encoder = LevelImgEncoder()
-    return level_img_encoder.create_one_element_img(level.get_used_elements(), multilayer, true_one_hot)
+    return level_img_encoder.create_one_element_img(
+        element_list = level.get_used_elements(),
+        air_layer = False,
+        multilayer = multilayer,
+        true_one_hot = true_one_hot
+    )
 
 
 if __name__ == '__main__':
-    encode_decode_test(test_with_game = False, multi_layer = True, true_one_hot = True)
+    encode_decode_test(test_with_game = False, multi_layer = False, true_one_hot = False)
     #compare_multilayer_with_single_layer()

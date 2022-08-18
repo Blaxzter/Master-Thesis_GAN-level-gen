@@ -110,13 +110,13 @@ class LevelImgEncoder:
     def create_one_element_img(self, element_list, air_layer = False, multilayer = False, true_one_hot = False):
         min_x, min_y, max_x, max_y = calc_structure_dimensions(element_list)
 
-        pig_index = 14
+        pig_index = 40
 
         img_width = round(max_y / resolution)
         img_height = round(max_x / resolution)
         if multilayer:
-            last_layer = 14 if true_one_hot else 4 # Only wood run
-            # last_layer = 40 if true_one_hot else 4
+            # last_layer = 14 if true_one_hot else 4 # Only wood run
+            last_layer = 40 if true_one_hot else 4
             if air_layer:
                 last_layer += 1
             picture = np.zeros((img_width, img_height, last_layer))

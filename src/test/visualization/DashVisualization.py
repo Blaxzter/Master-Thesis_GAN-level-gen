@@ -14,7 +14,7 @@ from test.visualization.LevelVisualisation import create_plotly_data
 current_figure = None
 
 if __name__ == '__main__':
-    test_environment = TestEnvironment('generated/single_structure_small')
+    test_environment = TestEnvironment('generated/single_structure')
 
     level_img_encoder = LevelImgEncoder()
 

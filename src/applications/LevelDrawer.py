@@ -227,7 +227,11 @@ class LevelDrawer:
         if self.draw_mode.get() == 'LevelImg':
             self.level = self.level_img_decoder.decode_level(temp_level_img)
         else:
-            self.level = self.level_id_img_decoder.decode_level(temp_level_img, recalibrate = self.recalibrate.get())
+            self.level = self.level_id_img_decoder.decode_level(
+                temp_level_img,
+                recalibrate = self.recalibrate.get(),
+                small_version = self.generator_application.small_version
+            )
 
         self.ax.imshow(np.flip(temp_level_img, axis = 0), origin = 'lower')
         self.level_visualizer.create_img_of_structure(
@@ -268,7 +272,7 @@ class LevelDrawer:
     def load_level(self):
         load_level = int(self.level_select.get('0.0', 'end'))
 
-        test_environment = TestEnvironment('generated/single_structure_small')
+        test_environment = TestEnvironment('generated/single_structure')
         level = test_environment.get_level(load_level)
         level_img_encoder = LevelImgEncoder()
         elements = level.get_used_elements()
