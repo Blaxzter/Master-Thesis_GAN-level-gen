@@ -47,7 +47,8 @@ class GeneratorApplication:
             'One Encoding': self.load_one_encoding,
             'One Element Multilayer': self.load_one_element_multilayer,
             'True One Hot': self.load_true_one_hot,
-            'Small True One Hot With Air': self.small_true_one_hot_with_air
+            'Small True One Hot With Air': self.small_true_one_hot_with_air,
+            'Multilayer With Air': self.multilayer_with_air,
         }
 
         self.img_decoding = self.default_rint_rescaling
@@ -328,6 +329,15 @@ class GeneratorApplication:
         self.small_version = True
         self.img_decoding = self.argmax_multilayer_decoding_with_air
 
+    def multilayer_with_air(self):
+        from generator.gan.BigGans import WGANGP128128_Multilayer
+        self.checkpoint_dir = self.config.get_checkpoint_dir('wgan_gp_128_128_multilayer_with_air', '20220816-202429')
+        self.max_value = 1
+        self.shift_value = 1
+        self.gan = WGANGP128128_Multilayer(last_dim = 5)
+        self.single_element = False
+        self.small_version = False
+        self.img_decoding = self.argmax_multilayer_decoding_with_air
 
 if __name__ == '__main__':
     generator_application = GeneratorApplication()

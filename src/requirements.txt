@@ -17,3 +17,4 @@ dash~=2.6.0
 ete3~=3.1.2
 keras~=2.8.0
 icecream~=2.1.2
+h5py==3.1.0
