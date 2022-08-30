@@ -66,7 +66,11 @@ class GeneratorApplication:
             # run the gui
             self.window.mainloop()
 
-    def generate_img(self):
+    def generate_img(self, created_img = None):
+        if created_img is None:
+            orig_img, pred = self.gan.create_img(seed = self.seed)
+        else:
+            orig_img, pred = created_img
 
         if self.level_drawer is None:
             if self.canvas:
@@ -78,25 +82,24 @@ class GeneratorApplication:
             fig, ax = plt.subplots(1, 1, dpi = 100)
         else:
             self.level_drawer.clear_figure_canvas()
-            fig, ax = self.level_drawer.new_fig()
+            for i in range(len(self.level_drawer.tabs)):
+                fig, ax = self.level_drawer.new_fig()
+                self.level_drawer.tabs[i]['fig'] = fig
+                self.level_drawer.tabs[i]['ax'] = ax
 
-        orig_img, pred = self.gan.create_img(seed = self.seed)
+            fig = self.level_drawer.tabs[0]['fig']
+            ax = self.level_drawer.tabs[0]['ax']
 
         # Use the defined decoding algorithm
-        img = self.img_decoding(orig_img[0])
+        img, norm_img = self.img_decoding(orig_img[0])
 
         if len(orig_img[0].shape) == 3:
             viz_img = np.max(orig_img[0], axis = 2)
         else:
             viz_img = orig_img[1].numpy()
 
-        trimmed_img = DecoderUtils.trim_img(img.reshape(img.shape[0:2]))
-
-        im = ax.imshow(viz_img)
-        ax.set_title(f'Probability {pred.item()}')
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes('right', size = '5%', pad = 0.05)
-        fig.colorbar(im, cax = cax, orientation = 'vertical')
+        trimmed_img, trim_data = DecoderUtils.trim_img(img.reshape(img.shape[0:2]), ret_trims = True)
+        self.create_plt_img(ax, fig, f'Probability {pred.item()}', viz_img)
 
         if self.level_drawer is None:
             self.canvas = FigureCanvasTkAgg(fig, master = self.window)
@@ -107,13 +110,26 @@ class GeneratorApplication:
             self.toolbar = NavigationToolbar2Tk(self.canvas, self.window)
             self.toolbar.update()
         else:
-            self.level_drawer.draw_img_to_fig_canvas()
+            self.level_drawer.draw_img_to_fig_canvas(tab = 0)
+            self.level_drawer.draw_level(trimmed_img, tab = 0)
 
-            self.level_drawer.draw_level(trimmed_img)
+            for i in range(1, len(self.level_drawer.tabs)):
+                fig = self.level_drawer.tabs[i]['fig']
+                ax = self.level_drawer.tabs[i]['ax']
+                self.create_plt_img(ax, fig, f'Layer {i}', orig_img[0, :, :, i - 1])
+                self.level_drawer.draw_img_to_fig_canvas(tab = i)
+                self.level_drawer.draw_level(np.rint(norm_img[trim_data[0]:trim_data[1], trim_data[2]: trim_data[3], i - 1]), tab = i)
+
+    def create_plt_img(self, ax, fig, plt_title, viz_img):
+        im = ax.imshow(viz_img)
+        ax.set_title(plt_title)
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes('right', size = '5%', pad = 0.05)
+        fig.colorbar(im, cax = cax, orientation = 'vertical')
 
     def default_rint_rescaling(self, orig_img):
         norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
-        return np.rint(norm_img)
+        return np.rint(norm_img), None
 
     def threshold_rint_rescaling(self, orig_img):
         threshold = float(self.threshold_text.get('0.0', 'end'))
@@ -121,18 +137,18 @@ class GeneratorApplication:
         norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
         norm_img[norm_img < threshold] = 0
 
-        return np.rint(norm_img)
+        return np.rint(norm_img), None
 
     def default_rint_rescaling(self, orig_img):
         norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
-        return np.rint(norm_img)
+        return np.rint(norm_img), None
 
     def argmax_multilayer_decoding(self, orig_img):
         threshold = float(self.threshold_text.get('0.0', 'end'))
 
         norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
         stacked_img = np.dstack((np.zeros((128, 128)) + threshold, norm_img))
-        return np.argmax(stacked_img, axis = 2)
+        return np.argmax(stacked_img, axis = 2), norm_img
 
     def argmax_multilayer_decoding_with_air(self, orig_img):
         norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
@@ -140,13 +156,13 @@ class GeneratorApplication:
         threshold = float(self.threshold_text.get('0.0', 'end'))
         norm_img[norm_img[:, :, 0] < threshold, 0] = 0
 
-        return np.argmax(norm_img, axis = 2)
+        return np.argmax(norm_img, axis = 2), norm_img
 
     def one_element_multilayer(self, orig_img):
         threshold = float(self.threshold_text.get('0.0', 'end'))
 
         norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
-        return LevelIdImgDecoder.create_single_layer_img(multilayer_img = norm_img, air_threshold = threshold)
+        return LevelIdImgDecoder.create_single_layer_img(multilayer_img = norm_img, air_threshold = threshold), norm_img
 
     def load_gan(self):
         import tensorflow as tf
@@ -175,7 +191,11 @@ class GeneratorApplication:
         else:
             logger.debug("Initializing from scratch.")
 
-        self.gan.create_img()
+        orig_img, pred = self.gan.create_img()
+        depth = orig_img.shape[-1]
+        self.level_drawer.grid_drawer.create_tab_panes(1 if depth == 1 else depth + 1)
+        self.level_drawer.create_img_tab_panes(1 if depth == 1 else depth + 1)
+        self.generate_img(created_img = (orig_img, pred))
 
     def new_seed(self):
         self.seed = self.gan.create_random_vector()
@@ -196,7 +216,7 @@ class GeneratorApplication:
         label = Label(wrapper, text = "Loaded Model:")
         label.pack(side = TOP)
 
-        self.combobox = ttk.Combobox(wrapper, textvariable = self.selected_model)
+        self.combobox = ttk.Combobox(wrapper, textvariable = self.selected_model, width = 30, state="readonly")
         self.combobox['values'] = list(self.model_loads.keys())
         self.combobox['state'] = 'readonly'
         self.combobox.bind('<<ComboboxSelected>>', lambda event: self.load_gan())

@@ -1,7 +1,10 @@
 from tkinter import *
+from tkinter.ttk import Notebook
+from typing import Dict, List
 
 import numpy as np
 
+from applications import TkinterUtils
 from level import Constants
 from util import Utils
 
@@ -16,59 +19,115 @@ class GridDrawer:
         self.draw_area_width = draw_area_width
         self.draw_area_height = draw_area_height
 
-        self.level_height = level_height
-        self.level_width = level_width
+        self.default_level_height = level_height
+        self.default_level_width = level_width
 
         self.colors = ['#a8d399', '#aacdf6', '#f98387', '#dbcc81']
 
-        self.create_draw_canvas()
-        self.create_grid()
+        self.tab_control = Notebook(self.left_frame)
+        self.tabs: List[Dict] = []
+        self.selected_tab = 0
+        self.create_tab_panes(2)
+        self.tab_control.bind(
+            "<<NotebookTabChanged>>",
+            lambda event: setattr(self, 'selected_tab', self.tab_control.index(self.tab_control.select()))
+        )
 
         self.material_id = 1
 
         self.init_blocks()
 
-    def create_draw_canvas(self):
-        self.draw_canvas = Canvas(self.left_frame, width = self.draw_area_width, height = self.draw_area_height)
-        self.draw_canvas.pack(expand = YES, side = LEFT, pady = (30, 30), padx = (30, 30))
+    def clear_tab_panes(self):
+        for tab_idx, tab in enumerate(self.tabs):
+            for key, element in tab.items():
+                invert_op = getattr(element, "destroy", None)
+                if callable(invert_op):
+                    invert_op()
 
-        self.draw_canvas.bind("<B1-Motion>", self.paint)
-        self.draw_canvas.bind("<Button-1>", self.paint)
-        self.draw_canvas.bind("<Motion>", self.hover)
-        self.draw_canvas.bind("<B3-Motion>", lambda event: self.paint(event, clear = True))
-        self.draw_canvas.bind("<Button-3>", lambda event: self.paint(event, clear = True))
+        for item in self.tab_control.winfo_children():
+            item.destroy()
 
-    def set_level_dims(self, height, width):
-        self.level_height = height
-        self.level_width = width
+        self.tabs = []
 
-    def create_grid(self):
-        self.draw_canvas.delete('grid_line')
-        self.canvas = np.zeros((self.level_height + 1, self.level_width + 1))
-        self.rects = [[None for _ in range(self.canvas.shape[0])] for _ in range(self.canvas.shape[1])]
+    def create_tab_panes(self, panel_amounts = 1):
+        self.tabs = TkinterUtils.clear_tab_panes(self.tab_control, self.tabs)
 
-        self.rec_height = self.draw_area_height / self.level_height
-        self.rec_width = self.draw_area_width / self.level_width
-        self.draw_grid_lines()
+        for tab_index in range(panel_amounts):
+            create_tab = Frame(self.tab_control)
+            self.tab_control.add(create_tab, text = 'Main Tab' if tab_index == 0 else f'Layer {tab_index}')
+            self.tabs.append(dict(
+                frame = create_tab,
+            ))
 
-    def draw_grid_lines(self):
-        for i in range(self.level_height):
-            self.draw_canvas.create_line(
+        self.tab_control.pack(expand = 1, fill = "both")
+
+        for tab_index in range(panel_amounts):
+            self.create_draw_canvas(tab = tab_index)
+            self.create_grid(tab = tab_index)
+
+    def create_draw_canvas(self, tab = -1):
+        if tab == -1: tab = self.selected_tab
+        draw_canvas = Canvas(self.frame(tab), width = self.draw_area_width, height = self.draw_area_height)
+        draw_canvas.pack(expand = YES, side = LEFT, pady = (30, 30), padx = (30, 30))
+
+        draw_canvas.bind("<B1-Motion>", self.paint)
+        draw_canvas.bind("<Button-1>", self.paint)
+        draw_canvas.bind("<Motion>", self.hover)
+        draw_canvas.bind("<B3-Motion>", lambda event: self.paint(event, clear = True))
+        draw_canvas.bind("<Button-3>", lambda event: self.paint(event, clear = True))
+        self.tabs[tab]['canvas'] = draw_canvas
+        self.tabs[tab]['level_height'] = self.default_level_height
+        self.tabs[tab]['level_width'] = self.default_level_width
+
+    def set_level_dims(self, height, width, tab = -1):
+        if tab == -1: tab = self.selected_tab
+
+        self.tabs[tab]['level_height'] = height
+        self.tabs[tab]['level_width'] = width
+
+    def delete_grids(self):
+        for tab in self.tabs:
+            tab['canvas'].delete('grid_line')
+
+    def create_grids(self):
+        for tab_index in range(len(self.tabs)):
+            self.create_grid(tab_index)
+
+    def create_grid(self, tab = -1):
+        if tab == -1: tab = self.selected_tab
+        level_width, level_height = self.get_level_dims(tab)
+        self.tabs[tab]['canvas'].delete('grid_line')
+        elements = np.zeros((level_height + 1, level_width + 1))
+        rectangles = [[None for _ in range(elements.shape[0])] for _ in range(elements.shape[1])]
+
+        self.rec_height = self.draw_area_height / level_height
+        self.rec_width = self.draw_area_width / level_width
+        self.draw_grid_lines(tab)
+
+        self.tabs[tab]['elements'] = elements
+        self.tabs[tab]['rectangles'] = rectangles
+
+    def draw_grid_lines(self, tab = -1):
+        if tab == -1: tab = self.selected_tab
+        level_width, level_height = self.get_level_dims(tab)
+        for i in range(level_height):
+            self.canvas(tab).create_line(
                 self.rec_height * i, self.rec_height,
                 self.rec_height * i, self.draw_area_height - self.rec_height,
                 width = 1,
                 tag = 'grid_line'
             )
 
-        for i in range(self.level_width):
-            self.draw_canvas.create_line(
+        for i in range(level_width):
+            self.canvas(tab).create_line(
                 self.rec_width, self.rec_width * i,
                 self.draw_area_width - self.rec_width, self.rec_width * i,
                 width = 1,
                 tag = 'grid_line'
             )
 
-    def paint(self, event, clear = False):
+    def paint(self, event, clear = False, tab = -1):
+        if tab == -1: tab = self.selected_tab
         self.hover(event)
 
         fill_color = self.colors[self.material_id - 1]
@@ -78,15 +137,15 @@ class GridDrawer:
 
         block_name, x_axis, x_pos, y_axis, y_pos = self.get_block_position(x_index, y_index, self.selected_block)
 
-
         if not clear:
             self.set_block(block_name, fill_color, self.material_id, x_axis, x_pos, y_axis, y_pos)
 
         single_element = self.draw_mode.get() != '' and self.draw_mode.get() != 'LevelImg'
+        level_width, level_height = self.get_level_dims(tab)
         if clear:
             for x, x_idx in zip(x_pos, x_axis):
                 for y, y_idx in zip(y_pos, y_axis):
-                    if y_idx > 1 and y_idx < self.level_height and x_idx > 1 and x_idx < self.level_width:
+                    if y_idx > 1 and y_idx < level_height and x_idx > 1 and x_idx < level_width:
 
                         if block_name == 'bird':
                             x_center = np.average(x_pos)
@@ -96,16 +155,22 @@ class GridDrawer:
                             if r > 1.2:
                                 continue
 
-                        self.canvas[y_idx, x_idx] = 0
+                        # Get element of current tab
+                        draw_canvas = self.canvas(tab)
+                        elements = self.elements(tab)
+                        rects = self.rects(tab)
+
+                        elements[y_idx, x_idx] = 0
                         if single_element:
-                            self.draw_canvas.delete(str((x_idx, y_idx)))
+                            draw_canvas.delete(str((x_idx, y_idx)))
                         else:
-                            self.draw_canvas.delete(self.rects[y_idx][x_idx])
-                            self.rects[y_idx][x_idx] = None
+                            draw_canvas.delete(rects[y_idx][x_idx])
+                            rects[y_idx][x_idx] = None
 
-
-    def hover(self, event):
-        self.draw_canvas.delete('hover')
+    def hover(self, event, tab = -1):
+        if tab == -1: tab = self.selected_tab
+        draw_canvas = self.canvas(tab)
+        draw_canvas.delete('hover')
 
         fill_color = self.colors[self.material_id - 1]
         lighten_fill_color = Utils.lighten_color(fill_color, 0.5)
@@ -116,15 +181,17 @@ class GridDrawer:
         block_name, x_axis, x_pos, y_axis, y_pos = self.get_block_position(x_index, y_index, self.selected_block)
 
         single_element = self.draw_mode.get() != 'LevelImg'
+        level_width, level_height = self.get_level_dims(tab)
 
         for x_pos_idx, (x, x_idx) in enumerate(zip(x_pos, x_axis)):
             for y_pos_idx, (y, y_idx) in enumerate(zip(y_pos, y_axis)):
-                if 1 < y_idx < self.level_height and 1 < x_idx < self.level_width:
+                if 1 < y_idx < level_height and 1 < x_idx < level_width:
 
                     if block_name == 'bird':
                         x_center = np.average(x_pos)
                         y_center = np.average(y_pos)
-                        r = np.sqrt((x - x_center) ** 2 + (y - y_center) ** 2) / np.max([x_pos - x_center, y_pos - y_center])
+                        r = np.sqrt((x - x_center) ** 2 + (y - y_center) ** 2) / np.max(
+                            [x_pos - x_center, y_pos - y_center])
                         if r > 1.2:
                             continue
 
@@ -136,7 +203,7 @@ class GridDrawer:
                         if x_pos_idx == int(len(x_axis) / 2) and y_pos_idx == int(len(y_axis) / 2):
                             next_color = lighten_fill_color
 
-                    self.draw_canvas.create_rectangle(x1, y1, x2, y2, fill = next_color, tag = f'hover')
+                    draw_canvas.create_rectangle(x1, y1, x2, y2, fill = next_color, tag = f'hover')
 
     def get_block_position(self, x_index, y_index, block):
         block_width, block_height, block_name = block
@@ -146,19 +213,21 @@ class GridDrawer:
         y_pos = y_axis * self.rec_height - self.rec_height / 2
         return block_name, x_axis, x_pos, y_axis, y_pos
 
-    def set_block(self, block_name, fill_color, material_id, x_axis, x_pos, y_axis, y_pos):
+    def set_block(self, block_name, fill_color, material_id, x_axis, x_pos, y_axis, y_pos, tab = -1):
+        if tab == -1: tab = self.selected_tab
 
         single_element = self.draw_mode.get() != '' and self.draw_mode.get() != 'LevelImg'
         lighten_fill_color = Utils.lighten_color(fill_color, 0.6)
 
         centerpos = (x_axis[int(len(x_axis) / 2)], y_axis[int(len(y_axis) / 2)])
+        level_width, level_height = self.get_level_dims(tab)
 
         for x, x_idx in zip(x_pos, x_axis):
             for y, y_idx in zip(y_pos, y_axis):
                 x1, y1 = int(x - self.rec_width / 2), int(y - self.rec_width / 2)
                 x2, y2 = int(x + self.rec_height / 2), int(y + self.rec_height / 2)
 
-                if 1 < y_idx < self.level_height and 1 < x_idx < self.level_width:
+                if 1 < y_idx < level_height and 1 < x_idx < level_width:
 
                     if block_name == 'bird':
                         x_center = np.average(x_pos)
@@ -174,10 +243,15 @@ class GridDrawer:
                         if x_idx == centerpos[0] and y_idx == centerpos[1]:
                             next_color = lighten_fill_color
 
-                    if self.canvas[y_idx][x_idx] == 0:
+                    # Get element of current tab
+                    draw_canvas = self.canvas(tab)
+                    elements = self.elements(tab)
+                    rects = self.rects(tab)
+
+                    if elements[y_idx][x_idx] == 0:
                         next_tag = ['rectangle'] + ([str(centerpos)] if single_element else [])
-                        self.rects[y_idx][x_idx] = \
-                            self.draw_canvas.create_rectangle(
+                        rects[y_idx][x_idx] = \
+                            draw_canvas.create_rectangle(
                                 x1, y1, x2, y2, fill = next_color,
                                 tag = next_tag,
                                 outline = fill_color)
@@ -185,10 +259,10 @@ class GridDrawer:
                         # Only set center element
                         if single_element:
                             if x_idx == centerpos[0] and y_idx == centerpos[1]:
-                                self.canvas[y_idx, x_idx] = (list(Constants.block_names.values()).index(block_name) + 1) + (material_id - 1) * 13
+                                elements[y_idx, x_idx] = (list(Constants.block_names.values()).index(
+                                    block_name) + 1) + (material_id - 1) * 13
                         else:
-                            self.canvas[y_idx, x_idx] = material_id
-
+                            elements[y_idx, x_idx] = material_id
 
     def block_cursor(self, block):
         self.selected_block = (block['width'], block['height'], block['name'])
@@ -200,10 +274,21 @@ class GridDrawer:
 
         self.level_drawer.selected_button[block['button']].config(bg = 'lightblue')
 
-    def delete_drawing(self):
-        self.draw_canvas.delete('rectangle')
-        self.rects = [[None for _ in range(self.canvas.shape[0])] for _ in range(self.canvas.shape[1])]
-        self.canvas = np.zeros((self.level_height + 1, self.level_width + 1))
+    def delete_drawing(self, tab = -1):
+        if tab == -1: tab = self.selected_tab
+
+        level_width, level_height = self.get_level_dims(tab)
+
+        # Get element of current tab
+        draw_canvas = self.canvas(tab)
+        elements = self.elements(tab)
+        draw_canvas.delete('rectangle')
+
+        rects = [[None for _ in range(elements.shape[0])] for _ in range(elements.shape[1])]
+        elements = np.zeros((level_height + 1, level_width + 1))
+
+        self.tabs[tab]['rectangles'] = rects
+        self.tabs[tab]['elements'] = elements
 
     def init_blocks(self):
 
@@ -211,10 +296,12 @@ class GridDrawer:
 
         prev_blocks = []
 
+        level_width, level_height = self.get_level_dims(0)
+
         while blocks_placed <= 4:
 
-            random_x = np.random.randint(3, self.level_width - 4)
-            random_y = np.random.randint(3, self.level_width - 4)
+            random_x = np.random.randint(3, level_width - 4)
+            random_y = np.random.randint(3, level_height - 4)
 
             block_amount = len(self.level_drawer.block_data)
             random_block = self.level_drawer.block_data[str(np.random.randint(block_amount))]
@@ -226,7 +313,7 @@ class GridDrawer:
             xx, yy = np.meshgrid(x_axis, y_axis)
             positions = np.vstack([xx.ravel(), yy.ravel()])
 
-            if np.max(x_axis) > self.level_width or np.max(y_axis) > self.level_height:
+            if np.max(x_axis) > level_width or np.max(y_axis) > level_height:
                 continue
 
             overlapping = False
@@ -242,3 +329,30 @@ class GridDrawer:
             self.set_block(block_name, self.colors[material - 1], material, x_axis, x_pos, y_axis, y_pos)
             blocks_placed += 1
             prev_blocks.append(positions)
+
+    def get_level_dims(self, i):
+        return self.get_level_width(i), self.get_level_height(i)
+
+    def get_level_height(self, i):
+        return self.tabs[i]['level_height']
+
+    def get_level_width(self, i):
+        return self.tabs[i]['level_width']
+
+    def frame(self, i):
+        return self.tabs[i]['frame']
+
+    def current_canvas(self):
+        return self.tabs[self.selected_tab]['canvas']
+
+    def canvas(self, i):
+        return self.tabs[i]['canvas']
+
+    def rects(self, i):
+        return self.tabs[i]['rectangles']
+
+    def current_elements(self):
+        return self.tabs[self.selected_tab]['elements']
+
+    def elements(self, i):
+        return self.tabs[i]['elements']

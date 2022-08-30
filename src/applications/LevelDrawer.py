@@ -1,5 +1,7 @@
 from tkinter import *
 from tkinter import ttk
+from tkinter.ttk import Notebook
+from typing import Dict, List
 
 import numpy as np
 from loguru import logger
@@ -7,6 +9,7 @@ from matplotlib import pyplot as plt
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+from applications import TkinterUtils
 from applications.GeneratorApplication import GeneratorApplication
 from applications.GridDrawer import GridDrawer
 from converter.to_img_converter import DecoderUtils
@@ -54,7 +57,9 @@ class LevelDrawer:
         )
 
         self.create_cursor_button()
-        self.create_img_canvas()
+
+        self.create_figure_frame()
+        self.create_img_tab_panes()
 
         self.level_img_decoder = LevelImgDecoder()
         self.level_id_img_decoder = LevelIdImgDecoder()
@@ -65,13 +70,6 @@ class LevelDrawer:
         self.control_buttons()
 
         self.generator_application = GeneratorApplication(self.btm_frame, self)
-
-    def create_img_canvas(self):
-        self.img_canvas = Canvas(self.right_frame, bg = "white", height = self.draw_area_width, width = self.draw_area_width)
-        self.img_canvas.pack(fill = BOTH)
-
-        self.figure_canvas = None
-        self.fig, self.ax = None, None
 
     def create_frames(self):
 
@@ -101,6 +99,40 @@ class LevelDrawer:
 
         self.draw_canvas = Canvas(self.left_frame, bg="white", height=self.draw_area_width, width=self.draw_area_width)
         self.draw_canvas.pack(fill = BOTH)
+
+    def create_figure_frame(self):
+        self.tab_control = Notebook(self.right_frame)
+        self.tabs: List[Dict] = []
+        self.selected_tab = 0
+        self.create_img_tab_panes(2)
+        self.tab_control.bind(
+            "<<NotebookTabChanged>>",
+            lambda event: setattr(self, 'selected_tab', self.tab_control.index(self.tab_control.select()))
+        )
+
+    def create_img_tab_panes(self, panel_amounts = 1):
+        self.tabs = TkinterUtils.clear_tab_panes(self.tab_control, self.tabs)
+
+        for tab_index in range(panel_amounts):
+            create_tab = Frame(self.tab_control)
+            self.tab_control.add(create_tab, text = 'Combined' if tab_index == 0 else f'Layer {tab_index}')
+            self.tabs.append(dict(
+                frame = create_tab,
+            ))
+
+        self.tab_control.pack(expand = 1, fill = "both")
+
+        for tab_index in range(panel_amounts):
+            self.create_img_canvas(tab_index)
+
+    def create_img_canvas(self, tab = -1):
+        if tab == -1: tab = self.selected_tab
+
+        matplot_wrapper_canvas = Canvas(
+            self.tabs[tab]['frame'],
+            bg = "white", height = self.draw_area_width, width = self.draw_area_width)
+        matplot_wrapper_canvas.pack(expand = YES, side = LEFT, pady = (30, 30), padx = (30, 30))
+        self.tabs[tab]['matplot_wrapper_canvas'] = matplot_wrapper_canvas
 
     def control_buttons(self):
 
@@ -143,7 +175,7 @@ class LevelDrawer:
         # button that displays the plot
         self.select_viz = Button(self.top_frame,
                                  command = lambda: self.level_img_decoder_visualization.create_tree_of_one_encoding(
-                                     self.grid_drawer.canvas), height = 2, width = 15,
+                                     self.grid_drawer.current_elements()), height = 2, width = 18,
                                  text = "Visualize Block Selection")
         self.select_viz.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
 
@@ -217,12 +249,14 @@ class LevelDrawer:
         if event.char in ['1', '2', '3', '4']:
             self.grid_drawer.material_id = int(event.char)
 
-    def create_level(self):
+    def create_level(self, tab = -1):
         self.clear_figure_canvas()
 
-        self.fig, self.ax = plt.subplots(1, 1, dpi = 100)
+        fig, ax = plt.subplots(1, 1, dpi = 100)
+        self.tabs[tab]['fig'] = fig
+        self.tabs[tab]['ax'] = ax
 
-        temp_level_img = DecoderUtils.trim_img(self.grid_drawer.canvas)
+        temp_level_img = DecoderUtils.trim_img(self.grid_drawer.current_elements())
 
         if self.draw_mode.get() == 'LevelImg':
             self.level = self.level_img_decoder.decode_level(temp_level_img)
@@ -233,13 +267,13 @@ class LevelDrawer:
                 small_version = self.generator_application.small_version
             )
 
-        self.ax.imshow(np.flip(temp_level_img, axis = 0), origin = 'lower')
+        ax.imshow(np.flip(temp_level_img, axis = 0), origin = 'lower')
         self.level_visualizer.create_img_of_structure(
-            self.level.get_used_elements(), use_grid = False, ax = self.ax, scaled = True
+            self.level.get_used_elements(), use_grid = False, ax = ax, scaled = True
         )
 
         if len(self.level.get_used_elements()) == 0:
-            self.ax.set_title("No Level Decoded")
+            ax.set_title("No Level Decoded")
 
         self.draw_img_to_fig_canvas()
 
@@ -248,12 +282,15 @@ class LevelDrawer:
         return self.fig, self.ax
 
     def clear_figure_canvas(self):
-        if self.figure_canvas is not None:
-            plt.close(self.fig)
-            self.figure_canvas.get_tk_widget().destroy()
-            self.img_canvas.delete(self.figure_canvas)
-            if self.toolbar is not None:
-                self.toolbar.destroy()
+        for tab in self.tabs:
+            if 'fig' in tab.keys():
+                plt.close(tab['fig'])
+
+            if 'matplot_canvas' in tab.keys():
+                tab['matplot_canvas'].get_tk_widget().destroy()
+
+            if 'toolbar' in tab.keys():
+                tab['toolbar'].destroy()
 
     def visualize_rectangle(self):
         self.clear_figure_canvas()
@@ -262,7 +299,7 @@ class LevelDrawer:
 
         material_id = int(self.rec_idx.get('0.0', 'end'))
 
-        trimmed_img = DecoderUtils.trim_img(self.grid_drawer.canvas)
+        trimmed_img = DecoderUtils.trim_img(self.grid_drawer.current_elements())
         self.level_img_decoder_visualization.visualize_rectangle(
             trimmed_img, material_id, ax = self.ax
         )
@@ -284,20 +321,25 @@ class LevelDrawer:
 
         self.draw_level(encoded_img)
 
-    def draw_level(self, encoded_img):
-        self.grid_drawer.delete_drawing()
+    def draw_level(self, encoded_img, tab = -1):
+        if tab == -1: tab = self.selected_tab
+        self.grid_drawer.delete_drawing(tab)
 
         logger.debug(np.unique(encoded_img))
 
-        if self.grid_drawer.level_width < encoded_img.shape[1] or self.grid_drawer.level_height < encoded_img.shape[0]:
-            max_dim = np.max(encoded_img.shape) + 2
-            self.grid_drawer.set_level_dims(max_dim, max_dim)
-            self.grid_drawer.create_grid()
+        level_width, level_height = self.grid_drawer.get_level_dims(tab)
 
-        pad_left = int((self.grid_drawer.level_width - encoded_img.shape[1]) / 2)
-        pad_right = int((self.grid_drawer.level_width - encoded_img.shape[1]) / 2)
-        pad_top = self.grid_drawer.level_height - encoded_img.shape[0]
+        if level_width < encoded_img.shape[1] or level_height < encoded_img.shape[0]:
+            max_dim = np.max(encoded_img.shape) + 2
+            self.grid_drawer.set_level_dims(max_dim, max_dim, tab = tab)
+            self.grid_drawer.create_grid(tab)
+
+        level_width, level_height = self.grid_drawer.get_level_dims(tab)
+        pad_left = int((level_width - encoded_img.shape[1]) / 2)
+        pad_right = int((level_width - encoded_img.shape[1]) / 2)
+        pad_top = level_height - encoded_img.shape[0]
         padded_img = np.pad(encoded_img, ((pad_top, 0), (pad_left, pad_right)), 'constant')
+
         for x_idx in range(padded_img.shape[1]):
             for y_idx in range(padded_img.shape[0]):
 
@@ -315,17 +357,21 @@ class LevelDrawer:
                     else:
                         fill_color = self.grid_drawer.colors[int((padded_img[y_idx, x_idx] - 1) / 13)]
 
-                    self.grid_drawer.rects[y_idx][use_x_idx] = \
-                        self.grid_drawer.draw_canvas.create_rectangle(
+                    self.grid_drawer.rects(tab)[y_idx][use_x_idx] = \
+                        self.grid_drawer.canvas(tab).create_rectangle(
                             x1, y1, x2, y2, fill = fill_color, tag = f'rectangle', outline = fill_color)
-                    self.grid_drawer.canvas[y_idx, use_x_idx] = int(padded_img[y_idx, x_idx])
+                    self.grid_drawer.elements(tab)[y_idx, use_x_idx] = int(padded_img[y_idx, x_idx])
 
-    def draw_img_to_fig_canvas(self):
-        self.figure_canvas = FigureCanvasTkAgg(self.fig, master = self.img_canvas)
-        self.figure_canvas.draw()
-        self.figure_canvas.get_tk_widget().pack(fill = BOTH, expand = 1)
-        self.toolbar = NavigationToolbar2Tk(self.figure_canvas, self.img_canvas)
-        self.toolbar.update()
+    def draw_img_to_fig_canvas(self, tab = -1):
+        if tab == -1: tab = self.selected_tab
+        matplot_canvas = FigureCanvasTkAgg(self.tabs[tab]['fig'], master = self.tabs[tab]['matplot_wrapper_canvas'])
+        matplot_canvas.draw()
+        matplot_canvas.get_tk_widget().pack(fill = BOTH, expand = 1)
+        toolbar = NavigationToolbar2Tk(matplot_canvas, self.tabs[tab]['matplot_wrapper_canvas'])
+        toolbar.update()
+
+        self.tabs[tab]['matplot_canvas'] = matplot_canvas
+        self.tabs[tab]['toolbar'] = toolbar
 
     def start_game(self):
         self.game_manager.start_game()

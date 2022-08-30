@@ -67,7 +67,12 @@ def get_img_trim(level_img):
 
     return top_space, bottom_space, left_space, right_space
 
-def trim_img(level_img):
+def trim_img(level_img, ret_trims = False):
     top_space, bottom_space, left_space, right_space = get_img_trim(level_img)
 
-    return level_img[top_space: -bottom_space + 1 if bottom_space != 1 else -1, left_space: -right_space + 1 if right_space != 1 else -1]
+    bottom_trim = -bottom_space + 1 if bottom_space != 1 else -1
+    right_trim = -right_space + 1 if right_space != 1 else -1
+    if ret_trims:
+        return level_img[top_space: bottom_trim, left_space: right_trim], (top_space, bottom_trim, left_space, right_trim)
+    else:
+        return level_img[top_space: bottom_trim, left_space: right_trim]
