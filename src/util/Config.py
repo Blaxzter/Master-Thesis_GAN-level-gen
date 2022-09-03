@@ -1,5 +1,6 @@
 import json
 import os
+import pickle
 import platform
 import sys
 import time
@@ -125,6 +126,9 @@ class Config:
         )
         self.checkpoint_dir = os.path.normpath(
             os.path.join(self.current_path, 'resources/models/{current_run}/{timestamp}/')
+        )
+        self.gan_img_store_dir = os.path.normpath(
+            os.path.join(self.current_path, 'resources/data/gan_images/')
         )
 
         self.save_checkpoint_every = 15
@@ -295,6 +299,13 @@ class Config:
         for path in Path(self.log_file_root).glob('*.xml'):
             next_free_level = min(int(path.name[5:7]), next_free_level)
         return os.path.join(self.source_file_root, 'deconverted_levels') + os.sep + "level_" + (str(next_free_level) if len(str(next_free_level)) > 1 else '0' + str(next_free_level)) + ".xml"
+
+    def get_gan_img_store(self, loaded_model):
+        path = os.path.join(self.gan_img_store_dir, loaded_model) + ".pickle"
+        if not Path(path).exists():
+            with open(path, 'wb') as handle:
+                pickle.dump(dict(), handle, protocol = pickle.HIGHEST_PROTOCOL)
+        return path
 
 
 if __name__ == '__main__':
