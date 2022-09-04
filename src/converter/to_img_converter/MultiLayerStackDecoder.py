@@ -1,3 +1,4 @@
+from scipy import ndimage
 
 
 class MultiLayerStackDecoder:
@@ -15,4 +16,5 @@ class MultiLayerStackDecoder:
         # Select top element, filter elements that overlap, repeat
         # If no element are over the coverage is high enough return with selected
         # Otherwise go with next block
-        pass
+
+        ndimage.convolve(x, y, output = x)

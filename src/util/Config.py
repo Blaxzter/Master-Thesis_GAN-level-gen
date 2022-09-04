@@ -301,7 +301,7 @@ class Config:
         return os.path.join(self.source_file_root, 'deconverted_levels') + os.sep + "level_" + (str(next_free_level) if len(str(next_free_level)) > 1 else '0' + str(next_free_level)) + ".xml"
 
     def get_gan_img_store(self, loaded_model):
-        path = os.path.join(self.gan_img_store_dir, loaded_model) + ".pickle"
+        path = os.path.join(self.gan_img_store_dir, loaded_model) + (".pickle" if ".pickle" not in loaded_model else '')
         if not Path(path).exists():
             with open(path, 'wb') as handle:
                 pickle.dump(dict(), handle, protocol = pickle.HIGHEST_PROTOCOL)

@@ -267,9 +267,9 @@ class GeneratorApplication:
         comment = self.img_store_comment.get('0.0', 'end')
         comment = comment.strip()
         self.loaded_outputs[comment] = dict(
-            output = orig_img,
+            output = orig_img.numpy(),
             prediction = prediction,
-            seed = self.seed,
+            seed = self.seed.numpy(),
             comment = comment
         )
 
