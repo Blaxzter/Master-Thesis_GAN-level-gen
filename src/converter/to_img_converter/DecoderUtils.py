@@ -45,8 +45,8 @@ def get_img_trim(level_img):
             break
 
     right_space = 0
-    for row_idx in range(level_img.shape[1]):
-        if len(np.nonzero(level_img[:, -row_idx])[0]) == 0:
+    for row_idx in range(1, level_img.shape[1]):
+        if len(np.nonzero(level_img[:, level_img.shape[1] - row_idx])[0]) == 0:
             right_space += 1
         else:
             break
@@ -59,8 +59,8 @@ def get_img_trim(level_img):
             break
 
     bottom_space = 0
-    for cloumn_idx in range(level_img.shape[0]):
-        if len(np.nonzero(level_img[-cloumn_idx, :])[0]) == 0:
+    for cloumn_idx in range(1, level_img.shape[0]):
+        if len(np.nonzero(level_img[level_img.shape[0] - cloumn_idx, :])[0]) == 0:
             bottom_space += 1
         else:
             break
@@ -70,8 +70,8 @@ def get_img_trim(level_img):
 def trim_img(level_img, ret_trims = False):
     top_space, bottom_space, left_space, right_space = get_img_trim(level_img)
 
-    bottom_trim = -bottom_space + 1 if bottom_space != 1 else -1
-    right_trim = -right_space + 1 if right_space != 1 else -1
+    bottom_trim = level_img.shape[0] - bottom_space
+    right_trim = level_img.shape[1] - right_space
     if ret_trims:
         return level_img[top_space: bottom_trim, left_space: right_trim], (top_space, bottom_trim, left_space, right_trim)
     else:
