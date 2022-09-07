@@ -178,6 +178,7 @@ class LevelImgDecoder:
             contour_reshaped = contour.reshape((len(contour), 2))
             pos = np.average(contour_reshaped, axis = 0)
             bird_positions.append(pos)
+
         return bird_positions
 
     def select_blocks(self, rectangles, used_blocks, required_area, poly, occupied_area = 0):

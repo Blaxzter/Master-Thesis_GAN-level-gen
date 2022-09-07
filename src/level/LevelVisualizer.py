@@ -19,7 +19,7 @@ class LevelVisualizer:
         self.id_font_size = id_font_size
         self.dot_size = dot_size
 
-    def create_img_of_structure(self, structure: [LevelElement],
+    def create_img_of_structure(self, structure: [LevelElement], title = None,
                                 use_grid = True, add_dots = False, element_ids = True, ax = None, scaled = False):
         show = False
         if ax is None:
@@ -58,7 +58,9 @@ class LevelVisualizer:
 
         # ax.set_xticks([])
         # ax.set_yticks([])
+
         ax.axis('scaled')
+        ax.set_title(title)
 
         if show:
             plt.axis('scaled')

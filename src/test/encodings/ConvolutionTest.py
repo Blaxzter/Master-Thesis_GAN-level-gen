@@ -7,15 +7,15 @@ import numpy as np
 from icecream import ic
 from matplotlib.patches import Rectangle
 
+from converter import MathUtil
 from converter.to_img_converter import DecoderUtils
-from converter.to_img_converter.LevelImgDecoder import LevelImgDecoder
+from converter.to_img_converter.DecoderUtils import recalibrate_blocks
 from converter.to_img_converter.LevelImgEncoder import LevelImgEncoder
 from converter.to_img_converter.MultiLayerStackDecoder import MultiLayerStackDecoder
 from data_scripts.CreateEncodingData import create_element_for_each_block
 from level import Constants
 from level.Level import Level
 from level.LevelVisualizer import LevelVisualizer
-from test.TestEnvironment import TestEnvironment
 from util.Config import Config
 
 config = Config.get_instance()
@@ -38,12 +38,13 @@ def load_test_outputs_of_model(model_name):
     return loaded_outputs
 
 
-def plt_img(img, title, ax = None, flip = False):
-    if not plot_stuff:
+def plt_img(img, title = None, ax = None, flip = False, plot_always = False):
+    if not plot_always and not plot_stuff:
         return
     if ax is None:
         plt.imshow(img)
-        plt.title(title)
+        if title is not None:
+            plt.title(title)
         plt.colorbar()
         plt.show()
     else:
@@ -54,8 +55,8 @@ def plt_img(img, title, ax = None, flip = False):
         ax.set_title(title)
 
 
-def create_plt_array(dpi = 100):
-    if not plot_stuff:
+def create_plt_array(dpi = 100, plot_always = False):
+    if not plot_always and not plot_stuff:
         return None, None
 
     fig, axs = plt.subplots(5, 3, figsize = (15, 10), dpi = dpi)
@@ -75,15 +76,15 @@ def plot_matrix(matrix, blocks, axs):
     plt.show(block = False)
 
 
-def plot_matrix_complete(matrix, blocks, title = None, add_max = True, block = False, position = None, delete_rectangles = None, flipped = False, selected_block = None):
-    if not plot_stuff:
+def plot_matrix_complete(matrix, blocks, title = None, add_max = True, block = False, position = None, delete_rectangles = None, flipped = False, selected_block = None, plot_always = False):
+    if not plot_always and not plot_stuff:
         return
 
-    fig, axs = create_plt_array(dpi = 200)
+    fig, axs = create_plt_array(dpi = 200, plot_always = False)
     for layer_idx in range(matrix.shape[-1]):
         _plot_img = matrix[:, :, layer_idx]
         ax_title = blocks[layer_idx]['name'] + (f' {np.max(_plot_img).item()}' if add_max else '')
-        plt_img(_plot_img, ax_title, ax = axs[layer_idx], flip = flipped)
+        plt_img(_plot_img, ax_title, ax = axs[layer_idx], flip = flipped, plot_always = plot_always)
         color = 'blue' if (selected_block is not None and selected_block == layer_idx) else 'red'
 
         if position is not None:
@@ -112,80 +113,127 @@ def plot_matrix_complete(matrix, blocks, title = None, add_max = True, block = F
     plt.show(block = block)
 
 
-if __name__ == '__main__':
-    test_outputs = load_test_outputs_of_model('multilayer_with_air.pickle')
+def get_cutoff_point(layer):
+    frequency, bins = np.histogram(layer, bins = 100)
+    if plot_stuff:
+        plt_img(layer, 'Original')
+        plt.hist(layer, bins = np.linspace(0, 1, 100), histtype = 'step', log = True)
+        plt.show()
+    center = (bins[-1] - bins[0]) / 2
+    highest_lowest_value = bins[0]
+    for i in range(20):
+        highest_count = frequency.argmax()
+        highest_count_value = bins[highest_count]
+        frequency[highest_count] = 0
+        if highest_count_value < center:
+            # print(highest_lowest_value, highest_count_value)
+            if highest_lowest_value < highest_count_value:
+                highest_lowest_value = highest_count_value
 
-    direction = 'vertical'
-    direction = 'horizontal'
-    x_offset = 0
-    y_offset = 0
+    print(highest_lowest_value, center, bins[-1])
+    return highest_lowest_value
 
-    elements, sizes = create_element_for_each_block(direction, 2, x_offset, y_offset, diff_materials = False)
-    level_img_encoder = LevelImgEncoder()
-    testing_img = level_img_encoder.create_calculated_img(elements)
+def _get_pig_position(bird_layer):
+    current_img = np.copy(bird_layer)
 
-    # test_environment = TestEnvironment('generated/single_structure')
-    # level_img_decoder = LevelImgDecoder()
-    # level_img_encoder = LevelImgEncoder()
-    # level = test_environment.get_level(0)
-    # elements = level.get_used_elements()
-    # testing_img = level_img_encoder.create_calculated_img(elements)
-    # testing_img[testing_img != 2] = 0
-    # testing_img[testing_img == 2] = 1
+    current_img = np.flip(current_img, axis = 0)
 
-    test_image = list(test_outputs.keys())[0]
-    ic(test_image)
-    test_output = test_outputs[test_image]['output']
-    test_output = (test_output[0] + 1) / 2
+    highest_lowest_value = get_cutoff_point(bird_layer)
+    current_img[current_img <= highest_lowest_value] = -1
 
-    for layer_idx in range(1, test_output.shape[-1]):
+    kernel = MathUtil.get_circular_kernel(7)
+    kernel = kernel / np.sum(kernel)
+    padded_img = np.pad(current_img, 6, 'constant', constant_values = -1)
+    bird_probabilities = cv2.filter2D(padded_img, -1, kernel)[6:-6, 6:-6]
+
+    plt_img(bird_probabilities, 'Bird Filter')
+
+    bird_probabilities[bird_probabilities < 0.85] = 0
+    trimmed_bird_img, trim_data = DecoderUtils.trim_img(bird_probabilities, ret_trims = True)
+
+    plt_img(bird_probabilities, 'After top trimming')
+
+    max_height, max_width = trimmed_bird_img.shape
+    top_space, bottom_space, left_space, right_space = trim_data
+
+    bird_positions = []
+    while not np.all(trimmed_bird_img < 0.00001):
+        bird_position = np.unravel_index(np.argmax(trimmed_bird_img), trimmed_bird_img.shape)
+        y, x = bird_position
+        bird_positions.append([
+            top_space + y, left_space + x
+        ])
+
+        # Remove the location the bird was picked
+        x_cords = np.arange(x - 6, x + 6 + 1, 1)
+        y_cords = np.arange(y - 6, y + 6 + 1, 1)
+        x_cords[x_cords < 0] = 0
+        x_cords[x_cords >= max_width] = max_width - 1
+        y_cords[y_cords < 0] = 0
+        y_cords[y_cords >= max_height] = max_height - 1
+        x_pos, y_pos = np.meshgrid(y_cords, x_cords)
+
+        trimmed_bird_img[x_pos, y_pos] = 0
+        if plot_stuff:
+            plt.imshow(trimmed_bird_img)
+            plt.title(f'x_pos: {x} ,y_pos: {y}')
+            plt.show()
+
+    return bird_positions
+
+
+def decode_gan(gan_output, kernel_scalar = True, minus_one_border = False, recalibrate = False):
+
+    stack_decoder = MultiLayerStackDecoder()
+    level_visualizer = LevelVisualizer()
+
+    # Move Gan img into positive realm
+    test_output = (gan_output[0] + 1) / 2
+
+    level_blocks = []
+
+    plt_title = f"{'Kernel With Scaler' if kernel_scalar else 'Uniform Kernel'} with {'-1 border' if minus_one_border else 'Normal'}"
+
+    for layer_idx in range(1, test_output.shape[-1] - 1):
 
         layer = test_output[:, :, layer_idx]
+        layer = (layer - np.min(layer)) / (np.max(layer) - np.min(layer))
+        layer = np.rint(layer)
         # layer = testing_img
 
-        plt.imshow(layer)
-        plt.show()
+        plt_img(layer, title = f'Layer {layer_idx}', plot_always = False)
 
-        layer = np.pad(layer, 10)
         layer = np.flip(layer, axis = 0)
 
-        plt_img(layer, 'Original')
-        frequency, bins = np.histogram(layer, bins = 100)
+        highest_lowest_value = get_cutoff_point(layer)
 
-        plt.hist(layer, bins = np.linspace(0, 1, 100), histtype='step', log = True)
-        plt.show()
-
-        center = (bins[-1] - bins[0]) / 2
-        highest_lowest_value = bins[0]
-        for i in range(20):
-            highest_count = frequency.argmax()
-            highest_count_value = bins[highest_count]
-            frequency[highest_count] = 0
-            if highest_count_value < center:
-                # print(highest_lowest_value, highest_count_value)
-                if highest_lowest_value < highest_count_value:
-                    highest_lowest_value = highest_count_value
-
-        print(highest_lowest_value, center, bins[-1])
         layer[layer <= highest_lowest_value] = 0
 
         # plt.hist(layer, bins = np.linspace(0, 1, 100), histtype='step', log = True)
         # plt.show()
 
         trimmed_img, trim_data = DecoderUtils.trim_img(layer, ret_trims = True)
-        trimmed_img = (trimmed_img * 2) - 1
 
-        level_plot_
+        if recalibrate:
+            trimmed_img = (trimmed_img * 2) - 1
 
         avg_results = []
         sum_results = []
         for idx, possible_block in enumerate(block_data.values()):
             sum_convolution_kernel = np.ones((possible_block['height'] + 1, possible_block['width'] + 1))
+
+            if kernel_scalar:
+                sum_convolution_kernel = sum_convolution_kernel * possible_block['scalar']
+
             avg_convolution_kernel = sum_convolution_kernel / np.sum(sum_convolution_kernel)
-            # sum_convolution_kernel = np.pad(sum_convolution_kernel, 1, 'constant', constant_values = -1)
+
+            if minus_one_border:
+                sum_convolution_kernel = np.pad(sum_convolution_kernel, 1, 'constant', constant_values = -1)
+
+            pad_value = 0
 
             pad_size = np.max(sum_convolution_kernel.shape)
-            padded_img = np.pad(trimmed_img, pad_size, 'constant', constant_values = -1)
+            padded_img = np.pad(trimmed_img, pad_size, 'constant', constant_values = pad_value)
 
             sum_result = cv2.filter2D(padded_img, -1, sum_convolution_kernel)[pad_size:-pad_size, pad_size:-pad_size]
             avg_result = cv2.filter2D(padded_img, -1, avg_convolution_kernel)[pad_size:-pad_size, pad_size:-pad_size]
@@ -207,11 +255,9 @@ if __name__ == '__main__':
         hit_probabilities = np.stack(avg_results, axis = -1)
         size_ranking = np.stack(sum_results, axis = -1)
         stop_condition = np.sum(trimmed_img[trimmed_img > 0]).item()
-        TOLERANCE = stop_condition * 0.1
 
-        plot_matrix_complete(hit_probabilities, blocks, title = 'Hit Confidence', block = False)
-        plot_matrix_complete(size_ranking, blocks, title = 'Size Ranking', block = False)
-
+        plot_matrix_complete(hit_probabilities, blocks, title = 'Hit Confidence', block = False, plot_always = False, flipped = True)
+        plot_matrix_complete(size_ranking, blocks, title = 'Size Ranking', block = False, plot_always = False, flipped = True)
 
         def delete_blocks(_block_rankings, center_block, _position):
             ret_block_ranking = np.copy(_block_rankings)
@@ -247,7 +293,6 @@ if __name__ == '__main__':
 
             return ret_block_ranking, delete_rectangles
 
-
         def _select_blocks(_block_rankings, _selected_blocks: List, _stop_condition: float, _covered_area: float = 0):
             print(_covered_area, _stop_condition)
             if _stop_condition - _covered_area < 1:
@@ -258,14 +303,16 @@ if __name__ == '__main__':
 
             # Extract the block
             selected_block = blocks[next_block[-1]]
-            block_position = next_block[0:2]
+            block_position = list(next_block[0:2])
             description = f"Selected Block: {selected_block['name']} with {_block_rankings[next_block]} area with {len(_selected_blocks)} selected"
             print(description)
 
             # Remove all blocks that cant work with that blocks together
             next_block_rankings, delete_rectangles = delete_blocks(_block_rankings, selected_block, block_position)
 
-            plot_matrix_complete(_block_rankings, blocks, title = description, add_max = True, block = True, position = block_position, delete_rectangles = delete_rectangles, selected_block = next_block[-1])
+            plot_matrix_complete(_block_rankings, blocks, title = description, add_max = True, block = True,
+                                 position = block_position, delete_rectangles = delete_rectangles,
+                                 selected_block = next_block[-1])
 
             if np.all(next_block_rankings < 0.00001):
                 print("No position available")
@@ -279,36 +326,65 @@ if __name__ == '__main__':
             next_covered_area = _covered_area + ((selected_block['width'] + 1) * (selected_block['height'] + 1))
             return _select_blocks(next_block_rankings, next_blocks, _stop_condition, next_covered_area)
 
+        percentage_cut = np.copy(hit_probabilities)
+        percentage_cut[hit_probabilities <= 0.3] = 0
 
-        for hit_rate in np.linspace(0.85, 0.5, 10):
-            percentage_cut = np.copy(hit_probabilities)
-            percentage_cut[hit_probabilities <= hit_rate] = 0
+        current_size_ranking = percentage_cut * size_ranking
+        plot_matrix_complete(current_size_ranking, blocks, "Current Size Rankings", add_max = True, block = False, plot_always = False, flipped = True)
 
-            current_size_ranking = percentage_cut * size_ranking
-            plot_matrix_complete(current_size_ranking, blocks, "Current Size Rankings", add_max = True, block = False)
-            rounded_block_rankings = np.around(current_size_ranking, 5)  # Round to remove floating point errors
-            selected_blocks = _select_blocks(rounded_block_rankings, [], stop_condition, _covered_area = 0)
+        rounded_block_rankings = np.around(current_size_ranking, 5)  # Round to remove floating point errors
+        selected_blocks = _select_blocks(rounded_block_rankings, [], stop_condition, _covered_area = 0)
 
-            # plot_matrix(current_size_ranking, blocks, axs)
+        top_space, bottom_space, left_space, right_space = trim_data
+        if selected_blocks is not None:
+            for block in selected_blocks:
+                ic(block)
+                block['position'][0] += top_space
+                block['position'][1] += left_space
+                block['material'] = layer_idx
+                level_blocks.append(block)
 
-            if selected_blocks is not None:
-                print('Blocks Selected')
-                ic(selected_blocks)
-                for block in selected_blocks:
-                    block['material'] = layer_idx
-                break
+        created_level_elements = stack_decoder.create_level_elements(selected_blocks, [])
+        # created_level_elements = recalibrate_blocks(created_level_elements)
+        level_visualizer.create_img_of_structure(created_level_elements, title = plt_title)
 
-            break
+    bird_positions = _get_pig_position(test_output[:, :, -1])
 
-        stack_decoder = MultiLayerStackDecoder()
-        level_elements = stack_decoder.create_level_elements(selected_blocks, [])
-        created_level = Level.create_level_from_structure(level_elements)
+    print(bird_positions)
 
-        ic(created_level)
+    created_level_elements = stack_decoder.create_level_elements(level_blocks, bird_positions)
+    # created_level_elements = recalibrate_blocks(created_level_elements)
+    created_level = Level.create_level_from_structure(created_level_elements)
 
-        level_visualizer = LevelVisualizer()
-        level_visualizer.create_img_of_structure(level_elements)
+    ic(created_level)
 
-        break
-
+    level_visualizer.create_img_of_structure(created_level_elements, title = plt_title)
     plt.show()
+
+
+if __name__ == '__main__':
+    test_outputs = load_test_outputs_of_model('multilayer_with_air.pickle')
+
+    direction = 'vertical'
+    direction = 'horizontal'
+    x_offset = 0
+    y_offset = 0
+
+    elements, sizes = create_element_for_each_block(direction, 2, x_offset, y_offset, diff_materials = False)
+    level_img_encoder = LevelImgEncoder()
+    testing_img = level_img_encoder.create_calculated_img(elements)
+
+    # test_environment = TestEnvironment('generated/single_structure')
+    # level_img_decoder = LevelImgDecoder()
+    # level_img_encoder = LevelImgEncoder()
+    # level = test_environment.get_level(0)
+    # elements = level.get_used_elements()
+    # testing_img = level_img_encoder.create_calculated_img(elements)
+    # testing_img[testing_img != 2] = 0
+    # testing_img[testing_img == 2] = 1
+
+    test_image = list(test_outputs.keys())[1]
+    ic(test_image)
+    test_output = test_outputs[test_image]['output']
+
+    decode_gan(test_output)

@@ -73,6 +73,6 @@ def trim_img(level_img, ret_trims = False):
     bottom_trim = level_img.shape[0] - bottom_space
     right_trim = level_img.shape[1] - right_space
     if ret_trims:
-        return level_img[top_space: bottom_trim, left_space: right_trim], (top_space, bottom_trim, left_space, right_trim)
+        return level_img[top_space: bottom_trim, left_space: right_trim], (top_space, bottom_space, left_space, right_space)
     else:
         return level_img[top_space: bottom_trim, left_space: right_trim]

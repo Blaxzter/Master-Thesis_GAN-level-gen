@@ -50,4 +50,5 @@ class MultiLayerStackDecoder:
             element = LevelElement(id = pig_idx + block_idx, **pig_attribute)
             element.create_set_geometry()
             ret_level_elements.append(element)
+
         return ret_level_elements
