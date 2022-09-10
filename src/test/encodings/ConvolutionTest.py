@@ -17,6 +17,7 @@ from data_scripts.CreateEncodingData import create_element_for_each_block
 from level import Constants
 from level.Level import Level
 from level.LevelVisualizer import LevelVisualizer
+from test.TestEnvironment import TestEnvironment
 from util.Config import Config
 
 config = Config.get_instance()
@@ -30,17 +31,6 @@ block_data = config.get_encoding_data(f"encoding_res_{Constants.resolution}")
 if type(block_data) is not str:
     resolution = block_data['resolution']
     del block_data['resolution']
-
-
-def load_test_outputs_of_model(model_name):
-    loaded_model = model_name.replace(' ', '_').lower()
-    store_imgs_pickle_file = config.get_gan_img_store(loaded_model)
-
-    with open(store_imgs_pickle_file, 'rb') as f:
-        loaded_outputs = pickle.load(f)
-
-    return loaded_outputs
-
 
 def plt_img(img, title = None, ax = None, flip = False, plot_always = False):
     if not plot_always and not plot_stuff:
@@ -441,29 +431,10 @@ def decode_gan(gan_output, kernel_scalar = True, minus_one_border = True, recali
 
 
 if __name__ == '__main__':
-    test_outputs = load_test_outputs_of_model('multilayer_with_air.pickle')
 
-    direction = 'vertical'
-    direction = 'horizontal'
-    x_offset = 0
-    y_offset = 0
-
-    elements, sizes = create_element_for_each_block(direction, 2, x_offset, y_offset, diff_materials = False)
-    level_img_encoder = LevelImgEncoder()
-    testing_img = level_img_encoder.create_calculated_img(elements)
-
-    # test_environment = TestEnvironment('generated/single_structure')
-    # level_img_decoder = LevelImgDecoder()
-    # level_img_encoder = LevelImgEncoder()
-    # level = test_environment.get_level(0)
-    # elements = level.get_used_elements()
-    # testing_img = level_img_encoder.create_calculated_img(elements)
-    # testing_img[testing_img != 2] = 0
-    # testing_img[testing_img == 2] = 1
-
-    test_image = list(test_outputs.keys())[0]
-    ic(test_image)
-    test_output = test_outputs[test_image]['output']
+    test_environment = TestEnvironment()
+    test_outputs = test_environment.load_test_outputs_of_model('multilayer_with_air')
+    test_output, image_name = test_environment.return_loaded_gan_output_by_idx(0)
 
     norm_img = (test_output[0] + 1) / 2
 
