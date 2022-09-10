@@ -121,6 +121,9 @@ class Config:
         self.image_root = os.path.normpath(
             os.path.join(self.current_path, 'resources/imgs/')
         )
+        self.conv_debug = os.path.normpath(
+            os.path.join(self.current_path, 'resources/imgs/conv_debug/')
+        )
         self.image_store = os.path.normpath(
             os.path.join(self.current_path, 'resources/imgs/generated/{timestamp}/')
         )
@@ -277,6 +280,10 @@ class Config:
     def get_eval_file(self, file_name):
         text_folder = os.path.join(self.eval_root, file_name)
         return text_folder + ".json"
+
+    def get_conv_debug_img_file(self, file_name):
+        img_file = os.path.join(self.conv_debug, file_name)
+        return img_file + ".png"
 
     def get_event_file(self, log_dir):
         for path in Path(log_dir).rglob('events.out.tfevents.*'):

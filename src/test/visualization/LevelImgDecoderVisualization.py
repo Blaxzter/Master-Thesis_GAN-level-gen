@@ -3,7 +3,6 @@ import itertools
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from ete3 import Tree, TreeNode, TextFace, TreeStyle
 from matplotlib import patches
 from shapely.geometry import Polygon
 
@@ -23,6 +22,7 @@ class LevelImgDecoderVisualization:
         self.level_viz = LevelVisualizer()
 
     def create_tree_of_one_encoding(self, level_img):
+        from ete3 import Tree, TreeNode, TextFace, TreeStyle
         self.t = Tree()
 
         ts = TreeStyle()
@@ -354,7 +354,8 @@ class LevelImgDecoderVisualization:
             plt.tight_layout()
             plt.show()
 
-    def visualize_select_blocks(self, rectangles, used_blocks, required_area, poly, tree_node: TreeNode, occupied_area = 0):
+    def visualize_select_blocks(self, rectangles, used_blocks, required_area, poly, tree_node, occupied_area = 0):
+        from ete3 import Tree, TreeNode, TextFace, TreeStyle
         # Break condition
         if occupied_area != 0 and abs(required_area / occupied_area - 1) < 0.1:
 

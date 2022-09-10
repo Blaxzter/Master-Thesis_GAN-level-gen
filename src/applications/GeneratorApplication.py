@@ -7,6 +7,7 @@ import numpy as np
 from loguru import logger
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+import test.encodings.ConvolutionTest
 from converter.gan_processing.DecodingFunctions import DecodingFunctions
 from converter.to_img_converter import DecoderUtils
 
@@ -101,6 +102,7 @@ class GeneratorApplication:
             viz_img = orig_img[1].numpy()
 
         trimmed_img, trim_data = DecoderUtils.trim_img(img.reshape(img.shape[0:2]), ret_trims = True)
+        self.main_visualization = trimmed_img
         self.create_plt_img(ax, fig, f'Probability {pred.item()}', viz_img)
 
         if self.level_drawer is None:
@@ -120,8 +122,11 @@ class GeneratorApplication:
                 ax = self.level_drawer.tabs[i]['ax']
                 self.create_plt_img(ax, fig, f'Layer {i}', orig_img[0, :, :, i - 1])
                 self.level_drawer.draw_img_to_fig_canvas(tab = i)
+                top_space, bottom_space, left_space, right_space = trim_data
+                bottom_trim = norm_img.shape[0] - bottom_space
+                right_trim = norm_img.shape[1] - right_space
                 self.level_drawer.draw_level(
-                    np.rint(norm_img[trim_data[0]:trim_data[1], trim_data[2]: trim_data[3], i - 1]), tab = i)
+                    np.rint(norm_img[top_space: bottom_trim, left_space: right_trim, i - 1]), tab = i)
 
     def create_plt_img(self, ax, fig, plt_title, viz_img):
         im = ax.imshow(viz_img)
@@ -168,7 +173,6 @@ class GeneratorApplication:
         self.seed = self.gan.create_random_vector()
 
     def create_window(self):
-
         self.window = Tk()
         self.window.title('Gan Level Generator')
         self.window.geometry("1200x800")
@@ -251,6 +255,15 @@ class GeneratorApplication:
             text = "X")
         store_img.pack(side = LEFT, pady = (20, 10), padx = (10, 10))
 
+
+        store_img = Button(
+            master = self.top_frame,
+            command = lambda: self.decode_gan_img(),
+            height = 2,
+            width = 15,
+            text = "Decode Gan Img")
+        store_img.pack(side = LEFT, pady = (20, 10), padx = (10, 10))
+
     def load_stored_imgs(self):
         loaded_model = self.selected_model.get().replace(' ', '_').lower()
         self.store_imgs_pickle_file = self.config.get_gan_img_store(loaded_model)
@@ -297,6 +310,34 @@ class GeneratorApplication:
             pickle.dump(self.loaded_outputs, handle, protocol = pickle.HIGHEST_PROTOCOL)
 
         self.stored_images['values'] = list(self.loaded_outputs.keys())
+
+    def decode_gan_img(self):
+        orig_img, prediction = self.gan.create_img(self.seed)
+        test.encodings.ConvolutionTest.plot_stuff = False
+        test.encodings.ConvolutionTest.plot_to_file = False
+        self.level_drawer.level = test.encodings.ConvolutionTest.decode_gan(
+            orig_img,
+            kernel_scalar = True,
+            minus_one_border = True,
+            recalibrate = False,
+            allow_plot = False,
+            use_rint = True,
+            cutoff_point = 0.5,
+            bird_cutoff = 0.1
+        )
+
+        self.level_drawer.clear_figure_canvas()
+        self.level_drawer.create_img_tab_panes(1)
+
+        fig, ax = self.level_drawer.new_fig()
+        self.level_drawer.tabs[0]['fig'] = fig
+        self.level_drawer.tabs[0]['ax'] = ax
+
+        self.level_drawer.level_visualizer.create_img_of_structure(
+            self.level_drawer.level.get_used_elements(), use_grid = False, ax = ax, scaled = True
+        )
+
+        self.level_drawer.draw_img_to_fig_canvas(tab = 0)
 
     def load_model_0(self):
         from generator.gan.SimpleGans import SimpleGAN100112

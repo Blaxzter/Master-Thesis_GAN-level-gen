@@ -8,6 +8,7 @@ from icecream import ic
 from matplotlib.patches import Rectangle
 
 from converter import MathUtil
+from converter.gan_processing.DecodingFunctions import DecodingFunctions
 from converter.to_img_converter import DecoderUtils
 from converter.to_img_converter.DecoderUtils import recalibrate_blocks
 from converter.to_img_converter.LevelImgEncoder import LevelImgEncoder
@@ -20,7 +21,10 @@ from util.Config import Config
 
 config = Config.get_instance()
 
-plot_stuff = False
+plot_stuff = True
+plot_to_file = True
+
+img_counter = 0
 
 block_data = config.get_encoding_data(f"encoding_res_{Constants.resolution}")
 if type(block_data) is not str:
@@ -46,7 +50,15 @@ def plt_img(img, title = None, ax = None, flip = False, plot_always = False):
         if title is not None:
             plt.title(title)
         plt.colorbar()
-        plt.show()
+        if plot_to_file:
+
+            global img_counter
+            plt.savefig(config.get_conv_debug_img_file(
+                f'{img_counter}_{title.replace(" ", "_").lower() if title is not None else "Img"}'))
+            img_counter += 1
+            plt.close()
+        else:
+            plt.show()
     else:
         if flip:
             ax.imshow(np.flip(img, axis = 0))
@@ -73,10 +85,19 @@ def plot_matrix(matrix, blocks, axs):
         _plot_img = matrix[:, :, layer]
         plt_img(_plot_img, blocks[layer]['name'], ax = axs[layer])
     plt.tight_layout()
-    plt.show(block = False)
+
+    if plot_to_file:
+        global img_counter
+        plt.savefig(config.get_conv_debug_img_file(f'{img_counter}_matrix'))
+        img_counter += 1
+        plt.close()
+    else:
+        plt.show(block = False)
 
 
-def plot_matrix_complete(matrix, blocks, title = None, add_max = True, block = False, position = None, delete_rectangles = None, flipped = False, selected_block = None, plot_always = False):
+def plot_matrix_complete(matrix, blocks, title = None, add_max = True, block = False, position = None,
+                         delete_rectangles = None, flipped = False, selected_block = None, plot_always = False,
+                         save_name = None):
     if not plot_always and not plot_stuff:
         return
 
@@ -104,21 +125,29 @@ def plot_matrix_complete(matrix, blocks, title = None, add_max = True, block = F
             else:
                 axs[layer_idx].add_patch(
                     Rectangle((start, top), end - start, bottom - top,
-                              fill = False, color = color,linewidth = 1))
+                              fill = False, color = color, linewidth = 1))
 
     if title is not None:
         fig.suptitle(title)
 
     plt.tight_layout()
-    plt.show(block = block)
+    if plot_to_file:
+        global img_counter
+        file_name = f'{img_counter}_{title.replace(" ", "_").lower() if title is not None else "matrix"}'
+        if save_name is not None:
+            file_name = f'{img_counter}_{save_name}'
+        fig.savefig(config.get_conv_debug_img_file(file_name))
+        img_counter += 1
+        plt.close(fig)
+    else:
+        plt.show(block = block)
 
 
 def get_cutoff_point(layer):
     frequency, bins = np.histogram(layer, bins = 100)
     if plot_stuff:
         plt_img(layer, 'Original')
-        plt.hist(layer, bins = np.linspace(0, 1, 100), histtype = 'step', log = True)
-        plt.show()
+
     center = (bins[-1] - bins[0]) / 2
     highest_lowest_value = bins[0]
     for i in range(20):
@@ -133,7 +162,8 @@ def get_cutoff_point(layer):
     print(highest_lowest_value, center, bins[-1])
     return highest_lowest_value
 
-def _get_pig_position(bird_layer):
+
+def _get_pig_position(bird_layer, bird_cutoff = 0.5):
     current_img = np.copy(bird_layer)
 
     current_img = np.flip(current_img, axis = 0)
@@ -146,17 +176,20 @@ def _get_pig_position(bird_layer):
     padded_img = np.pad(current_img, 6, 'constant', constant_values = -1)
     bird_probabilities = cv2.filter2D(padded_img, -1, kernel)[6:-6, 6:-6]
 
-    plt_img(bird_probabilities, 'Bird Filter')
+    if plot_stuff:
+        plt_img(bird_probabilities, 'Bird Filter')
 
-    bird_probabilities[bird_probabilities < 0.85] = 0
+    bird_probabilities[bird_probabilities < bird_cutoff] = 0
     trimmed_bird_img, trim_data = DecoderUtils.trim_img(bird_probabilities, ret_trims = True)
 
-    plt_img(bird_probabilities, 'After top trimming')
+    if plot_stuff:
+        plt_img(bird_probabilities, 'After top trimming')
 
     max_height, max_width = trimmed_bird_img.shape
     top_space, bottom_space, left_space, right_space = trim_data
 
     bird_positions = []
+    trim_counter = 0
     while not np.all(trimmed_bird_img < 0.00001):
         bird_position = np.unravel_index(np.argmax(trimmed_bird_img), trimmed_bird_img.shape)
         y, x = bird_position
@@ -176,14 +209,23 @@ def _get_pig_position(bird_layer):
         trimmed_bird_img[x_pos, y_pos] = 0
         if plot_stuff:
             plt.imshow(trimmed_bird_img)
-            plt.title(f'x_pos: {x} ,y_pos: {y}')
-            plt.show()
+            plt.title(f'Bird Removed at: x_pos: {x} ,y_pos: {y}')
+            if plot_to_file:
+                global img_counter
+                plt.savefig(config.get_conv_debug_img_file(f'{img_counter}_{trim_counter}_bird_after_trim'))
+                img_counter += 1
+                plt.close()
+            else:
+                plt.show()
+
+        trim_counter += 1
 
     return bird_positions
 
 
-def decode_gan(gan_output, kernel_scalar = True, minus_one_border = False, recalibrate = False):
-
+def decode_gan(gan_output, kernel_scalar = True, minus_one_border = True, recalibrate = True, allow_plot = True,
+               use_rint = False, cutoff_point = 0.85, bird_cutoff = 0.5):
+    global img_counter
     stack_decoder = MultiLayerStackDecoder()
     level_visualizer = LevelVisualizer()
 
@@ -198,23 +240,42 @@ def decode_gan(gan_output, kernel_scalar = True, minus_one_border = False, recal
 
         layer = test_output[:, :, layer_idx]
         layer = (layer - np.min(layer)) / (np.max(layer) - np.min(layer))
-        layer = np.rint(layer)
+        if use_rint:
+            layer = np.rint(layer)
         # layer = testing_img
 
-        plt_img(layer, title = f'Layer {layer_idx}', plot_always = False)
+        if allow_plot:
+            plt_img(layer, title = f'Layer {layer_idx}', plot_always = True)
 
         layer = np.flip(layer, axis = 0)
 
         highest_lowest_value = get_cutoff_point(layer)
 
+        if allow_plot and plot_stuff:
+            plt.hist(layer, bins = np.linspace(0, 1, 100), histtype = 'step', log = True)
+            plt.title("Matrix histogram before low values are uniformed")
+            if plot_to_file:
+                plt.savefig(config.get_conv_debug_img_file(f'{img_counter}_before_uniformed'))
+                img_counter += 1
+                plt.close()
+            else:
+                plt.show()
+
         layer[layer <= highest_lowest_value] = 0
 
-        # plt.hist(layer, bins = np.linspace(0, 1, 100), histtype='step', log = True)
-        # plt.show()
+        if allow_plot and plot_stuff:
+            plt.hist(layer, bins = np.linspace(0, 1, 100), histtype = 'step', log = True)
+            plt.title("Matrix histogram after low values are uniformed")
+            if plot_to_file:
+                plt.savefig(config.get_conv_debug_img_file(f'{img_counter}_after_uniformed'))
+                img_counter += 1
+                plt.close()
+            else:
+                plt.show()
 
         trimmed_img, trim_data = DecoderUtils.trim_img(layer, ret_trims = True)
 
-        if recalibrate:
+        if not recalibrate:
             trimmed_img = (trimmed_img * 2) - 1
 
         avg_results = []
@@ -230,7 +291,7 @@ def decode_gan(gan_output, kernel_scalar = True, minus_one_border = False, recal
             if minus_one_border:
                 sum_convolution_kernel = np.pad(sum_convolution_kernel, 1, 'constant', constant_values = -1)
 
-            pad_value = 0
+            pad_value = -1 if recalibrate else 0
 
             pad_size = np.max(sum_convolution_kernel.shape)
             padded_img = np.pad(trimmed_img, pad_size, 'constant', constant_values = pad_value)
@@ -240,10 +301,6 @@ def decode_gan(gan_output, kernel_scalar = True, minus_one_border = False, recal
 
             avg_results.append(avg_result)
             sum_results.append(sum_result)
-
-            # fig, ax = plt.subplots(1, 2, figsize = (12, 6))
-            # ax[1].hist(result, bins = np.linspace(0, 1, 100), histtype = 'step', log = True)
-            # plt.show()
 
         # Create a matrix of block layer,
         # Start with a high hit rate 0.99 or something and iterate down with 0.01 (set prev position to 0)
@@ -256,8 +313,11 @@ def decode_gan(gan_output, kernel_scalar = True, minus_one_border = False, recal
         size_ranking = np.stack(sum_results, axis = -1)
         stop_condition = np.sum(trimmed_img[trimmed_img > 0]).item()
 
-        plot_matrix_complete(hit_probabilities, blocks, title = 'Hit Confidence', block = False, plot_always = False, flipped = True)
-        plot_matrix_complete(size_ranking, blocks, title = 'Size Ranking', block = False, plot_always = False, flipped = True)
+        if allow_plot:
+            plot_matrix_complete(hit_probabilities, blocks, title = 'Hit Confidence', block = False, plot_always = True,
+                                 flipped = True)
+            plot_matrix_complete(size_ranking, blocks, title = 'Size Ranking', block = False, plot_always = True,
+                                 flipped = True)
 
         def delete_blocks(_block_rankings, center_block, _position):
             ret_block_ranking = np.copy(_block_rankings)
@@ -310,9 +370,10 @@ def decode_gan(gan_output, kernel_scalar = True, minus_one_border = False, recal
             # Remove all blocks that cant work with that blocks together
             next_block_rankings, delete_rectangles = delete_blocks(_block_rankings, selected_block, block_position)
 
-            plot_matrix_complete(_block_rankings, blocks, title = description, add_max = True, block = True,
-                                 position = block_position, delete_rectangles = delete_rectangles,
-                                 selected_block = next_block[-1])
+            if allow_plot:
+                plot_matrix_complete(_block_rankings, blocks, title = description, add_max = True, block = True,
+                                     position = block_position, delete_rectangles = delete_rectangles,
+                                     selected_block = next_block[-1], save_name = f'{selected_block["name"]}_selected')
 
             if np.all(next_block_rankings < 0.00001):
                 print("No position available")
@@ -327,10 +388,12 @@ def decode_gan(gan_output, kernel_scalar = True, minus_one_border = False, recal
             return _select_blocks(next_block_rankings, next_blocks, _stop_condition, next_covered_area)
 
         percentage_cut = np.copy(hit_probabilities)
-        percentage_cut[hit_probabilities <= 0.3] = 0
+        percentage_cut[hit_probabilities <= cutoff_point] = 0
 
         current_size_ranking = percentage_cut * size_ranking
-        plot_matrix_complete(current_size_ranking, blocks, "Current Size Rankings", add_max = True, block = False, plot_always = False, flipped = True)
+        if allow_plot:
+            plot_matrix_complete(current_size_ranking, blocks, "Current Size Rankings", add_max = True, block = False,
+                                 plot_always = True, flipped = True)
 
         rounded_block_rankings = np.around(current_size_ranking, 5)  # Round to remove floating point errors
         selected_blocks = _select_blocks(rounded_block_rankings, [], stop_condition, _covered_area = 0)
@@ -344,22 +407,37 @@ def decode_gan(gan_output, kernel_scalar = True, minus_one_border = False, recal
                 block['material'] = layer_idx
                 level_blocks.append(block)
 
-        created_level_elements = stack_decoder.create_level_elements(selected_blocks, [])
-        # created_level_elements = recalibrate_blocks(created_level_elements)
-        level_visualizer.create_img_of_structure(created_level_elements, title = plt_title)
+        if allow_plot and plot_stuff:
+            fig, ax = plt.subplots()
+            created_level_elements = stack_decoder.create_level_elements(selected_blocks, [])
+            # created_level_elements = recalibrate_blocks(created_level_elements)
+            level_visualizer.create_img_of_structure(created_level_elements, title = plt_title, ax = ax)
+            ax.set_title(f'Encoded Layer {layer_idx}')
+            if plot_to_file:
+                fig.savefig(config.get_conv_debug_img_file(f'{img_counter}_finished_structure'))
+                img_counter += 1
+                plt.close(fig)
+            else:
+                plt.show()
 
-    bird_positions = _get_pig_position(test_output[:, :, -1])
-
-    print(bird_positions)
+    bird_positions = _get_pig_position(test_output[:, :, -1], bird_cutoff = bird_cutoff)
 
     created_level_elements = stack_decoder.create_level_elements(level_blocks, bird_positions)
     # created_level_elements = recalibrate_blocks(created_level_elements)
     created_level = Level.create_level_from_structure(created_level_elements)
 
-    ic(created_level)
+    if allow_plot:
+        fig, ax = plt.subplots()
+        level_visualizer.create_img_of_structure(created_level_elements, title = plt_title, ax = ax)
+        if plot_to_file:
+            ax.set_title('Finished Structure')
+            fig.savefig(config.get_conv_debug_img_file(f'{img_counter}_finished_structure'))
+            img_counter += 1
+            plt.close(fig)
+        else:
+            plt.show()
 
-    level_visualizer.create_img_of_structure(created_level_elements, title = plt_title)
-    plt.show()
+    return created_level
 
 
 if __name__ == '__main__':
@@ -383,8 +461,35 @@ if __name__ == '__main__':
     # testing_img[testing_img != 2] = 0
     # testing_img[testing_img == 2] = 1
 
-    test_image = list(test_outputs.keys())[1]
+    test_image = list(test_outputs.keys())[0]
     ic(test_image)
     test_output = test_outputs[test_image]['output']
 
-    decode_gan(test_output)
+    norm_img = (test_output[0] + 1) / 2
+
+    norm_img[norm_img[:, :, 0] < 0.1, 0] = 0
+    img = np.argmax(norm_img, axis = 2)
+
+    plt.imshow(img)
+    plt.show()
+
+    plot_stuff = False
+    allow_plot = False
+    plot_to_file = True
+
+    decoded_level = decode_gan(
+        test_output,
+        kernel_scalar = True,
+        minus_one_border = True,
+        recalibrate = False,
+        allow_plot = allow_plot,
+        use_rint = False,
+        cutoff_point = 0.5,
+        bird_cutoff = 0.1
+    )
+
+    fig, ax = plt.subplots()
+    level_visualizer = LevelVisualizer()
+    created_level_elements = recalibrate_blocks(decoded_level.get_used_elements())
+    level_visualizer.create_img_of_structure(created_level_elements, title = "Finished Structure")
+    plt.show()
