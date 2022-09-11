@@ -31,6 +31,10 @@ class Config:
         if self.generator not in GeneratorOptions:
             raise ParameterException(f"The selected generator is not an option: {GeneratorOptions}")
 
+        self.plotting_enabled = True
+        self.plot_to_file = False
+        self.plt_img_counter = 0
+
         # Tensorflow data creation setting
         self.max_height = 128
         self.max_width = 128
@@ -314,6 +318,12 @@ class Config:
                 pickle.dump(dict(), handle, protocol = pickle.HIGHEST_PROTOCOL)
         return path
 
+    def get_block_data(self, resoultion):
+        block_data = self.get_encoding_data(f"encoding_res_{resoultion}")
+        if type(block_data) is not str:
+            resolution = block_data['resolution']
+            del block_data['resolution']
+        return block_data
 
 if __name__ == '__main__':
     config = Config.get_instance()
