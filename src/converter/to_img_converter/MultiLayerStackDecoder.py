@@ -7,10 +7,11 @@ from scipy import ndimage
 
 from converter import MathUtil
 from converter.to_img_converter import DecoderUtils
+from converter.to_img_converter.DecoderUtils import recalibrate_blocks
 from level import Constants
+from level.Level import Level
 from level.LevelElement import LevelElement
 from test.TestUtils import plot_matrix_complete
-from test.encodings.ConvolutionTest import get_cutoff_point
 from util.Config import Config
 
 
@@ -29,18 +30,28 @@ class MultiLayerStackDecoder:
         self.minus_one_border = True
         self.cutoff_point = 0.85
         self.bird_cutoff = 0.5
+        self.recalibrate_blocks = False
 
     def preprocess_layer(self, layer):
         pass
 
-    def decode(self):
-        # Move each possible blocks like a convolution over the block mush
-        # for every position store the overlap 1 = full overlap 0 = no overlap
-        # sort by overlap with mush
-        # Select top element, filter elements that overlap, repeat
-        # If no element are over the coverage is high enough return with selected
-        # Otherwise go with next block
-        pass
+    def decode(self, gan_output):
+        if len(gan_output.shape) == 4:
+            gan_output = gan_output[0]
+
+        level_blocks = []
+
+        for layer_idx in range(1, gan_output.shape[-1] - 1):
+            layer_blocks = self.decode_layer(gan_output[:, :, layer_idx], layer_idx)
+            level_blocks += layer_blocks
+
+        bird_positions = self.get_pig_position(gan_output[:, :, -1])
+        created_level_elements = self.create_level_elements(level_blocks, bird_positions)
+        if self.recalibrate_blocks:
+            created_level_elements = recalibrate_blocks(created_level_elements)
+        created_level = Level.create_level_from_structure(created_level_elements)
+
+        return created_level
 
     def decode_layer(self, layer, layer_idx):
         layer = np.flip(layer, axis = 0)
@@ -98,7 +109,7 @@ class MultiLayerStackDecoder:
             if self.minus_one_border:
                 sum_convolution_kernel = np.pad(sum_convolution_kernel, 1, 'constant', constant_values = -1)
 
-            pad_value = -1 if recalibrate else 0
+            pad_value = -1 if self.move_to_minus_one_one else 0
 
             pad_size = np.max(sum_convolution_kernel.shape)
             padded_img = np.pad(layer, pad_size, 'constant', constant_values = pad_value)
@@ -114,12 +125,12 @@ class MultiLayerStackDecoder:
 
         return hit_probabilities, size_ranking
 
-    def _get_pig_position(self, bird_layer):
+    def get_pig_position(self, bird_layer):
         current_img = np.copy(bird_layer)
 
         current_img = np.flip(current_img, axis = 0)
 
-        highest_lowest_value = get_cutoff_point(bird_layer)
+        highest_lowest_value = self.get_cutoff_point(bird_layer)
         current_img[current_img <= highest_lowest_value] = 0
 
         kernel = MathUtil.get_circular_kernel(7)
@@ -152,16 +163,6 @@ class MultiLayerStackDecoder:
             x_pos, y_pos = np.meshgrid(y_cords, x_cords)
 
             trimmed_bird_img[x_pos, y_pos] = 0
-            if plot_stuff:
-                plt.imshow(trimmed_bird_img)
-                plt.title(f'Bird Removed at: x_pos: {x} ,y_pos: {y}')
-                if plot_to_file:
-                    global img_counter
-                    plt.savefig(config.get_conv_debug_img_file(f'{img_counter}_{trim_counter}_bird_after_trim'))
-                    img_counter += 1
-                    plt.close()
-                else:
-                    plt.show()
 
             trim_counter += 1
 
@@ -176,21 +177,16 @@ class MultiLayerStackDecoder:
         next_block = np.unravel_index(np.argmax(_block_rankings), _block_rankings.shape)
 
         # Extract the block
-        selected_block = blocks[next_block[-1]]
+        selected_block = self.blocks[next_block[-1]]
         block_position = list(next_block[0:2])
+
         description = f"Selected Block: {selected_block['name']} with {_block_rankings[next_block]} area with {len(_selected_blocks)} selected"
         print(description)
 
         # Remove all blocks that cant work with that blocks together
-        next_block_rankings, delete_rectangles = delete_blocks(_block_rankings, selected_block, block_position)
-
-        if allow_plot:
-            plot_matrix_complete(_block_rankings, blocks, title = description, add_max = True, block = True,
-                                 position = block_position, delete_rectangles = delete_rectangles,
-                                 selected_block = next_block[-1], save_name = f'{selected_block["name"]}_selected')
+        next_block_rankings = self.delete_blocks(_block_rankings, selected_block['idx'], block_position)
 
         if np.all(next_block_rankings < 0.00001):
-            print("No position available")
             return _selected_blocks
 
         next_blocks = _selected_blocks.copy()
@@ -199,7 +195,7 @@ class MultiLayerStackDecoder:
             block = selected_block,
         ))
         next_covered_area = _covered_area + ((selected_block['width'] + 1) * (selected_block['height'] + 1))
-        return _select_blocks(next_block_rankings, next_blocks, _stop_condition, next_covered_area)
+        return self.select_blocks(next_block_rankings, next_blocks, _stop_condition, next_covered_area)
 
     def create_delete_block_matrices(self):
         """
@@ -262,10 +258,26 @@ class MultiLayerStackDecoder:
                 x_pos, y_pos = np.meshgrid(y_cords, x_cords)
                 multiply_matrix[y_pos, x_pos, layer_idx] = 0
 
-            ret_matrices[block_idx] = multiply_matrix
-            plot_matrix_complete(multiply_matrix, decoder.blocks, title = f'Delete Matrix of {block_range["name"]}')
+            ret_matrices[block_idx] = dict(
+                matrix = multiply_matrix,
+                shape = np.array(multiply_matrix.shape)
+            )
 
         return ret_matrices
+
+    def delete_blocks(self, _block_rankings, _selected_block_idx, _block_position):
+        current_delete_matrix_data = self.delete_matrices[_selected_block_idx]
+        current_delete_matrix = current_delete_matrix_data['matrix']
+        x_pad, y_pad, _ = current_delete_matrix.shape
+        padded_block_rankings = np.pad(_block_rankings, ((x_pad, x_pad), (y_pad, y_pad), (0, 0)), 'constant', constant_values=0)
+
+        delete_matrix_shape = current_delete_matrix_data['shape'][:2]
+        left_stop, top_stop = _block_position - (delete_matrix_shape // 2) + delete_matrix_shape
+        right_stop, bottom_stop = _block_position + (delete_matrix_shape // 2) + delete_matrix_shape + (delete_matrix_shape % 2)
+        padded_block_rankings[left_stop: right_stop, top_stop: bottom_stop] = \
+            padded_block_rankings[left_stop: right_stop, top_stop: bottom_stop] * current_delete_matrix
+
+        return padded_block_rankings[x_pad: -x_pad, y_pad: -y_pad]
 
     def get_cutoff_point(self, layer):
         frequency, bins = np.histogram(layer, bins = 100)
@@ -319,6 +331,4 @@ class MultiLayerStackDecoder:
 if __name__ == '__main__':
     decoder = MultiLayerStackDecoder()
     delete_matrix = decoder.create_delete_block_matrices()
-
-    plot_matrix_complete(delete_matrix, decoder.blocks)
 

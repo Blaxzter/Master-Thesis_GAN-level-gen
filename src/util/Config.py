@@ -323,6 +323,10 @@ class Config:
         if type(block_data) is not str:
             resolution = block_data['resolution']
             del block_data['resolution']
+
+        for block_idx, (key, value) in enumerate(block_data.items()):
+            block_data[key]['idx'] = block_idx
+
         return block_data
 
 if __name__ == '__main__':
