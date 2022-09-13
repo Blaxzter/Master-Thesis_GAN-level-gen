@@ -383,6 +383,41 @@ class LevelDrawer:
 
         self.game_manager.switch_to_level(self.level, stop_time = False)
 
+    def create_parameter_popup(self, dict_data: Dict, ok_button_text: str, callback):
+
+        self.decoding_popup_window = Toplevel()
+        self.decoding_popup_window.wm_title("Window")
+
+        idx = 0
+        for idx, (key, value) in enumerate(dict_data.items()):
+            l = Label(self.decoding_popup_window, text = key.replace('_', ' '), justify=LEFT, anchor="w")
+            l.grid(row = idx, column = 0, pady = (2, 2), padx = (5, 5))
+
+            if value['type'] == 'bool':
+                int_var = IntVar()
+                int_var.set(1 if value['default'] else 0)
+                checkbox = Checkbutton(self.decoding_popup_window, variable=int_var, onvalue=1, offvalue=0)
+                checkbox.grid(row = idx, column = 1, pady = (2, 2), padx = (5, 5))
+                value['data'] = int_var
+            else:
+                text_field = Text(self.decoding_popup_window, height = 1, width = 5)
+                text_field.replace("1.0", END, value['default'])
+                text_field.grid(row = idx, column = 1, pady = (2, 2), padx = (5, 5))
+                value['data'] = text_field
+
+        def _call_callback(_window, _callback):
+
+            for key, value in dict_data.items():
+                if value['type'] == 'bool':
+                    value['data'] = value['data'].get() == 1
+                else:
+                    value['data'] = float(value['data'].get("1.0", END))
+
+            _window.destroy()
+            _callback()
+
+        b = ttk.Button(self.decoding_popup_window, text = ok_button_text, command = lambda callback = callback: _call_callback(self.decoding_popup_window, callback))
+        b.grid(row = idx + 1, column = 0, columnspan = 2)
 
 if __name__ == '__main__':
     level_drawer = LevelDrawer()

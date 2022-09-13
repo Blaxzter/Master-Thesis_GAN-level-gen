@@ -18,7 +18,7 @@ from level import Constants
 from level.Level import Level
 from level.LevelVisualizer import LevelVisualizer
 from test.TestEnvironment import TestEnvironment
-from test.TestUtils import plt_img, plot_matrix_complete
+from test.TestUtils import plot_img, plot_matrix_complete
 from util.Config import Config
 
 config = Config.get_instance()
@@ -37,7 +37,7 @@ if type(block_data) is not str:
 def get_cutoff_point(layer):
     frequency, bins = np.histogram(layer, bins = 100)
     if plot_stuff:
-        plt_img(layer, 'Original')
+        plot_img(layer, 'Original')
 
     center = (bins[-1] - bins[0]) / 2
     highest_lowest_value = bins[0]
@@ -68,13 +68,13 @@ def _get_pig_position(bird_layer, bird_cutoff = 0.5):
     bird_probabilities = cv2.filter2D(padded_img, -1, kernel)[6:-6, 6:-6]
 
     if plot_stuff:
-        plt_img(bird_probabilities, 'Bird Filter')
+        plot_img(bird_probabilities, 'Bird Filter')
 
     bird_probabilities[bird_probabilities < bird_cutoff] = 0
     trimmed_bird_img, trim_data = DecoderUtils.trim_img(bird_probabilities, ret_trims = True)
 
     if plot_stuff:
-        plt_img(bird_probabilities, 'After top trimming')
+        plot_img(bird_probabilities, 'After top trimming')
 
     max_height, max_width = trimmed_bird_img.shape
     top_space, bottom_space, left_space, right_space = trim_data
@@ -136,7 +136,7 @@ def decode_gan(gan_output, kernel_scalar = True, minus_one_border = True, recali
         # layer = testing_img
 
         if allow_plot:
-            plt_img(layer, title = f'Layer {layer_idx}', plot_always = True)
+            plot_img(layer, title = f'Layer {layer_idx}', plot_always = True)
 
         layer = np.flip(layer, axis = 0)
 
@@ -246,8 +246,6 @@ def decode_gan(gan_output, kernel_scalar = True, minus_one_border = True, recali
 
         def _select_blocks(_block_rankings, _selected_blocks: List, _stop_condition: float, _covered_area: float = 0):
             print(_covered_area, _stop_condition)
-            if _stop_condition - _covered_area < 1:
-                return _selected_blocks
 
             # select the most probable block that is also the biggest
             next_block = np.unravel_index(np.argmax(_block_rankings), _block_rankings.shape)
@@ -345,9 +343,9 @@ if __name__ == '__main__':
     plt.imshow(img)
     plt.show()
 
-    plot_stuff = False
-    allow_plot = False
-    plot_to_file = True
+    plot_stuff = True
+    allow_plot = True
+    plot_to_file = False
 
     decoded_level = decode_gan(
         test_output,

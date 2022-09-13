@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 from converter.to_img_converter.MultiLayerStackDecoder import MultiLayerStackDecoder
 from level.LevelVisualizer import LevelVisualizer
 from test.TestEnvironment import TestEnvironment
+from test.TestUtils import plot_img
 
 if __name__ == '__main__':
     test_environment = TestEnvironment()
@@ -14,9 +15,7 @@ if __name__ == '__main__':
 
     norm_img[norm_img[:, :, 0] < 0.1, 0] = 0
     img = np.argmax(norm_img, axis = 2)
-
-    plt.imshow(img)
-    plt.show()
+    plot_img(img)
 
     multiLayerStackDecoder = MultiLayerStackDecoder()
     created_level = multiLayerStackDecoder.decode(gan_output)

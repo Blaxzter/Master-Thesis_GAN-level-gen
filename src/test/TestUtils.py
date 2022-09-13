@@ -7,20 +7,22 @@ from util.Config import Config
 config = Config.get_instance()
 
 
-def plt_img(img, title = None, ax = None, flip = False, plot_always = False):
+def plot_img(img, title = None, ax = None, flip = False, plot_always = False):
     if not plot_always and not config.plotting_enabled:
         return
     if ax is None:
-        plt.imshow(img)
+        fig, ax = plt.subplots()
+        im = ax.imshow(img)
         if title is not None:
-            plt.title(title)
-        plt.colorbar()
+            ax.set_title(title)
+        plt.colorbar(im)
 
         if config.plot_to_file:
-            plt.savefig(config.get_conv_debug_img_file(
-                f'{config.plt_img_counter}_{title.replace(" ", "_").lower() if title is not None else "Img"}'))
+            fig_name = config.get_conv_debug_img_file(
+                f'{config.plt_img_counter}_{title.replace(" ", "_").lower() if title is not None else "Img"}')
+            fig.savefig(fig_name)
             config.plt_img_counter += 1
-            plt.close()
+            plt.close(fig)
         else:
             plt.show()
     else:
@@ -29,7 +31,6 @@ def plt_img(img, title = None, ax = None, flip = False, plot_always = False):
         else:
             ax.imshow(img)
         ax.set_title(title)
-
 
 def create_plt_array(dpi = 100, plot_always = False):
     if not plot_always and not config.plotting_enabled:
@@ -47,7 +48,7 @@ def plot_matrix(matrix, blocks, axs):
         return
     for layer in range(matrix.shape[-1]):
         _plot_img = matrix[:, :, layer]
-        plt_img(_plot_img, blocks[layer]['name'], ax = axs[layer])
+        plot_img(_plot_img, blocks[layer]['name'], ax = axs[layer])
     plt.tight_layout()
 
     if config.plot_to_file:
@@ -65,7 +66,7 @@ def plot_matrix_complete(matrix, blocks = None, title = None, add_max = True, bl
     if not plot_always and not config.plotting_enabled:
         return
 
-    fig, axs = create_plt_array(dpi = 200, plot_always = False)
+    fig, axs = create_plt_array(dpi = 100, plot_always = False)
 
     for layer_idx in range(matrix.shape[-1]):
         _plot_img = matrix[:, :, layer_idx]
@@ -74,13 +75,13 @@ def plot_matrix_complete(matrix, blocks = None, title = None, add_max = True, bl
         if blocks is not None:
             ax_title = blocks[layer_idx]['name'] + (f' {np.max(_plot_img).item()}' if add_max else '')
 
-        plt_img(_plot_img, ax_title, ax = axs[layer_idx], flip = flipped, plot_always = plot_always)
+        plot_img(_plot_img, ax_title, ax = axs[layer_idx], flip = flipped, plot_always = plot_always)
         color = 'blue' if (selected_block is not None and selected_block == layer_idx) else 'red'
 
         if position is not None:
             height = _plot_img.shape[0]
             if flipped:
-                axs[layer_idx].scatter([position[1]], [height - position[0]], color = 'red', s = 1)
+                axs[layer_idx].scatter([position[1]], [height - position[0] - 1], color = 'red', s = 1)
             else:
                 axs[layer_idx].scatter([position[1]], [position[0]], color = 'red', s = 1)
 

@@ -10,6 +10,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import test.encodings.ConvolutionTest
 from converter.gan_processing.DecodingFunctions import DecodingFunctions
 from converter.to_img_converter import DecoderUtils
+from converter.to_img_converter.MultiLayerStackDecoder import MultiLayerStackDecoder
 
 matplotlib.use("TkAgg")
 
@@ -64,6 +65,8 @@ class GeneratorApplication:
 
         self.decoding_functions = DecodingFunctions(threshold_callback = lambda: self.threshold_text.get('0.0', 'end'))
         self.img_decoding = self.decoding_functions.default_rint_rescaling
+
+        self.multilayer_stack_decoder = MultiLayerStackDecoder()
 
         if frame is None:
             # run the gui
@@ -258,7 +261,7 @@ class GeneratorApplication:
 
         store_img = Button(
             master = self.top_frame,
-            command = lambda: self.decode_gan_img(),
+            command = lambda: self.get_decode_parameter(callback = self.decode_gan_img),
             height = 2,
             width = 15,
             text = "Decode Gan Img")
@@ -311,20 +314,32 @@ class GeneratorApplication:
 
         self.stored_images['values'] = list(self.loaded_outputs.keys())
 
-    def decode_gan_img(self):
-        orig_img, prediction = self.gan.create_img(self.seed)
-        test.encodings.ConvolutionTest.plot_stuff = False
-        test.encodings.ConvolutionTest.plot_to_file = False
-        self.level_drawer.level = test.encodings.ConvolutionTest.decode_gan(
-            orig_img,
-            kernel_scalar = True,
-            minus_one_border = True,
-            recalibrate = False,
-            allow_plot = False,
-            use_rint = True,
-            cutoff_point = 0.5,
-            bird_cutoff = 0.1
+    def get_decode_parameter(self, callback):
+        self.parameter_dict = dict(
+            use_drawn_level = dict(type = 'bool', default = True),
+            round_to_next_int = dict(type = 'bool', default = True),
+            use_negative_air_value = dict(type = 'bool', default = True),
+            negative_air_value = dict(type = 'number', default = -2),
+            custom_kernel_scale = dict(type = 'bool', default = True),
+            minus_one_border = dict(type = 'bool', default = False),
+            cutoff_point = dict(type = 'number', default = 0.85),
+            bird_cutoff = dict(type = 'number', default = 0.5),
+            recalibrate_blocks = dict(type = 'bool', default = False),
+            combine_layers = dict(type = 'bool', default = True)
         )
+        self.level_drawer.create_parameter_popup(self.parameter_dict, ok_button_text = 'Decode Img', callback = callback)
+
+    def decode_gan_img(self):
+
+        for key, value in self.parameter_dict.items():
+            if hasattr(self.multilayer_stack_decoder, key):
+                setattr(self.multilayer_stack_decoder, key, value['data'])
+
+        if self.parameter_dict['use_drawn_level']['data'] == 0:
+            orig_img, prediction = self.gan.create_img(self.seed)
+            self.level_drawer.level = self.multilayer_stack_decoder.decode(orig_img)
+        else:
+            self.multilayer_stack_decoder.layer_to_level(self.level_drawer.grid_drawer.current_elements())
 
         self.level_drawer.clear_figure_canvas()
         self.level_drawer.create_img_tab_panes(1)

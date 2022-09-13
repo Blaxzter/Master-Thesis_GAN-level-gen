@@ -11,7 +11,7 @@ from converter.to_img_converter.DecoderUtils import recalibrate_blocks
 from level import Constants
 from level.Level import Level
 from level.LevelElement import LevelElement
-from test.TestUtils import plot_matrix_complete
+from test.TestUtils import plot_matrix_complete, plot_img, plot_matrix
 from util.Config import Config
 
 
@@ -21,19 +21,27 @@ class MultiLayerStackDecoder:
         self.config = Config.get_instance()
         self.block_data = self.config.get_block_data(Constants.resolution)
         self.blocks: List[Dict] = list(self.block_data.values())
+
+        self.max_ratio = -np.inf
+        for block in self.blocks:
+            ratio = block['width'] / block['height']
+            self.max_ratio = np.max([self.max_ratio, ratio])
+
         self.delete_matrices = self.create_delete_block_matrices()
 
+        # Print data
+        self.display_decoding = True
+
         # Decoding parameter
-        self.round_to_next_int = False
-        self.move_to_minus_one_one = False
+        self.round_to_next_int = True
+        self.use_negative_air_value = True
+        self.negative_air_value = -2
         self.custom_kernel_scale = True
-        self.minus_one_border = True
+        self.minus_one_border = False
         self.cutoff_point = 0.85
         self.bird_cutoff = 0.5
         self.recalibrate_blocks = False
-
-    def preprocess_layer(self, layer):
-        pass
+        self.combine_layers = True
 
     def decode(self, gan_output):
         if len(gan_output.shape) == 4:
@@ -41,9 +49,27 @@ class MultiLayerStackDecoder:
 
         level_blocks = []
 
-        for layer_idx in range(1, gan_output.shape[-1] - 1):
-            layer_blocks = self.decode_layer(gan_output[:, :, layer_idx], layer_idx)
-            level_blocks += layer_blocks
+        if self.combine_layers:
+            flattened_idx_img = np.argmax(gan_output, axis = 2)
+            flattened_idx_img[flattened_idx_img == 4] = 0
+
+            flattened_img = np.zeros(gan_output.shape[:2])
+            for i in range(1, 4):
+                flattened_img[flattened_idx_img == i] = gan_output[flattened_idx_img == i, i]
+
+            if self.display_decoding:
+                plot_img(flattened_img, title = 'Flattened Img')
+                level_blocks = self.decode_layer(flattened_img, -1)
+
+            # Get block material by going over each block and check which material is the most confident at this location
+            for block in level_blocks:
+                start, end, bottom, top = self.get_range_of_block(block['block'], block['position'], gan_output[:, :, 1: -1])
+                material = np.argmax(np.sum(gan_output[bottom:top, start:end, 1: -1], axis = (0, 1)))
+                block['material'] = material
+        else:
+            for layer_idx in range(1, gan_output.shape[-1] - 1):
+                layer_blocks = self.decode_layer(gan_output[:, :, layer_idx], layer_idx)
+                level_blocks += layer_blocks
 
         bird_positions = self.get_pig_position(gan_output[:, :, -1])
         created_level_elements = self.create_level_elements(level_blocks, bird_positions)
@@ -51,6 +77,32 @@ class MultiLayerStackDecoder:
             created_level_elements = recalibrate_blocks(created_level_elements)
         created_level = Level.create_level_from_structure(created_level_elements)
 
+        return created_level
+
+    def layer_to_level(self, layer):
+        to_be_decoded = np.copy(layer)
+        to_be_decoded[to_be_decoded == 4] = 0
+        to_be_decoded[to_be_decoded > 0] = 1
+
+        level_blocks = self.decode_layer(to_be_decoded, -1)
+
+        multi_dim = np.zeros((layer.shape[0], layer.shape[1], 3))
+        for i in range(1, 4):
+            multi_dim[:, :, i - 1] = to_be_decoded[layer == i]
+
+        # Get block material by going over each block and check which material is the most confident at this location
+        for block in level_blocks:
+            start, end, bottom, top = self.get_range_of_block(block['block'], block['position'], layer)
+            material = np.argmax(np.sum(multi_dim[bottom:top, start:end, 1: -1], axis = (0, 1)))
+            block['material'] = material
+
+        bird_layer = np.copy(layer)
+        bird_layer[bird_layer != 4] = 0
+        bird_positions = self.get_pig_position(bird_layer)
+        created_level_elements = self.create_level_elements(level_blocks, bird_positions)
+        if self.recalibrate_blocks:
+            created_level_elements = recalibrate_blocks(created_level_elements)
+        created_level = Level.create_level_from_structure(created_level_elements)
         return created_level
 
     def decode_layer(self, layer, layer_idx):
@@ -67,19 +119,26 @@ class MultiLayerStackDecoder:
 
         trimmed_img, trim_data = DecoderUtils.trim_img(layer, ret_trims = True)
 
-        if self.move_to_minus_one_one:
+        if self.use_negative_air_value:
             trimmed_img = (trimmed_img * 2) - 1
+            trimmed_img[trimmed_img == -1] = self.negative_air_value
 
         hit_probabilities, size_ranking = self.create_confidence_matrix(trimmed_img)
 
-        stop_condition = np.sum(trimmed_img[trimmed_img > 0]).item()
+        if self.display_decoding:
+            plot_matrix_complete(hit_probabilities, blocks = self.blocks, title = 'Hit Probabilities', flipped = True)
+            plot_matrix_complete(size_ranking, blocks = self.blocks, title = 'Size Ranking', flipped = True)
 
-        hit_probabilities[hit_probabilities <= self.cutoff_point] = 0
+        stop_condition = np.sum(trimmed_img[trimmed_img > 0]).item()
 
         # Create a ranking depending on the hit probability and the covering of the block
         current_size_ranking = hit_probabilities * size_ranking
-
         rounded_block_rankings = np.around(current_size_ranking, 5)  # Round to remove floating point errors
+
+        if self.display_decoding:
+            plot_matrix_complete(rounded_block_rankings, blocks = self.blocks, title = 'Rounded Block Rankings', flipped = True)
+
+        rounded_block_rankings[hit_probabilities <= self.cutoff_point] = 0
         selected_blocks = self.select_blocks(rounded_block_rankings, [], stop_condition, _covered_area = 0)
 
         ret_blocks = []
@@ -99,23 +158,32 @@ class MultiLayerStackDecoder:
         sum_results = []
         
         for idx, possible_block in enumerate(self.block_data.values()):
-            sum_convolution_kernel = np.ones((possible_block['height'] + 1, possible_block['width'] + 1))
-
-            if self.custom_kernel_scale:
-                sum_convolution_kernel = sum_convolution_kernel * possible_block['scalar']
+            block_width = possible_block['width']
+            block_height = possible_block['height']
+            sum_convolution_kernel = np.ones((block_height + 1, block_width + 1))
 
             avg_convolution_kernel = sum_convolution_kernel / np.sum(sum_convolution_kernel)
+
+            if self.custom_kernel_scale != -1:
+                sum_convolution_kernel = sum_convolution_kernel * possible_block['scalar']
+
+                # norm_ratio = (possible_block['width'] / possible_block['height']) / self.max_ratio
+                # scalar = 1 - (norm_ratio * self.custom_kernel_scale)
+                #
+                # sum_convolution_kernel = sum_convolution_kernel * (1 - scalar)
 
             if self.minus_one_border:
                 sum_convolution_kernel = np.pad(sum_convolution_kernel, 1, 'constant', constant_values = -1)
 
-            pad_value = -1 if self.move_to_minus_one_one else 0
+            pad_value = self.negative_air_value if self.use_negative_air_value else 0
 
             pad_size = np.max(sum_convolution_kernel.shape)
-            padded_img = np.pad(layer, pad_size, 'constant', constant_values = pad_value)
 
-            sum_result = cv2.filter2D(padded_img, -1, sum_convolution_kernel)[pad_size:-pad_size, pad_size:-pad_size]
-            avg_result = cv2.filter2D(padded_img, -1, avg_convolution_kernel)[pad_size:-pad_size, pad_size:-pad_size]
+            sum_padded_img = np.pad(layer, pad_size, 'constant', constant_values = pad_value)
+            sum_result = cv2.filter2D(sum_padded_img, -1, sum_convolution_kernel)[pad_size:-pad_size, pad_size:-pad_size]
+
+            avg_padded_img = np.pad(layer, pad_size, 'constant', constant_values = 0)
+            avg_result = cv2.filter2D(avg_padded_img, -1, avg_convolution_kernel)[pad_size:-pad_size, pad_size:-pad_size]
 
             avg_results.append(avg_result)
             sum_results.append(sum_result)
@@ -170,21 +238,23 @@ class MultiLayerStackDecoder:
 
     def select_blocks(self, _block_rankings, _selected_blocks: List, _stop_condition: float, _covered_area: float = 0):
         print(_covered_area, _stop_condition)
-        if _stop_condition - _covered_area < 1:
-            return _selected_blocks
+        # if _stop_condition - _covered_area < 1:
+        #     return _selected_blocks
 
         # select the most probable block that is also the biggest
         next_block = np.unravel_index(np.argmax(_block_rankings), _block_rankings.shape)
 
         # Extract the block
         selected_block = self.blocks[next_block[-1]]
-        block_position = list(next_block[0:2])
+        block_position = np.array(next_block[0:2])
 
         description = f"Selected Block: {selected_block['name']} with {_block_rankings[next_block]} area with {len(_selected_blocks)} selected"
         print(description)
 
         # Remove all blocks that cant work with that blocks together
         next_block_rankings = self.delete_blocks(_block_rankings, selected_block['idx'], block_position)
+        if self.display_decoding:
+            self.display_block_deletion(_block_rankings, block_position, selected_block)
 
         if np.all(next_block_rankings < 0.00001):
             return _selected_blocks
@@ -196,6 +266,44 @@ class MultiLayerStackDecoder:
         ))
         next_covered_area = _covered_area + ((selected_block['width'] + 1) * (selected_block['height'] + 1))
         return self.select_blocks(next_block_rankings, next_blocks, _stop_condition, next_covered_area)
+
+    def display_block_deletion(self, _block_rankings, position, selected_block):
+        delete_matrix_data = self.delete_matrices[selected_block['idx']]
+        delete_rectangles = delete_matrix_data['delete_rectangles']
+        y_pad, x_pad, _ = delete_matrix_data['matrix'].shape
+        y_max, x_max, _ = _block_rankings.shape
+
+        current_delete_rectangles = []
+        for delete_rectangle in delete_rectangles:
+            (del_start, del_end, del_top, del_bottom) = delete_rectangle
+            start = 0 if position[1] + del_start < 0 else position[1] + del_start
+            end = x_max - 1 if position[1] + del_end > x_max else position[1] + del_end
+            top = 0 if position[0] + del_top < 0 else position[0] + del_top
+            bottom = y_max - 1 if position[0] + del_bottom > y_max else position[0] + del_bottom
+            current_delete_rectangles.append((start, end, top, bottom))
+        plot_matrix_complete(
+            _block_rankings,
+            blocks = self.blocks,
+            title = f"Selected Block: {selected_block['name']}",
+            selected_block = selected_block['idx'],
+            position = position,
+            delete_rectangles = current_delete_rectangles,
+            flipped = True
+        )
+
+    def delete_blocks(self, _block_rankings, _selected_block_idx, _block_position):
+        current_delete_matrix_data = self.delete_matrices[_selected_block_idx]
+        current_delete_matrix = current_delete_matrix_data['matrix']
+        y_pad, x_pad, _ = current_delete_matrix.shape
+        padded_block_rankings = np.pad(_block_rankings, ((y_pad, y_pad), (x_pad, x_pad), (0, 0)), 'constant', constant_values=0)
+
+        delete_matrix_shape = current_delete_matrix_data['shape'][:2]
+        top_stop, left_stop = _block_position - (delete_matrix_shape // 2) + delete_matrix_shape
+        bottom_stop, right_stop = _block_position + (delete_matrix_shape // 2) + delete_matrix_shape + (delete_matrix_shape % 2)
+        padded_block_rankings[top_stop: bottom_stop, left_stop: right_stop] = \
+            padded_block_rankings[top_stop: bottom_stop, left_stop: right_stop] * current_delete_matrix
+
+        return padded_block_rankings[y_pad: -y_pad, x_pad: -x_pad]
 
     def create_delete_block_matrices(self):
         """
@@ -248,36 +356,44 @@ class MultiLayerStackDecoder:
 
         for block_idx, block_range in block_ranges.items():
             range_list, x_max, y_max = block_range['range_list'], block_range['x_max'], block_range['y_max']
-            multiply_matrix = np.ones((x_max, y_max, len(range_list)))
+            multiply_matrix = np.ones((y_max, x_max, len(range_list)))
 
             center_pos_x, center_pos_y = x_max // 2, y_max // 2
+            delete_rectangles = []
 
             for layer_idx, (x_cords, y_cords) in enumerate(range_list):
-                x_cords += center_pos_x
-                y_cords += center_pos_y
-                x_pos, y_pos = np.meshgrid(y_cords, x_cords)
-                multiply_matrix[y_pos, x_pos, layer_idx] = 0
+                current_x_cords = x_cords + center_pos_x
+                current_y_cords = y_cords + center_pos_y
+                x_pos, y_pos = np.meshgrid(current_y_cords, current_x_cords)
+                multiply_matrix[x_pos, y_pos, layer_idx] = 0
+
+                delete_rectangles.append([
+                    np.min(x_cords), np.max(x_cords),
+                    np.min(y_cords), np.max(y_cords)]
+                )
 
             ret_matrices[block_idx] = dict(
                 matrix = multiply_matrix,
-                shape = np.array(multiply_matrix.shape)
+                shape = np.array(multiply_matrix.shape),
+                delete_rectangles = delete_rectangles
             )
+
+            # width, height = self.blocks[block_idx]['width'], self.blocks[block_idx]['height']
+            # plot_matrix_complete(matrix = multiply_matrix, blocks = self.blocks, title = f'{block_range["name"]} {width}, {height}')
 
         return ret_matrices
 
-    def delete_blocks(self, _block_rankings, _selected_block_idx, _block_position):
-        current_delete_matrix_data = self.delete_matrices[_selected_block_idx]
-        current_delete_matrix = current_delete_matrix_data['matrix']
-        x_pad, y_pad, _ = current_delete_matrix.shape
-        padded_block_rankings = np.pad(_block_rankings, ((x_pad, x_pad), (y_pad, y_pad), (0, 0)), 'constant', constant_values=0)
+    def get_range_of_block(self, block, position, matrix):
+        width, height = block['width'] + 1, block['height'] + 1
+        start = position[1] - width // 2
+        end = position[1] + width // 2 + width % 2
+        top = position[0] - height // 2
+        bottom = position[0] + height // 2 + height % 2
 
-        delete_matrix_shape = current_delete_matrix_data['shape'][:2]
-        left_stop, top_stop = _block_position - (delete_matrix_shape // 2) + delete_matrix_shape
-        right_stop, bottom_stop = _block_position + (delete_matrix_shape // 2) + delete_matrix_shape + (delete_matrix_shape % 2)
-        padded_block_rankings[left_stop: right_stop, top_stop: bottom_stop] = \
-            padded_block_rankings[left_stop: right_stop, top_stop: bottom_stop] * current_delete_matrix
+        end = end if end < matrix.shape[1] else matrix.shape[1] - 1
+        bottom = bottom if bottom < matrix.shape[0] else matrix.shape[0] - 1
 
-        return padded_block_rankings[x_pad: -x_pad, y_pad: -y_pad]
+        return start, end, matrix.shape[0] - bottom, matrix.shape[0] - top
 
     def get_cutoff_point(self, layer):
         frequency, bins = np.histogram(layer, bins = 100)
