@@ -22,6 +22,7 @@ from level.LevelVisualizer import LevelVisualizer
 from test.TestEnvironment import TestEnvironment
 from test.visualization.LevelImgDecoderVisualization import LevelImgDecoderVisualization
 from util.Config import Config
+from util.tkinterutils.ScrollableNotebook import *
 
 
 class LevelDrawer:
@@ -101,17 +102,23 @@ class LevelDrawer:
         self.draw_canvas.pack(fill = BOTH)
 
     def create_figure_frame(self):
-        self.tab_control = Notebook(self.right_frame)
+        self.tab_control = ScrollableNotebook(
+            self.right_frame,
+            wheelscroll = True, tabmenu = True,
+            tab_change_callback = lambda event:
+                setattr(self, 'selected_tab', self.tab_control.notebookTab.index(self.tab_control.notebookTab.select()))
+        )
+        self.tab_control.pack()
         self.tabs: List[Dict] = []
         self.selected_tab = 0
-        self.create_img_tab_panes(2)
+        self.create_img_tab_panes(1)
         self.tab_control.bind(
             "<<NotebookTabChanged>>",
             lambda event: setattr(self, 'selected_tab', self.tab_control.index(self.tab_control.select()))
         )
 
     def create_img_tab_panes(self, panel_amounts = 1):
-        self.tabs = TkinterUtils.clear_tab_panes(self.tab_control, self.tabs)
+        self.tabs = self.tab_control.clear_tab_panes(self.tabs)
 
         for tab_index in range(panel_amounts):
             create_tab = Frame(self.tab_control)
@@ -372,6 +379,25 @@ class LevelDrawer:
 
         self.tabs[tab]['matplot_canvas'] = matplot_canvas
         self.tabs[tab]['toolbar'] = toolbar
+
+    def add_tab_to_fig_canvas(self, fig, ax, name = None):
+        create_tab = Frame(self.tab_control)
+        self.tab_control.add(create_tab, text = name if name is not None else f'Img {len(self.tabs)}')
+        matplot_wrapper_canvas = Canvas(
+            create_tab,
+            bg = "white", height = self.draw_area_width, width = self.draw_area_width)
+        matplot_wrapper_canvas.pack(expand = YES, side = LEFT, pady = (30, 30), padx = (30, 30))
+        self.tabs.append(dict(
+            frame = create_tab,
+            fig = fig,
+            ax = ax,
+            matplot_wrapper_canvas = matplot_wrapper_canvas
+        ))
+        matplot_canvas = FigureCanvasTkAgg(fig, master = matplot_wrapper_canvas)
+        matplot_canvas.draw()
+        matplot_canvas.get_tk_widget().pack(fill = BOTH, expand = 1)
+        toolbar = NavigationToolbar2Tk(matplot_canvas, matplot_wrapper_canvas)
+        toolbar.update()
 
     def start_game(self):
         self.game_manager.start_game()

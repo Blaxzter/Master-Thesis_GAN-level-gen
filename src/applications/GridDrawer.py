@@ -7,6 +7,7 @@ import numpy as np
 from applications import TkinterUtils
 from level import Constants
 from util import Utils
+from util.tkinterutils.ScrollableNotebook import ScrollableNotebook
 
 
 class GridDrawer:
@@ -24,14 +25,15 @@ class GridDrawer:
 
         self.colors = ['#a8d399', '#aacdf6', '#f98387', '#dbcc81']
 
-        self.tab_control = Notebook(self.left_frame)
+        self.tab_control = ScrollableNotebook(
+            self.left_frame,
+            wheelscroll = True, tabmenu = True,
+            tab_change_callback = lambda event:
+                setattr(self, 'selected_tab', self.tab_control.notebookTab.index(self.tab_control.notebookTab.select()))
+        )
         self.tabs: List[Dict] = []
         self.selected_tab = 0
         self.create_tab_panes(2)
-        self.tab_control.bind(
-            "<<NotebookTabChanged>>",
-            lambda event: setattr(self, 'selected_tab', self.tab_control.index(self.tab_control.select()))
-        )
 
         self.material_id = 1
 
@@ -50,7 +52,7 @@ class GridDrawer:
         self.tabs = []
 
     def create_tab_panes(self, panel_amounts = 1):
-        self.tabs = TkinterUtils.clear_tab_panes(self.tab_control, self.tabs)
+        self.tabs = self.tab_control.clear_tab_panes(self.tabs)
 
         for tab_index in range(panel_amounts):
             create_tab = Frame(self.tab_control)
