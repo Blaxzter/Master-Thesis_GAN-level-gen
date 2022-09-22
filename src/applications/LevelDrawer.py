@@ -373,9 +373,18 @@ class LevelDrawer:
         if tab == -1: tab = self.selected_tab
         matplot_canvas = FigureCanvasTkAgg(self.tabs[tab]['fig'], master = self.tabs[tab]['matplot_wrapper_canvas'])
         matplot_canvas.draw()
-        matplot_canvas.get_tk_widget().pack(fill = BOTH, expand = 1)
+        matplot_canvas.get_tk_widget().pack(fill = BOTH, expand = 1, side = TOP)
         toolbar = NavigationToolbar2Tk(matplot_canvas, self.tabs[tab]['matplot_wrapper_canvas'])
         toolbar.update()
+
+        temp_button = Button(
+            master = self.tabs[tab]['frame'],
+            command = lambda fig = self.tabs[tab]['fig']: self.dummy_figer(fig),
+            height = 1,
+            width = 10,
+            text = 'open'
+        )
+        temp_button.pack(side = TOP, pady = (2, 10), padx = (2, 2))
 
         self.tabs[tab]['matplot_canvas'] = matplot_canvas
         self.tabs[tab]['toolbar'] = toolbar
@@ -398,6 +407,15 @@ class LevelDrawer:
         matplot_canvas.get_tk_widget().pack(fill = BOTH, expand = 1)
         toolbar = NavigationToolbar2Tk(matplot_canvas, matplot_wrapper_canvas)
         toolbar.update()
+
+        temp_button = Button(
+            master = create_tab,
+            command = lambda fig = fig: self.dummy_figer(fig),
+            height = 1,
+            width = 10,
+            text = 'open'
+        )
+        temp_button.pack(side = TOP, pady = (2, 10), padx = (2, 2))
 
     def start_game(self):
         self.game_manager.start_game()
@@ -444,6 +462,13 @@ class LevelDrawer:
 
         b = ttk.Button(self.decoding_popup_window, text = ok_button_text, command = lambda callback = callback: _call_callback(self.decoding_popup_window, callback))
         b.grid(row = idx + 1, column = 0, columnspan = 2)
+
+    def dummy_figer(self, fig):
+        dummy = plt.figure()
+        new_manager = dummy.canvas.manager
+        new_manager.canvas.figure = fig
+        fig.set_canvas(new_manager.canvas)
+        fig.show()
 
 if __name__ == '__main__':
     level_drawer = LevelDrawer()
