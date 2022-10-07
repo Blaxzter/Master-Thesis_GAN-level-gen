@@ -41,9 +41,8 @@ def calculate_fid(model, images1, images2):
     fid = ssdiff + np.trace(sigma1 + sigma2 - 2.0 * covmean)
     return fid
 
-
 def create_fid_metric():
-    with tf.device('/CPU:0'):
+    with tf.device('/GPU:0'):
         # prepare the inception v3 model
         model = InceptionV3(include_top = False, pooling = 'avg', input_shape = (128, 128, 3))
         dataset = LevelDataset(dataset_name = "new_encoding_multilayer_unified_128_128", batch_size = 9)

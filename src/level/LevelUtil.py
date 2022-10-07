@@ -9,6 +9,10 @@ from util.Utils import round_to_cord
 @dataclass
 class StructureMetaData:
     """ Class that represents a levels / structures meta data """
+    min_x: float = None
+    max_x: float = None
+    min_y: float = None
+    max_y: float = None
     height: float = None
     width: float = None
     block_amount: int = None
@@ -78,6 +82,10 @@ def calc_structure_meta_data(element_list: [LevelElement]) -> StructureMetaData:
     ice_blocks = len([x for x in element_list if x.object_type == ObjectType.Block and x.material == 'ice'])
     wood_blocks = len([x for x in element_list if x.object_type == ObjectType.Block and x.material == 'wood'])
     return StructureMetaData(
+        min_x = min_x,
+        max_x = max_x,
+        min_y = min_y,
+        max_y = max_y,
         height = max_y - min_y,
         width = max_x - min_x,
         block_amount = block_amount,

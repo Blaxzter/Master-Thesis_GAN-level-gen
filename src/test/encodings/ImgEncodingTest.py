@@ -80,7 +80,7 @@ def compare_encodings(level, test_environment):
     encoded_calculated_orig = level_img_encoder.create_calculated_img(elements)
     no_size_check = level_img_encoder.create_calculated_img_no_size_check(elements)
 
-    fig = plt.figure(constrained_layout = True, dpi = 300)
+    fig = plt.figure(constrained_layout = True, dpi = 100)
     fig.suptitle('Compare different level encodings')
 
     subfigs = fig.subfigures(nrows = 1, ncols = 4)
@@ -100,12 +100,15 @@ def compare_encodings(level, test_environment):
 
     axs_1[0].imshow(encoded_calculated)
     axs_1[0].set_title("With Size Checks")
+    test_environment.level_visualizer.remove_ax_ticks(axs_1[0])
 
     axs_2[0].imshow(no_size_check)
     axs_2[0].set_title("No Size Checks")
+    test_environment.level_visualizer.remove_ax_ticks(axs_2[0])
 
     axs_3[0].imshow(no_size_check - encoded_calculated)
     axs_3[0].set_title("Calc Difference")
+    test_environment.level_visualizer.remove_ax_ticks(axs_3[0])
 
     encoded_calculated = encoded_calculated_orig
     if dot_encoding.shape != encoded_calculated.shape:
@@ -123,12 +126,15 @@ def compare_encodings(level, test_environment):
 
     axs_1[1].imshow(encoded_calculated)
     axs_1[1].set_title("With Size Checks")
+    test_environment.level_visualizer.remove_ax_ticks(axs_1[1])
 
     axs_2[1].imshow(dot_encoding)
     axs_2[1].set_title("Dot Img")
+    test_environment.level_visualizer.remove_ax_ticks(axs_2[1])
 
     axs_3[1].imshow(dot_encoding - encoded_calculated)
     axs_3[1].set_title("Dot Difference")
+    test_environment.level_visualizer.remove_ax_ticks(axs_3[1])
 
     plt.tight_layout()
     plt.show()
@@ -201,4 +207,4 @@ def compare_material_recs(direction = 'vertical', stacked = 3, x_offset = 0, y_o
 
 
 if __name__ == '__main__':
-    create_img_encoding()
+    img_encoding_test()

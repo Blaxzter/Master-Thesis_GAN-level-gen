@@ -210,7 +210,6 @@ class Level:
         current_elements = self.get_used_elements()
         return calc_structure_meta_data(current_elements)
 
-
     @staticmethod
     def create_level_from_structure(level_elements: [LevelElement]):
         ret_level = Level(path = 'created')

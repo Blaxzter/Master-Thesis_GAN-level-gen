@@ -19,7 +19,7 @@ class TestEnvironment:
         self.game_manager = GameManager(conf = self.config, game_connection = self.game_connection)
 
         self.level_reader = LevelReader()
-        self.level_visualizer = LevelVisualizer()
+        self.level_visualizer = LevelVisualizer(line_size = 1)
         self.level_img_encoder = LevelImgEncoder()
 
         self.level_path = self.config.get_data_train_path(folder = level_folder)
