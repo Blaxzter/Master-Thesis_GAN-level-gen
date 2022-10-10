@@ -14,10 +14,11 @@ from level.LevelUtil import calc_structure_dimensions
 
 class LevelVisualizer:
 
-    def __init__(self, dpi = 300, id_font_size = 5, dot_size = 2):
+    def __init__(self, dpi = 300, id_font_size = 5, dot_size = 2, line_size = 2):
         self.dpi = dpi
         self.id_font_size = id_font_size
         self.dot_size = dot_size
+        self.line_size = line_size
 
     def create_img_of_structure(self, structure: [LevelElement], title = None,
                                 use_grid = True, add_dots = False, element_ids = True, ax = None, scaled = False):
@@ -68,7 +69,7 @@ class LevelVisualizer:
             plt.close()
 
     def create_img_of_level(self, level: Level, use_grid = True, add_dots = False, element_ids = True,
-                            write_to_file = None, ax = None):
+                            write_to_file = None, ax = None, scaled = None):
         # Create figure and axes
         show = False
         if ax is None:
@@ -76,6 +77,9 @@ class LevelVisualizer:
             fig, ax = plt.subplots(dpi = self.dpi)
 
         element_list: [LevelElement] = level.get_used_elements()
+
+        if scaled is not None:
+            meta_data = level.get_level_metadata()
 
         if level.structures is None:
             hsv = plt.get_cmap('Paired')
@@ -90,6 +94,14 @@ class LevelVisualizer:
             # Receive the data required to draw the element shape
             bottom_left, current_color, height, width = self.get_element_data(colors, element, idx, level)
 
+            if scaled is not None:
+                scale_to = scaled.shape
+                bottom_left[0] = bottom_left[0] * scale_to[1] / meta_data.max_x
+                bottom_left[1] = bottom_left[1] * scale_to[0] / meta_data.max_y
+
+                height *= scale_to[0]  / meta_data.max_y
+                width *= scale_to[1] / meta_data.max_x
+
             # Create the matplotlib patch for each element type
             new_patch = self.create_new_patch(ax, bottom_left, current_color, element, height, width)
 
@@ -98,7 +110,16 @@ class LevelVisualizer:
 
             # If block ids should be printed add text at the center of the element
             if element_ids:
-                ax.text(element.x, element.y, str(element.id),
+
+                x_position = element.x
+                y_position = element.y
+
+                if scaled is not None:
+                    scale_to = scaled.shape
+                    x_position = element.x * scale_to[1] / meta_data.max_x
+                    y_position = element.y * scale_to[0] / meta_data.max_y
+
+                ax.text(x_position, y_position, str(element.id),
                          color = "black", fontsize = self.id_font_size, ha = 'center', va = 'center')
 
         if use_grid or add_dots:
@@ -122,27 +143,32 @@ class LevelVisualizer:
     def create_dots_and_grid(self, structure, ax, use_dots, use_grid):
         min_x, min_y, max_x, max_y = calc_structure_dimensions(structure)
         if use_dots:
-            x_cords = np.arange(min_x + Constants.resolution / 2, max_x - Constants.resolution, Constants.resolution)
-            y_cords = np.arange(min_y + Constants.resolution / 2, max_y - Constants.resolution, Constants.resolution)
+            x_cords = np.arange(min_x + Constants.resolution / 2, max_x + Constants.resolution, Constants.resolution)
+            y_cords = np.arange(min_y + Constants.resolution / 2, max_y + Constants.resolution, Constants.resolution)
             XX, YY = np.meshgrid(x_cords, y_cords)
             ax.scatter(XX, YY, s = self.dot_size)
+
         if use_grid:
             ax.set_xticks(np.arange(min_x, max_x, Constants.resolution))
             ax.set_yticks(np.arange(min_y, max_y, Constants.resolution))
-            ax.tick_params(axis = 'both', which = 'both', grid_alpha = 0, grid_color = "grey")
             ax.grid(alpha = 0.2)
-            ax.set_xticklabels([])
-            ax.set_yticklabels([])
-            for tick in ax.xaxis.get_major_ticks():
-                tick.tick1line.set_visible(False)
-                tick.tick2line.set_visible(False)
-                tick.label1.set_visible(False)
-                tick.label2.set_visible(False)
-            for tick in ax.yaxis.get_major_ticks():
-                tick.tick1line.set_visible(False)
-                tick.tick2line.set_visible(False)
-                tick.label1.set_visible(False)
-                tick.label2.set_visible(False)
+            self.remove_ax_ticks(ax)
+
+    @staticmethod
+    def remove_ax_ticks(ax):
+        ax.tick_params(axis = 'both', which = 'both', grid_alpha = 0, grid_color = "grey")
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        for tick in ax.xaxis.get_major_ticks():
+            tick.tick1line.set_visible(False)
+            tick.tick2line.set_visible(False)
+            tick.label1.set_visible(False)
+            tick.label2.set_visible(False)
+        for tick in ax.yaxis.get_major_ticks():
+            tick.tick1line.set_visible(False)
+            tick.tick2line.set_visible(False)
+            tick.label1.set_visible(False)
+            tick.label2.set_visible(False)
 
     def get_element_data(self, colors, element, idx, level = None):
         bottom_left = element.get_bottom_left()
@@ -163,7 +189,7 @@ class LevelVisualizer:
 
     def create_new_patch(self, ax, bottom_left, current_color, element, height, width):
         new_patch = self.get_patch(ax, bottom_left, element, height, width)
-        new_patch.set_linewidth(1)
+        new_patch.set_linewidth(self.line_size)
         new_patch.set_edgecolor(current_color)
         if "Basic" not in element.type:
             new_patch.set_facecolor('none')
@@ -230,6 +256,8 @@ class LevelVisualizer:
 
         if show:
             plt.show()
+
+        return level_representations
 
     def visualize_screenshot(self, img, ax = None):
         show = False

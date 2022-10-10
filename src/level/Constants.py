@@ -138,18 +138,35 @@ def get_sizes(print_data = True):
 
 
 if __name__ == '__main__':
+    from tabulate import tabulate
+
     size_list = []
+    data = []
     for i in range(1, 20):
         module_list = []
-        for width, height in block_sizes.values():
-            i_width = int(width * 100) / i - int(int(width * 100) / i)
-            module_list.append(i_width)
-            module_list.append(int(height * 100) / i - int(int(height * 100) / i))
-        size_list.append(np.max(module_list))
+        size_width_list = []
+        c_block_names = []
+        for block_idx, (width, height) in enumerate(block_sizes.values()):
 
-    print(size_list)
+            divider = float(f'0.{f"0{i}" if i <= 9 else i}')
+            if block_is_rotated[block_idx + 1]:
+                continue
 
-    for div_list in size_list:
-        print(div_list)
+            c_block_names.append(block_names[block_idx + 1])
+
+            i_width = width / divider
+            i_height = height / divider
+            to_lower = int(round(width / divider * 100) / 100)
+            tp_lower_2 = int(height / divider * 100) / 100
+            module_list.append(i_width - to_lower)
+            module_list.append(i_height - tp_lower_2)
+
+            size_width_list.append(f'{np.round(i_width * 100) / 100}, {np.round(i_height * 100) / 100}')
+
+        np_max = np.max(module_list)
+        data.append([f'0.{f"0{i}" if i <= 9 else i}'] + size_width_list + [round(np_max * 100) / 100, np.round(np.average(module_list) * 100) / 100])
+        size_list.append(np_max)
+
+    print(tabulate(data, headers=list(c_block_names) + ['max', 'avg'], tablefmt='latex'))
 
     # get_sizes()

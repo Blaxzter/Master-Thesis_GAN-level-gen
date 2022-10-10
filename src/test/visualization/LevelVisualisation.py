@@ -60,7 +60,7 @@ def level_visualisation():
     game_manager.stop_game()
 
 
-def create_plotly_data(img, true_one_hot = False):
+def create_plotly_data(img, true_one_hot = False, seperator = True):
 
     if true_one_hot:
         color_range = [matplotlib.colors.to_hex(color) for color in
@@ -70,16 +70,19 @@ def create_plotly_data(img, true_one_hot = False):
         if color_mode:
             color_range = [matplotlib.colors.to_hex(color) for color in plt.get_cmap("Pastel1")(np.linspace(0., 1., len(np.unique(img))))]
         else:
-            color_range = ['#a8d399', '#aacdf6', '#f98387', '#dbcc81', 'white']
+            if img.shape[-1] == 4:
+                color_range = ['#a8d399', '#aacdf6', '#f98387', '#dbcc81']
+            else:
+                color_range = ['#9673A6', '#a8d399', '#aacdf6', '#f98387', '#dbcc81']
 
-    def _create_box(x, y, layer):
+    def _create_box(x, y, layer, width = 1, height = 1, depth = 1, depth_scale = 20):
         sx = x - 0.5
         sy = y - 0.5
         return dict(
             # 8 vertices of a cube
-            x = [sx, sx, sx + 1, sx + 1, sx, sx, sx + 1, sx + 1],
-            y = [sy, sy + 1, sy + 1, sy, sy, sy + 1, sy + 1, sy],
-            z = np.array([layer, layer, layer, layer, layer + 1, layer + 1, layer + 1, layer + 1]) * 10,
+            x = [sx, sx, sx + width, sx + width, sx, sx, sx + width, sx + width],
+            y = [sy, sy + height, sy + height, sy, sy, sy + height, sy + height, sy],
+            z = np.array([layer, layer, layer, layer, layer + depth, layer + depth, layer + depth, layer + depth]) * depth_scale,
             i = [7, 0, 0, 0, 4, 4, 6, 6, 4, 0, 3, 2],
             j = [3, 4, 1, 2, 5, 6, 5, 2, 0, 1, 6, 3],
             k = [0, 7, 2, 3, 6, 7, 1, 1, 5, 5, 7, 6]
@@ -92,7 +95,7 @@ def create_plotly_data(img, true_one_hot = False):
             color = color_range[color]
         )
 
-    def _combine(box_list):
+    def _combine(box_list, opacity = 1):
         boxes = box_list['boxes']
         color = box_list['color']
 
@@ -108,7 +111,7 @@ def create_plotly_data(img, true_one_hot = False):
             k = list(np.concatenate([np.asarray(data_dict['k']) + 8 * idx for idx, data_dict in enumerate(boxes)])),
 
             color = color,
-            opacity = 1,
+            opacity = opacity,
             intensitymode = 'cell',
             flatshading = True,
         )
@@ -129,7 +132,15 @@ def create_plotly_data(img, true_one_hot = False):
     for last_axis in range(iter_range):
         ret_boxs.append(_create_boxes(img[:, :, last_axis], axis = last_axis, color = last_axis))
 
-    return [_combine(box_data) for box_data in ret_boxs if len(box_data['boxes']) != 0]
+    boxes_ = [_combine(box_data) for box_data in ret_boxs if len(box_data['boxes']) != 0]
+    if seperator:
+        border_wall = dict(
+            boxes = [_create_box(0, 0, i - 0.06, width = img.shape[0], height = img.shape[1], depth = 0.01) for i in range(iter_range)],
+            color = 'grey'
+        )
+
+        boxes_ += [_combine(border_wall, opacity = 0.09)]
+    return boxes_
 
 
 def test_plotly():
@@ -149,4 +160,5 @@ def test_plotly():
 
 
 if __name__ == '__main__':
-    test_plotly()
+    # test_plotly()
+    level_visualisation()

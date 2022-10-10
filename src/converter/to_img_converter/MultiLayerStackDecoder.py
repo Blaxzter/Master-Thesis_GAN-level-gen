@@ -12,13 +12,18 @@ from level import Constants
 from level.Level import Level
 from level.LevelElement import LevelElement
 from test.TestUtils import plot_matrix_complete, plot_img, plot_matrix
+from test.visualization.GanDecodingVisualization import GanDecodingVisualization
 from util.Config import Config
 
 
 class MultiLayerStackDecoder:
 
-    def __init__(self):
+    def __init__(self, level_drawer = None, add_tab = False):
         self.config = Config.get_instance()
+
+        self.level_drawer = level_drawer
+        self.visualizer = GanDecodingVisualization(level_drawer = level_drawer, add_tab = add_tab)
+
         self.block_data = self.config.get_block_data(Constants.resolution)
         self.blocks: List[Dict] = list(self.block_data.values())
 
@@ -58,7 +63,7 @@ class MultiLayerStackDecoder:
                 flattened_img[flattened_idx_img == i] = gan_output[flattened_idx_img == i, i]
 
             if self.display_decoding:
-                plot_img(flattened_img, title = 'Flattened Img')
+                self.visualizer.plot_img(flattened_img, title = 'Flattened Img')
                 level_blocks = self.decode_layer(flattened_img, -1)
 
             # Get block material by going over each block and check which material is the most confident at this location
@@ -118,6 +123,7 @@ class MultiLayerStackDecoder:
         layer[layer <= highest_lowest_value] = 0
 
         trimmed_img, trim_data = DecoderUtils.trim_img(layer, ret_trims = True)
+        self.visualizer.plot_img(trimmed_img, title = 'Trimmed Img')
 
         if self.use_negative_air_value:
             trimmed_img = (trimmed_img * 2) - 1
@@ -126,8 +132,8 @@ class MultiLayerStackDecoder:
         hit_probabilities, size_ranking = self.create_confidence_matrix(trimmed_img)
 
         if self.display_decoding:
-            plot_matrix_complete(hit_probabilities, blocks = self.blocks, title = 'Hit Probabilities', flipped = True)
-            plot_matrix_complete(size_ranking, blocks = self.blocks, title = 'Size Ranking', flipped = True)
+            self.visualizer.plot_matrix_complete(hit_probabilities, blocks = self.blocks, title = 'Hit Probabilities', flipped = True)
+            self.visualizer.plot_matrix_complete(size_ranking, blocks = self.blocks, title = 'Size Ranking', flipped = True)
 
         stop_condition = np.sum(trimmed_img[trimmed_img > 0]).item()
 
@@ -136,7 +142,7 @@ class MultiLayerStackDecoder:
         rounded_block_rankings = np.around(current_size_ranking, 5)  # Round to remove floating point errors
 
         if self.display_decoding:
-            plot_matrix_complete(rounded_block_rankings, blocks = self.blocks, title = 'Rounded Block Rankings', flipped = True)
+            self.visualizer.plot_matrix_complete(rounded_block_rankings, blocks = self.blocks, title = 'Rounded Block Rankings', flipped = True)
 
         rounded_block_rankings[hit_probabilities <= self.cutoff_point] = 0
         selected_blocks = self.select_blocks(rounded_block_rankings, [], stop_condition, _covered_area = 0)
@@ -281,7 +287,7 @@ class MultiLayerStackDecoder:
             top = 0 if position[0] + del_top < 0 else position[0] + del_top
             bottom = y_max - 1 if position[0] + del_bottom > y_max else position[0] + del_bottom
             current_delete_rectangles.append((start, end, top, bottom))
-        plot_matrix_complete(
+        self.visualizer.plot_matrix_complete(
             _block_rankings,
             blocks = self.blocks,
             title = f"Selected Block: {selected_block['name']}",
@@ -379,7 +385,7 @@ class MultiLayerStackDecoder:
             )
 
             # width, height = self.blocks[block_idx]['width'], self.blocks[block_idx]['height']
-            # plot_matrix_complete(matrix = multiply_matrix, blocks = self.blocks, title = f'{block_range["name"]} {width}, {height}')
+            # self.visualizer.plot_matrix_complete(matrix = multiply_matrix, blocks = self.blocks, title = f'{block_range["name"]} {width}, {height}')
 
         return ret_matrices
 

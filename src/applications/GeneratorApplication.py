@@ -51,6 +51,7 @@ class GeneratorApplication:
             'True One Hot': self.load_true_one_hot,
             'Small True One Hot With Air': self.small_true_one_hot_with_air,
             'Multilayer With Air': self.multilayer_with_air,
+            'RELU Multilayer With Air': self.multilayer_with_air_relu
         }
 
         if frame is None:
@@ -66,7 +67,7 @@ class GeneratorApplication:
         self.decoding_functions = DecodingFunctions(threshold_callback = lambda: self.threshold_text.get('0.0', 'end'))
         self.img_decoding = self.decoding_functions.default_rint_rescaling
 
-        self.multilayer_stack_decoder = MultiLayerStackDecoder()
+        self.multilayer_stack_decoder = MultiLayerStackDecoder(level_drawer = level_drawer, add_tab = True)
 
         if frame is None:
             # run the gui
@@ -448,6 +449,14 @@ class GeneratorApplication:
         self.single_element = False
         self.small_version = False
 
+    def multilayer_with_air_relu(self):
+        from generator.gan.BigGans import WGANGP128128_Multilayer
+        self.checkpoint_dir = self.config.get_checkpoint_dir('wgan_gp_128_128_relu_multilayer_with_air', '20220919-145749')
+        self.decoding_functions.update_rescale_values(max_value = 1, shift_value = 1)
+        self.img_decoding = self.decoding_functions.argmax_multilayer_decoding_with_air
+        self.gan = WGANGP128128_Multilayer(last_dim = 5)
+        self.single_element = False
+        self.small_version = False
 
 if __name__ == '__main__':
     generator_application = GeneratorApplication()

@@ -2,7 +2,7 @@ import numpy as np
 from shapely.geometry import Point
 
 from level import Constants
-from level.Constants import resolution, ObjectType
+from level.Constants import ObjectType
 from level.LevelUtil import calc_structure_dimensions
 from util.Config import Config
 
@@ -11,6 +11,7 @@ class LevelImgEncoder:
 
     def __init__(self, config = None):
         self.config = config
+
         if self.config is None:
             self.config = Config.get_instance()
 
@@ -33,6 +34,7 @@ class LevelImgEncoder:
         working_list = element_list.copy()
 
         min_x, min_y, max_x, max_y = calc_structure_dimensions(working_list)
+        resolution = Constants.resolution
 
         x_cords = np.arange(min_x + resolution / 2, max_x - resolution / 2, resolution)
         y_cords = np.arange(min_y + resolution / 2, max_y - resolution / 2, resolution)
@@ -65,8 +67,9 @@ class LevelImgEncoder:
     def create_calculated_img(self, element_list):
         min_x, min_y, max_x, max_y = calc_structure_dimensions(element_list)
 
-        cord_list = []
+        resolution = Constants.resolution
 
+        cord_list = []
         # logger.debug(f"New Structure {(round((max_x - min_x) / resolution), round((max_y - min_y) / resolution))}")
         for element in element_list:
 
@@ -75,8 +78,8 @@ class LevelImgEncoder:
             bottom_block_pos = element.y - element.height / 2 - min_y
             top_block_pos = element.y + element.height / 2 - min_y
 
-            x_cord_range = np.linspace(left_block_pos + resolution / 2, right_block_pos - resolution / 2) + 0.00001
-            y_cord_range = np.linspace(bottom_block_pos + resolution / 2, top_block_pos - resolution / 2) + 0.00001
+            x_cord_range = np.linspace(left_block_pos + resolution / 2, right_block_pos - resolution / 2, num=100) + 0.00001
+            y_cord_range = np.linspace(bottom_block_pos + resolution / 2, top_block_pos - resolution / 2, num=100) + 0.00001
 
             x_cords = np.unique(np.round(x_cord_range / resolution)).astype(np.int)
             y_cords = np.unique(np.round(y_cord_range / resolution)).astype(np.int)
@@ -88,7 +91,7 @@ class LevelImgEncoder:
                     right_stop = right_block_pos + resolution / 2
                     pass
 
-                x_cord_range = np.linspace(left_block_pos + resolution / 2, right_stop)
+                x_cord_range = np.linspace(left_block_pos + resolution / 2, right_stop, num=100)
                 x_cords = np.unique(np.round(x_cord_range / resolution)).astype(np.int)
 
             if len(y_cords) != element.int_height:
@@ -98,7 +101,7 @@ class LevelImgEncoder:
                     top_stop = top_block_pos + resolution / 2
                     pass
 
-                y_cord_range = np.linspace(bottom_block_pos + resolution / 2, top_stop)
+                y_cord_range = np.linspace(bottom_block_pos + resolution / 2, top_stop, num=100)
                 y_cords = np.unique(np.round(y_cord_range / resolution)).astype(np.int)
 
             cord_list.append(self.extract_element_data(element, x_cords, y_cords))
@@ -109,6 +112,7 @@ class LevelImgEncoder:
 
     def create_one_element_img(self, element_list, air_layer = False, multilayer = False, true_one_hot = False):
         min_x, min_y, max_x, max_y = calc_structure_dimensions(element_list)
+        resolution = Constants.resolution
 
         pig_index = 40
 
@@ -225,6 +229,7 @@ class LevelImgEncoder:
 
     def create_calculated_img_no_size_check(self, element_list):
         min_x, min_y, max_x, max_y = calc_structure_dimensions(element_list)
+        resolution = Constants.resolution
 
         cord_list = []
 
