@@ -77,7 +77,7 @@ class WGANGP128128(IGAN):
 
 class WGANGP128128_Multilayer(IGAN):
 
-    def __init__(self, data_augmentation = None, last_dim = 4):
+    def __init__(self, data_augmentation = None, last_dim = 4, last_layer = 'tanh'):
         super().__init__()
         self.input_array_size = 128
         self.channel_amount = 64
@@ -86,6 +86,7 @@ class WGANGP128128_Multilayer(IGAN):
         self.output_shape = (128, 128, last_dim)
 
         self.data_augmentation = data_augmentation
+        self.last_layer = last_layer
 
         self.generator = None
         self.discriminator = None
@@ -118,7 +119,10 @@ class WGANGP128128_Multilayer(IGAN):
             model.add(layers.ReLU())
 
         model.add(layers.Conv2DTranspose(self.output_shape[2], 4, strides = 2, padding = 'same'))
-        model.add(layers.Activation(activations.tanh))
+        if self.last_layer == 'tanh':
+            model.add(layers.Activation(activations.tanh))
+        else:
+            model.add(layers.ReLU())
 
         self.generator = model
 
