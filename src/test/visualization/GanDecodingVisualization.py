@@ -8,7 +8,7 @@ from util.Config import Config
 class GanDecodingVisualization:
 
     def __init__(self, dpi = 100, add_color_bar = True, add_tab = False, plot_to_file = False,
-                 plot_show_immediately = False, level_drawer = None):
+                 plot_show_immediately = False, level_drawer = None, disable = False):
 
         self.config = Config.get_instance()
 
@@ -22,8 +22,12 @@ class GanDecodingVisualization:
         self.add_tab = add_tab
         self.plot_to_file = plot_to_file
         self.plot_show_immediately = plot_show_immediately
+        self.disable = disable
 
     def plot_img(self, img, title = None, ax = None, flip = False):
+        if self.disable:
+            return
+
         if ax is None:
             fig, ax = plt.subplots(dpi = self.dpi)
             im = ax.imshow(img)
@@ -67,6 +71,9 @@ class GanDecodingVisualization:
     def plot_matrix_complete(self, matrix, blocks = None, title = None, add_max = True, position = None,
                              delete_rectangles = None, flipped = False, selected_block = None, save_name = None):
 
+        if self.disable:
+            return
+
         fig, axs = self.create_plt_array()
 
         for layer_idx in range(matrix.shape[-1]):
@@ -101,7 +108,7 @@ class GanDecodingVisualization:
         if title is not None:
             fig.suptitle(title)
 
-        plt.tight_layout()
+        fig.tight_layout()
 
         if self.plot_to_file:
             file_name = f'{self.plot_counter}_{title.replace(" ", "_").lower() if title is not None else "matrix"}'

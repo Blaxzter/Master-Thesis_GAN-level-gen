@@ -32,7 +32,7 @@ class MultiLayerStackDecoder:
             ratio = block['width'] / block['height']
             self.max_ratio = np.max([self.max_ratio, ratio])
 
-        self.delete_matrices = self.create_delete_block_matrices()
+        self.delete_matrices = self.create_delete_block_matrices(self.blocks)
 
         # Print data
         self.display_decoding = True
@@ -93,20 +93,22 @@ class MultiLayerStackDecoder:
 
         multi_dim = np.zeros((layer.shape[0], layer.shape[1], 3))
         for i in range(1, 4):
-            multi_dim[:, :, i - 1] = to_be_decoded[layer == i]
+            multi_dim[layer == i, i - 1] = 1
 
         # Get block material by going over each block and check which material is the most confident at this location
         for block in level_blocks:
             start, end, bottom, top = self.get_range_of_block(block['block'], block['position'], layer)
-            material = np.argmax(np.sum(multi_dim[bottom:top, start:end, 1: -1], axis = (0, 1)))
+            material = np.argmax(np.sum(multi_dim[bottom:top, start:end], axis = (0, 1)))
             block['material'] = material
 
-        bird_layer = np.copy(layer)
-        bird_layer[bird_layer != 4] = 0
-        bird_positions = self.get_pig_position(bird_layer)
+        pig_layer = np.copy(layer)
+        pig_layer[pig_layer != 4] = 0
+        bird_positions = self.get_pig_position(pig_layer)
         created_level_elements = self.create_level_elements(level_blocks, bird_positions)
+
         if self.recalibrate_blocks:
             created_level_elements = recalibrate_blocks(created_level_elements)
+
         created_level = Level.create_level_from_structure(created_level_elements)
         return created_level
 
@@ -262,15 +264,16 @@ class MultiLayerStackDecoder:
         if self.display_decoding:
             self.display_block_deletion(_block_rankings, block_position, selected_block)
 
-        if np.all(next_block_rankings < 0.00001):
-            return _selected_blocks
-
         next_blocks = _selected_blocks.copy()
         next_blocks.append(dict(
             position = block_position,
             block = selected_block,
         ))
         next_covered_area = _covered_area + ((selected_block['width'] + 1) * (selected_block['height'] + 1))
+
+        if np.all(next_block_rankings < 0.00001):
+            return next_blocks
+
         return self.select_blocks(next_block_rankings, next_blocks, _stop_condition, next_covered_area)
 
     def display_block_deletion(self, _block_rankings, position, selected_block):
@@ -287,6 +290,7 @@ class MultiLayerStackDecoder:
             top = 0 if position[0] + del_top < 0 else position[0] + del_top
             bottom = y_max - 1 if position[0] + del_bottom > y_max else position[0] + del_bottom
             current_delete_rectangles.append((start, end, top, bottom))
+
         self.visualizer.plot_matrix_complete(
             _block_rankings,
             blocks = self.blocks,
@@ -311,7 +315,8 @@ class MultiLayerStackDecoder:
 
         return padded_block_rankings[y_pad: -y_pad, x_pad: -x_pad]
 
-    def create_delete_block_matrices(self):
+    @staticmethod
+    def create_delete_block_matrices(_blocks):
         """
         Function that creates a matrix that deletes the possible blocks at this location over the layer matrix
         """
@@ -335,11 +340,11 @@ class MultiLayerStackDecoder:
                 y_max = -np.inf
 
                 for outside_block_idx, outside_block in enumerate(blocks):
-                    start = -(((outside_block['width'] + 1) // 2) + left_extension)
-                    end = ((outside_block['width'] + 1) // 2) + right_extension - outside_block['width'] % 2
+                    start = -(((outside_block['width'] + 1) // 2) + left_extension) + (outside_block['width'] % 2)
+                    end = (((outside_block['width'] + 1) // 2) + right_extension) - (outside_block['width'] % 2)
 
-                    top = -(((outside_block['height'] + 1) // 2) + top_extension)
-                    bottom = ((outside_block['height'] + 1) // 2) + bottom_extension - outside_block['height'] % 2
+                    top = -(((outside_block['height'] + 1) // 2) + top_extension) + (outside_block['height'] % 2)
+                    bottom = (((outside_block['height'] + 1) // 2) + bottom_extension) - (outside_block['height'] % 2)
 
                     x_cords = np.arange(start, end + 1, 1)
                     y_cords = np.arange(top, bottom + 1, 1)
@@ -357,7 +362,7 @@ class MultiLayerStackDecoder:
                 )
             return ret_ranges
 
-        block_ranges = _get_block_ranges(self.blocks)
+        block_ranges = _get_block_ranges(_blocks)
         ret_matrices = dict()
 
         for block_idx, block_range in block_ranges.items():
@@ -452,5 +457,5 @@ class MultiLayerStackDecoder:
 
 if __name__ == '__main__':
     decoder = MultiLayerStackDecoder()
-    delete_matrix = decoder.create_delete_block_matrices()
+    delete_matrix = decoder.create_delete_block_matrices(decoder.blocks)
 

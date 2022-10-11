@@ -1,6 +1,9 @@
+from typing import List, Dict
+
 import numpy as np
 
 from converter.to_img_converter.DecoderUtils import recalibrate_blocks
+from converter.to_img_converter.MultiLayerStackDecoder import MultiLayerStackDecoder
 from level import Constants
 from level.Level import Level
 from level.LevelElement import LevelElement
@@ -13,10 +16,11 @@ class LevelIdImgDecoder:
     def __init__(self):
         self.threshold = 0.4
         self.config = Config.get_instance()
-        self.block_data = self.config.get_encoding_data(f"encoding_res_{Constants.resolution}")
-        if type(self.block_data) is not str:
-            self.resolution = self.block_data['resolution']
-            del self.block_data['resolution']
+
+        self.block_data = self.config.get_block_data(Constants.resolution)
+        self.blocks: List[Dict] = list(self.block_data.values())
+
+        self.delete_matrix = MultiLayerStackDecoder.create_delete_block_matrices(self.blocks)
 
         self.level_viz = LevelVisualizer()
 
@@ -26,6 +30,7 @@ class LevelIdImgDecoder:
         # blocks based on the position of the pixel and the id
         def _create_elements_of_layer(img_layer, layer = -1):
             ret_elements = []
+
             used_blocks = np.unique(img_layer)
 
             for color_idx, material_idx in enumerate(used_blocks):
@@ -45,11 +50,6 @@ class LevelIdImgDecoder:
 
         created_elements = []
 
-        # preprocess true one hot
-        if len(level_img.shape) == 3 and level_img.shape[-1] == 40:
-            stacked_img = np.dstack((np.zeros(level_img.shape[0:2]) + self.threshold, level_img))
-            level_img = np.argmax(stacked_img, axis = 2)
-
         if len(level_img.shape) == 2:
             created_elements += _create_elements_of_layer(level_img, layer = -1)
         else:
@@ -68,6 +68,12 @@ class LevelIdImgDecoder:
             created_level_elements = recalibrate_blocks(created_level_elements)
 
         return Level.create_level_from_structure(created_level_elements)
+
+
+    def decode_one_hot_encoding(self, gan_matrix, recalibrate = True, small_version = False):
+
+        # preprocess true one hot
+        print("Hello")
 
     def get_element_of_id_encoding(self, element_id, layer = -1, small_version = False):
         if layer < 0:

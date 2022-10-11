@@ -63,7 +63,7 @@ class LevelDrawer:
         self.create_img_tab_panes()
 
         self.level_img_decoder = LevelImgDecoder()
-        self.level_id_img_decoder = LevelIdImgDecoder()
+        self.level_id_img_decoder: LevelIdImgDecoder = LevelIdImgDecoder()
         self.level_img_decoder_visualization = LevelImgDecoderVisualization()
         self.level_visualizer = LevelVisualizer()
         self.game_manager = GameManager(Config.get_instance())

@@ -17,6 +17,8 @@ class ScrollableNotebook(ttk.Frame):
         self.notebookTab = ttk.Notebook(self, **kwargs)
         self.notebookTab.bind("<<NotebookTabChanged>>", self._tabChanger)
 
+        self.timer = None
+
         self.tab_change_callback = tab_change_callback
         if wheelscroll == True: self.notebookTab.bind("<MouseWheel>", self._wheelscroll)
         slideFrame = ttk.Frame(self)
@@ -27,6 +29,7 @@ class ScrollableNotebook(ttk.Frame):
             bottomTab = ttk.Label(slideFrame, text = "\u2630")
             bottomTab.bind("<ButtonPress-1>", self._bottomMenu)
             bottomTab.pack(side = RIGHT)
+
         leftArrow = ttk.Label(slideFrame, text = " \u276E")
         leftArrow.bind("<ButtonPress-1>", self._leftSlideStart)
         leftArrow.bind("<ButtonRelease-1>", self._slideStop)
@@ -35,6 +38,7 @@ class ScrollableNotebook(ttk.Frame):
         rightArrow.bind("<ButtonPress-1>", self._rightSlideStart)
         rightArrow.bind("<ButtonRelease-1>", self._slideStop)
         rightArrow.pack(side = RIGHT)
+
         self.notebookContent.bind("<Configure>", self._resetSlide)
         self.contentsManaged = []
 
@@ -84,10 +88,11 @@ class ScrollableNotebook(ttk.Frame):
             self.xLocation += 20
             self.notebookTab.place(x = self.xLocation, y = 0)
             return True
+
         return False
 
     def _slideStop(self, event):
-        if self.timer != None:
+        if self.timer is not None:
             self.after_cancel(self.timer)
             self.timer = None
 
@@ -151,7 +156,7 @@ class ScrollableNotebook(ttk.Frame):
         self.notebookTab.insert(pos, frame, **kwargs)
 
     def select(self, tab_id):
-        ##        self.notebookContent.select(self.__ContentTabID(tab_id))
+        # self.notebookContent.select(self.__ContentTabID(tab_id))
         self.notebookTab.select(tab_id)
 
     def tab(self, tab_id, option = None, **kwargs):
@@ -161,7 +166,7 @@ class ScrollableNotebook(ttk.Frame):
         return self.notebookTab.tab(tab_id, option = None, **kwargs)
 
     def tabs(self):
-        ##        return self.notebookContent.tabs()
+        # return self.notebookContent.tabs()
         return self.notebookTab.tabs()
 
     def enable_traversal(self):

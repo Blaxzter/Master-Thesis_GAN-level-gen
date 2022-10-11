@@ -318,42 +318,47 @@ class GeneratorApplication:
     def get_decode_parameter(self, callback):
         self.parameter_dict = dict(
             use_drawn_level = dict(type = 'bool', default = True),
-            round_to_next_int = dict(type = 'bool', default = True),
-            use_negative_air_value = dict(type = 'bool', default = True),
+            round_to_next_int = dict(type = 'bool', default = False),
+            use_negative_air_value = dict(type = 'bool', default = False),
             negative_air_value = dict(type = 'number', default = -2),
             custom_kernel_scale = dict(type = 'bool', default = True),
             minus_one_border = dict(type = 'bool', default = False),
             cutoff_point = dict(type = 'number', default = 0.85),
             bird_cutoff = dict(type = 'number', default = 0.5),
-            recalibrate_blocks = dict(type = 'bool', default = False),
-            combine_layers = dict(type = 'bool', default = True)
+            recalibrate_blocks = dict(type = 'bool', default = True),
+            combine_layers = dict(type = 'bool', default = False),
+            disable_plotting = dict(type = 'bool', default = True)
         )
         self.level_drawer.create_parameter_popup(self.parameter_dict, ok_button_text = 'Decode Img', callback = callback)
 
     def decode_gan_img(self):
 
+        self.level_drawer.clear_figure_canvas()
+
         for key, value in self.parameter_dict.items():
             if hasattr(self.multilayer_stack_decoder, key):
                 setattr(self.multilayer_stack_decoder, key, value['data'])
 
-        if self.parameter_dict['use_drawn_level']['data'] == 0:
-            orig_img, prediction = self.gan.create_img(self.seed)
-            self.level_drawer.level = self.multilayer_stack_decoder.decode(orig_img)
+        if self.parameter_dict['disable_plotting']['data'] == 1:
+            self.multilayer_stack_decoder.visualizer.disable = True
         else:
-            self.multilayer_stack_decoder.layer_to_level(self.level_drawer.grid_drawer.current_elements())
+            self.multilayer_stack_decoder.visualizer.disable = False
 
-        self.level_drawer.clear_figure_canvas()
-        self.level_drawer.create_img_tab_panes(1)
+        if self.gan is not None and self.parameter_dict['use_drawn_level']['data'] == 0:
+            orig_img, prediction = self.gan.create_img(self.seed)
+
+            if orig_img.shape[-1] < 5:
+                self.level_drawer.level = self.multilayer_stack_decoder.decode(orig_img)
+            else:
+                self.level_drawer.level = self.level_drawer.level_id_img_decoder.decode_one_hot_encoding(orig_img)
+        else:
+            self.level_drawer.level = self.multilayer_stack_decoder.layer_to_level(self.level_drawer.grid_drawer.current_elements())
 
         fig, ax = self.level_drawer.new_fig()
-        self.level_drawer.tabs[0]['fig'] = fig
-        self.level_drawer.tabs[0]['ax'] = ax
-
         self.level_drawer.level_visualizer.create_img_of_structure(
             self.level_drawer.level.get_used_elements(), use_grid = False, ax = ax, scaled = True
         )
-
-        self.level_drawer.draw_img_to_fig_canvas(tab = 0)
+        self.level_drawer.add_tab_to_fig_canvas(fig, ax, name = 'Decoded Level')
 
     def load_model_0(self):
         from generator.gan.SimpleGans import SimpleGAN100112
