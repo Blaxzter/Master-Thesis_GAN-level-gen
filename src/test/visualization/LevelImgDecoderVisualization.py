@@ -11,6 +11,7 @@ from converter.to_img_converter.LevelImgDecoder import LevelImgDecoder
 from level import Constants
 from level.Level import Level
 from level.LevelVisualizer import LevelVisualizer
+from test.TestEnvironment import TestEnvironment
 from util.Config import Config
 
 
@@ -27,6 +28,7 @@ class LevelImgDecoderVisualization:
 
         ts = TreeStyle()
         ts.scale = 10
+        ts.mode = "c"
         # Disable the default tip names config
         ts.show_leaf_name = False
         ts.show_scale = False
@@ -100,7 +102,7 @@ class LevelImgDecoderVisualization:
         plt.tight_layout()
         plt.show()
 
-    def visualize_one_decoding(self, level_img, material_id = 0, axs = None):
+    def visualize_one_decoding(self, level_img, material_id = 0, axs = None, title = None):
         flipped = np.flip(level_img, axis = 0)
         level_img_8 = flipped.astype(np.uint8)
         original_img = level_img_8.copy()
@@ -110,10 +112,12 @@ class LevelImgDecoderVisualization:
         if axs is None:
             skip_first = False
             fig, axs = plt.subplots(1, 4, figsize = (10, 3), dpi = 300)
+            if title is not None:
+                fig.sup_title(title)
 
         if not skip_first:
             axs[axs_idx].imshow(level_img_8, origin = 'lower')
-            axs[axs_idx].axis('off')
+            self.remove_ax_ticks(axs[axs_idx])
             axs_idx += 1
 
         level_img_8[level_img_8 != material_id] = 0
@@ -122,6 +126,7 @@ class LevelImgDecoderVisualization:
         contour_viz = level_img_8.copy()
         cv2.drawContours(contour_viz, contours, -1, 8, 1)
         axs[axs_idx].imshow(contour_viz, origin = 'lower')
+        self.remove_ax_ticks(axs[axs_idx])
         axs_idx += 1
 
         blocks = []
@@ -166,6 +171,7 @@ class LevelImgDecoderVisualization:
                 rectangle_data.append(self.level_img_decoder.create_rect_dict(rectangle.reshape((4, 2))))
 
             axs[axs_idx].imshow(original_img, origin = 'lower')
+            self.remove_ax_ticks(axs[axs_idx])
 
             # Sort by rectangle size
             rectangles = sorted(rectangle_data, key = lambda x: x['area'], reverse = True)
@@ -178,7 +184,8 @@ class LevelImgDecoderVisualization:
                 rectangles = rect_dict.copy(),
                 used_blocks = [],
                 required_area = required_area,
-                poly = poly
+                poly = poly,
+                tree_node = None
             )
 
             if selected_blocks is not None:
@@ -194,6 +201,7 @@ class LevelImgDecoderVisualization:
         # Create block elements out of the possible blocks and the rectangle
         level_elements = self.level_img_decoder.create_level_elements(flattend_blocks, [])
         axs[axs_idx].imshow(level_img_8, origin = 'lower')
+        self.remove_ax_ticks(axs[axs_idx])
         self.level_viz.create_img_of_structure(level_elements, use_grid = False, ax = axs[axs_idx], scaled = True)
 
         if not skip_first:
@@ -359,25 +367,35 @@ class LevelImgDecoderVisualization:
         # Break condition
         if occupied_area != 0 and abs(required_area / occupied_area - 1) < 0.1:
 
-            name_face = TextFace(tree_node.name, fgcolor='green', fsize=10)
-            tree_node.add_face(name_face, column=0, position='branch-right')
+            if tree_node is not None:
+                name_face = TextFace(tree_node.name, fgcolor='green', fsize=10)
+                tree_node.add_face(name_face, column=0, position='branch-right')
 
             return used_blocks
 
         if occupied_area > required_area or len(rectangles) == 0:
-            end_child = tree_node.add_child()
-            name_face = TextFace('X', fgcolor='red', fsize=10)
-            end_child.add_face(name_face, column=0, position='branch-right')
+            if tree_node is not None:
+                end_child = tree_node.add_child()
+                name_face = TextFace('X', fgcolor='red', fsize=10)
+                end_child.add_face(name_face, column=0, position='branch-right')
             return None
 
         LevelImgDecoder.filter_rectangles_by_used_blocks(rectangles, used_blocks)
 
         if len(rectangles) == 0:
+            if tree_node is not None:
+                end_child = tree_node.add_child()
+                name_face = TextFace('X', fgcolor='red', fsize=10)
+                end_child.add_face(name_face, column=0, position='branch-right')
             return None
 
         # check if remaining rectangles are able to fill the shape approximetly
         combined_area = np.sum([rec['poly'].area for rec in rectangles.values()])
         if abs((combined_area + occupied_area) / required_area) < 0.8:
+            if tree_node is not None:
+                end_child = tree_node.add_child()
+                name_face = TextFace('X', fgcolor='red', fsize=10)
+                end_child.add_face(name_face, column=0, position='branch-right')
             return None
 
         # Go over each rectangle
@@ -412,9 +430,10 @@ class LevelImgDecoderVisualization:
 
                     next_used_blocks.append(new_block)
 
-                    new_child = tree_node.add_child()
-                    name_face = TextFace(block['name'], fsize = 10)
-                    new_child.add_face(name_face, column = 0, position = 'branch-right')
+                    if tree_node is not None:
+                        new_child = tree_node.add_child()
+                        name_face = TextFace(block['name'], fsize = 10)
+                        new_child.add_face(name_face, column = 0, position = 'branch-right')
 
                     selected_blocks = self.visualize_select_blocks(
                         rectangles = next_rectangles,
@@ -422,11 +441,12 @@ class LevelImgDecoderVisualization:
                         required_area = required_area,
                         occupied_area = occupied_area + rec['area'] + add_area,
                         poly = poly,
-                        tree_node = new_child,
+                        tree_node = new_child if tree_node is not None else None
                     )
 
                     if selected_blocks is not None:
-                        name_face.fgcolor = 'green'
+                        if tree_node is not None:
+                            name_face.fgcolor = 'green'
                         return selected_blocks
                     else:
                         break
@@ -488,8 +508,9 @@ class LevelImgDecoderVisualization:
                             start_value = ry_1 if primary_orientation == 'height' else rx_1
                             used_area = 0
 
-                            new_child = tree_node.add_child()
-                            name_faces = []
+                            if tree_node is not None:
+                                new_child = tree_node.add_child()
+                                name_faces = []
 
                             text_face_name = ''
 
@@ -509,11 +530,13 @@ class LevelImgDecoderVisualization:
                                 used_area += block['area']
                                 start_value += block[f'{primary_orientation}'] + 1
 
-                                text_face_name += f"{block['name']} \n"
+                                if tree_node is not None:
+                                    text_face_name += f"{block['name']} \n"
 
-                            name_face = TextFace(text_face_name, fsize = 10)
-                            new_child.add_face(name_face, column = 0, position = 'branch-right')
-                            name_faces.append(name_face)
+                            if tree_node is not None:
+                                name_face = TextFace(text_face_name, fsize = 10)
+                                new_child.add_face(name_face, column = 0, position = 'branch-right')
+                                name_faces.append(name_face)
 
                             # Remove the current big rectangle
                             del next_rectangles[rec_idx]
@@ -524,12 +547,13 @@ class LevelImgDecoderVisualization:
                                 required_area = required_area,
                                 poly = poly,
                                 occupied_area = occupied_area + (rec['area'] if all_space_used else used_area),
-                                tree_node = new_child
+                                tree_node = new_child if tree_node is not None else None
                             )
 
                             if selected_blocks is not None:
-                                for name_face in name_faces:
-                                    name_face.fgcolor = 'green'
+                                if tree_node is not None:
+                                    for name_face in name_faces:
+                                        name_face.fgcolor = 'green'
                                 return selected_blocks
 
                         # This means the block were to big which means doesnt fit
@@ -541,4 +565,34 @@ class LevelImgDecoderVisualization:
                         break
 
         # We tested everything and nothing worked :(
+        if tree_node is not None:
+            end_child = tree_node.add_child()
+            name_face = TextFace('X', fgcolor = 'red', fsize = 10)
+            end_child.add_face(name_face, column = 0, position = 'branch-right')
         return None
+
+    @staticmethod
+    def remove_ax_ticks(ax):
+        ax.tick_params(axis = 'both', which = 'both', grid_alpha = 0, grid_color = "grey")
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        for tick in ax.xaxis.get_major_ticks():
+            tick.tick1line.set_visible(False)
+            tick.tick2line.set_visible(False)
+            tick.label1.set_visible(False)
+            tick.label2.set_visible(False)
+        for tick in ax.yaxis.get_major_ticks():
+            tick.tick1line.set_visible(False)
+            tick.tick2line.set_visible(False)
+            tick.label1.set_visible(False)
+            tick.label2.set_visible(False)
+
+if __name__ == '__main__':
+    test_environment = TestEnvironment()
+
+    level = test_environment.get_level(0)
+    level_img = test_environment.level_img_encoder.create_calculated_img(level.get_used_elements())
+
+    visualizer = LevelImgDecoderVisualization()
+
+    visualizer.visualize_one_decoding(level_img, material_id = 1)

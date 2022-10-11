@@ -63,7 +63,7 @@ class MultiLayerStackDecoder:
                 flattened_img[flattened_idx_img == i] = gan_output[flattened_idx_img == i, i]
 
             if self.display_decoding:
-                self.visualizer.plot_img(flattened_img, title = 'Flattened Img')
+                self.visualizer.plot_img(flattened_img, title = 'Flattened Img', flip = True)
                 level_blocks = self.decode_layer(flattened_img, -1)
 
             # Get block material by going over each block and check which material is the most confident at this location
@@ -125,7 +125,7 @@ class MultiLayerStackDecoder:
         layer[layer <= highest_lowest_value] = 0
 
         trimmed_img, trim_data = DecoderUtils.trim_img(layer, ret_trims = True)
-        self.visualizer.plot_img(trimmed_img, title = 'Trimmed Img')
+        self.visualizer.plot_img(trimmed_img, title = 'Trimmed Img', flip = True)
 
         if self.use_negative_air_value:
             trimmed_img = (trimmed_img * 2) - 1
@@ -144,7 +144,7 @@ class MultiLayerStackDecoder:
         rounded_block_rankings = np.around(current_size_ranking, 5)  # Round to remove floating point errors
 
         if self.display_decoding:
-            self.visualizer.plot_matrix_complete(rounded_block_rankings, blocks = self.blocks, title = 'Rounded Block Rankings', flipped = True)
+            self.visualizer.plot_matrix_complete(rounded_block_rankings, blocks = self.blocks, title = 'Selection Rankings', flipped = True)
 
         rounded_block_rankings[hit_probabilities <= self.cutoff_point] = 0
         selected_blocks = self.select_blocks(rounded_block_rankings, [], stop_condition, _covered_area = 0)
@@ -172,7 +172,7 @@ class MultiLayerStackDecoder:
 
             avg_convolution_kernel = sum_convolution_kernel / np.sum(sum_convolution_kernel)
 
-            if self.custom_kernel_scale != -1:
+            if self.custom_kernel_scale:
                 sum_convolution_kernel = sum_convolution_kernel * possible_block['scalar']
 
                 # norm_ratio = (possible_block['width'] / possible_block['height']) / self.max_ratio
@@ -332,9 +332,9 @@ class MultiLayerStackDecoder:
                 current_list = list()
 
                 left_extension = (center_block['width'] + 1) // 2
-                right_extension = (center_block['width'] + 1) // 2
+                right_extension = ((center_block['width'] + 1) // 2) - (center_block['width'] % 2)
                 top_extension = (center_block['height'] + 1) // 2
-                bottom_extension = (center_block['height'] + 1) // 2
+                bottom_extension = ((center_block['height'] + 1) // 2) - (center_block['height'] % 2)
 
                 x_max = -np.inf
                 y_max = -np.inf

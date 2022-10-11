@@ -24,19 +24,22 @@ class GanDecodingVisualization:
         self.plot_show_immediately = plot_show_immediately
         self.disable = disable
 
-    def plot_img(self, img, title = None, ax = None, flip = False):
+    def plot_img(self, img, title = None, ax = None, flip = False, remove_ticks = False):
         if self.disable:
             return
 
         if ax is None:
             fig, ax = plt.subplots(dpi = self.dpi)
-            im = ax.imshow(img)
+            im = ax.imshow(np.around(img, decimals=5))
 
             if title is not None:
                 ax.set_title(title)
 
             if self.add_color_bar:
                 plt.colorbar(im)
+
+            if remove_ticks:
+                self.remove_ax_ticks(ax)
 
             if self.plot_to_file:
                 fig_name = self.config.get_conv_debug_img_file(
@@ -59,6 +62,10 @@ class GanDecodingVisualization:
                 ax.imshow(np.flip(img, axis = 0))
             else:
                 ax.imshow(img)
+
+            if remove_ticks:
+                self.remove_ax_ticks(ax)
+
             ax.set_title(title)
 
     def create_plt_array(self):
@@ -83,7 +90,7 @@ class GanDecodingVisualization:
             if blocks is not None:
                 ax_title = blocks[layer_idx]['name'] + (f' {np.round(np.max(_plot_img).item() * 100) / 100}' if add_max else '')
 
-            self.plot_img(_plot_img, ax_title, ax = axs[layer_idx], flip = flipped)
+            self.plot_img(_plot_img, ax_title, ax = axs[layer_idx], flip = flipped, remove_ticks = True)
             color = 'blue' if (selected_block is not None and selected_block == layer_idx) else 'red'
 
             if position is not None:
@@ -126,3 +133,19 @@ class GanDecodingVisualization:
 
         if not self.plot_to_file and not self.plot_show_immediately and not self.add_tab:
             plt.close(fig)
+
+    @staticmethod
+    def remove_ax_ticks(ax):
+        ax.tick_params(axis = 'both', which = 'both', grid_alpha = 0, grid_color = "grey")
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        for tick in ax.xaxis.get_major_ticks():
+            tick.tick1line.set_visible(False)
+            tick.tick2line.set_visible(False)
+            tick.label1.set_visible(False)
+            tick.label2.set_visible(False)
+        for tick in ax.yaxis.get_major_ticks():
+            tick.tick1line.set_visible(False)
+            tick.tick2line.set_visible(False)
+            tick.label1.set_visible(False)
+            tick.label2.set_visible(False)

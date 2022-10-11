@@ -41,6 +41,7 @@ class GameManager:
         self.game_connection.start()
         if not is_running:
             self.game_connection.start_game(self.conf.game_path)
+
         self.game_connection.wait_for_game_window()
         self.game_is_running = True
 

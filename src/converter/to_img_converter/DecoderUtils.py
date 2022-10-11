@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def recalibrate_blocks(created_level_elements):
+def recalibrate_blocks(created_level_elements, flipped = False):
     if len(created_level_elements) == 0:
         return []
 

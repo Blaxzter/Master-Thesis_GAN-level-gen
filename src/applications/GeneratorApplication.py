@@ -319,13 +319,13 @@ class GeneratorApplication:
         self.parameter_dict = dict(
             use_drawn_level = dict(type = 'bool', default = True),
             round_to_next_int = dict(type = 'bool', default = False),
-            use_negative_air_value = dict(type = 'bool', default = False),
+            use_negative_air_value = dict(type = 'bool', default = True),
             negative_air_value = dict(type = 'number', default = -2),
             custom_kernel_scale = dict(type = 'bool', default = True),
             minus_one_border = dict(type = 'bool', default = False),
             cutoff_point = dict(type = 'number', default = 0.85),
             bird_cutoff = dict(type = 'number', default = 0.5),
-            recalibrate_blocks = dict(type = 'bool', default = True),
+            recalibrate_blocks = dict(type = 'bool', default = False),
             combine_layers = dict(type = 'bool', default = False),
             disable_plotting = dict(type = 'bool', default = True)
         )

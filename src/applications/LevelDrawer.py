@@ -72,6 +72,8 @@ class LevelDrawer:
 
         self.generator_application = GeneratorApplication(self.btm_frame, self)
 
+        self.level = None
+
     def create_frames(self):
 
         # Layout Frames
@@ -260,8 +262,6 @@ class LevelDrawer:
         self.clear_figure_canvas()
 
         fig, ax = plt.subplots(1, 1, dpi = 100)
-        self.tabs[tab]['fig'] = fig
-        self.tabs[tab]['ax'] = ax
 
         temp_level_img = DecoderUtils.trim_img(self.grid_drawer.current_elements())
 
@@ -282,36 +282,28 @@ class LevelDrawer:
         if len(self.level.get_used_elements()) == 0:
             ax.set_title("No Level Decoded")
 
-        self.draw_img_to_fig_canvas()
+        self.add_tab_to_fig_canvas(fig, ax, 'Decoded Level')
 
     def new_fig(self):
         self.fig, self.ax = plt.subplots(1, 1, dpi = 100)
         return self.fig, self.ax
 
     def clear_figure_canvas(self):
-        for tab in self.tabs:
-            if 'fig' in tab.keys():
-                plt.close(tab['fig'])
-
-            if 'matplot_canvas' in tab.keys():
-                tab['matplot_canvas'].get_tk_widget().destroy()
-
-            if 'toolbar' in tab.keys():
-                tab['toolbar'].destroy()
+        self.tab_control.clear_tab_panes(self.tabs)
 
     def visualize_rectangle(self):
         self.clear_figure_canvas()
 
-        self.fig, self.ax = plt.subplots(1, 1, dpi = 100)
+        fig, ax = plt.subplots(1, 1, dpi = 100)
 
         material_id = int(self.rec_idx.get('0.0', 'end'))
 
         trimmed_img = DecoderUtils.trim_img(self.grid_drawer.current_elements())
         self.level_img_decoder_visualization.visualize_rectangle(
-            trimmed_img, material_id, ax = self.ax
+            trimmed_img, material_id, ax = ax
         )
 
-        self.draw_img_to_fig_canvas()
+        self.add_tab_to_fig_canvas(fig, ax, 'Rectangles')
 
     def load_level(self):
         load_level = int(self.level_select.get('0.0', 'end'))
@@ -423,6 +415,10 @@ class LevelDrawer:
     def run_level_in_game(self):
         if self.level is None:
             logger.debug("No level decoded")
+            return
+
+        if not self.game_manager.game_is_running:
+            logger.debug("Game isn't running")
             return
 
         self.game_manager.switch_to_level(self.level, stop_time = False)
