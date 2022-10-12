@@ -102,16 +102,19 @@ class LevelImgDecoderVisualization:
         plt.tight_layout()
         plt.show()
 
-    def visualize_one_decoding(self, level_img, material_id = 0, axs = None, title = None):
+    def visualize_one_decoding(self, level_img, material_id = 0, axs = None, title = None, skip_first = False):
         flipped = np.flip(level_img, axis = 0)
         level_img_8 = flipped.astype(np.uint8)
         original_img = level_img_8.copy()
 
-        skip_first = True
+        plot_image = False
+
         axs_idx = 0
         if axs is None:
-            skip_first = False
-            fig, axs = plt.subplots(1, 4, figsize = (10, 3), dpi = 300)
+            plot_image = True
+            if not skip_first:
+                skip_first = False
+            fig, axs = plt.subplots(1, 4 - (1 if skip_first else 0), figsize = (10, 3), dpi = 300)
             if title is not None:
                 fig.sup_title(title)
 
@@ -204,7 +207,7 @@ class LevelImgDecoderVisualization:
         self.remove_ax_ticks(axs[axs_idx])
         self.level_viz.create_img_of_structure(level_elements, use_grid = False, ax = axs[axs_idx], scaled = True)
 
-        if not skip_first:
+        if plot_image:
             plt.tight_layout()
             plt.show()
 
@@ -253,7 +256,7 @@ class LevelImgDecoderVisualization:
         show_img = False
         if axs is None:
             show_img = True
-            fig, axs = plt.subplots(1, 3, dpi = 500, figsize = (12, 3))
+            fig, axs = plt.subplots(1, 3, dpi = 150, figsize = (12, 3))
 
         axs[0].set_title("Original Dots")
         axs[0].imshow(current_img)
@@ -314,7 +317,7 @@ class LevelImgDecoderVisualization:
             plt.tight_layout()
             plt.show()
 
-    def visualize_rectangle(self, level_img, material_id, ax = None):
+    def visualize_rectangle(self, level_img, material_id, desired_contour_idx = None, ax = None, filtered = True):
         """
         Visualizes the rectangles of one level img
         """
@@ -325,18 +328,21 @@ class LevelImgDecoderVisualization:
         show_img = False
         if ax is None:
             show_img = True
-            fig, ax = plt.subplots(1, 1, dpi = 300)
+            fig, ax = plt.subplots(1, 1, dpi = 100)
 
         # get the contours
         contours, _ = cv2.findContours(current_img, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         ax.imshow(current_img)
         for contour_idx, contour in enumerate(contours):
+            if desired_contour_idx is not None and contour_idx != desired_contour_idx:
+                continue
+
             contour_reshaped = contour.reshape((len(contour), 2))
             poly = Polygon(contour_reshaped)
 
             rectangles, contour_list = MathUtil.get_rectangles(contour_reshaped, poly)
 
-            rect_dict = self.level_img_decoder.get_rectangle_data(rectangles)
+            rect_dict = self.level_img_decoder.get_rectangle_data(rectangles, filter_rectangles = filtered)
 
             hsv = plt.get_cmap('brg')
             colors = hsv(np.linspace(0, 0.8, len(rectangles)))
@@ -595,4 +601,6 @@ if __name__ == '__main__':
 
     visualizer = LevelImgDecoderVisualization()
 
-    visualizer.visualize_one_decoding(level_img, material_id = 1)
+    # visualizer.visualize_one_decoding(level_img, material_id = 2, skip_first = True)
+    visualizer.visualize_rectangle(level_img, material_id = 2, desired_contour_idx = 1, filtered = True)
+    # visualizer.visualize_rectangles(level_img, material_id = 2)

@@ -132,7 +132,7 @@ class LevelImgDecoder:
             min_x = contour_reshaped[:, 0].min()
         )
 
-    def get_rectangle_data(self, rectangles):
+    def get_rectangle_data(self, rectangles, filter_rectangles = True):
 
         def _filter_rectangles(_rect_data):
             if _rect_data['width'] <= 1 or _rect_data['height'] <= 1:
@@ -153,7 +153,9 @@ class LevelImgDecoder:
             rect_data['idx'] = rec_idx
             rectangles_with_data.append(rect_data)
 
-        possible_rects = list(filter(_filter_rectangles, rectangles_with_data))
+        possible_rects = rectangles_with_data
+        if filter_rectangles:
+            possible_rects = list(filter(_filter_rectangles, rectangles_with_data))
 
         # Sort the rectangles by area and create a dictionary out of them
         sorted_rectangles = sorted(possible_rects, key = lambda x: x['area'], reverse = True)
