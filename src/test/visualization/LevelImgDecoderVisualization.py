@@ -213,7 +213,9 @@ class LevelImgDecoderVisualization:
 
     def visualize_pig_position(self, level_img, axs = None):
 
+        show = False
         if axs is None:
+            show = True
             fig, axs = plt.subplots(1, 3)
 
         level_img_8 = level_img.astype(np.uint8)
@@ -244,6 +246,9 @@ class LevelImgDecoderVisualization:
 
         axs[2].imshow(erosion)
         axs[2].axis('off')
+
+        if show:
+            plt.show()
 
         return pig_positions
 
@@ -371,7 +376,7 @@ class LevelImgDecoderVisualization:
     def visualize_select_blocks(self, rectangles, used_blocks, required_area, poly, tree_node, occupied_area = 0):
         from ete3 import Tree, TreeNode, TextFace, TreeStyle
         # Break condition
-        if occupied_area != 0 and abs(required_area / occupied_area - 1) < 0.1:
+        if occupied_area != 0 and abs(required_area / occupied_area - 1) < 0.01:
 
             if tree_node is not None:
                 name_face = TextFace(tree_node.name, fgcolor='green', fsize=10)
@@ -472,7 +477,7 @@ class LevelImgDecoderVisualization:
                 fitting_blocks = {
                     k: _block for k, _block in self.level_img_decoder.block_data.items()
                     if (_block[primary_orientation] + 2) / rec[primary_orientation] - 1 < 0.001 and
-                       abs((_block[secondary_orientation]) / rec[secondary_orientation] - 1) < 0.001
+                       (_block[secondary_orientation]) / rec[secondary_orientation] - 1 < 0.001
                 }
 
                 # No combination found for this block
@@ -482,9 +487,16 @@ class LevelImgDecoderVisualization:
                 for combination_amount in range(2, 5):
                     combinations = itertools.product(fitting_blocks.items(), repeat = combination_amount)
                     to_big_counter = 0
+                    combi_counter = 0
                     for combination in combinations:
+                        combi_counter += 1
+                        secondary_size = combination[0][1][secondary_orientation]
 
-                        secondary_size = rec[secondary_orientation]
+                        # Only elements with the same secondary_orientation
+                        secondary_direction_difference = np.sum(
+                            list(map(lambda block: abs(block[1][secondary_orientation] - secondary_size), combination)))
+                        if secondary_direction_difference > 0.01:
+                            continue
 
                         # Check if the two blocks combined can fit in the space
                         combined_height = \
@@ -502,10 +514,20 @@ class LevelImgDecoderVisualization:
                             all_space_used = True
                             if rec[secondary_orientation] / secondary_size - 1 > 0.001:
                                 rectangle = np.ndarray.copy(rec['rectangle'])
-                                rectangle[0][idx_2] += secondary_size
-                                rectangle[1][idx_2] += secondary_size
+                                if primary_orientation == 'height':
+                                    rectangle[0][idx_2] += secondary_size + 1
+                                    rectangle[1][idx_2] += secondary_size + 1
+                                else:
+                                    rectangle[1][idx_2] += secondary_size + 1
+                                    rectangle[2][idx_2] += secondary_size + 1
 
                                 new_dict = self.level_img_decoder.create_rect_dict(rectangle)
+
+                                if new_dict['width'] <= 1 or new_dict['height'] <= 1 or \
+                                        new_dict['width'] not in self.possible_width or \
+                                        new_dict['height'] not in self.possible_height:
+                                    continue
+
                                 next_rectangles[len(rectangles)] = new_dict
                                 all_space_used = False
 
@@ -522,18 +544,35 @@ class LevelImgDecoderVisualization:
 
                             for idx, (block_idx, block) in enumerate(combination):
                                 block_rectangle = np.ndarray.copy(rec['rectangle'])
-                                block_rectangle[1][idx_1] = start_value
-                                block_rectangle[2][idx_1] = start_value
+                                if primary_orientation == 'height':
+                                    block_rectangle[1][idx_1] = start_value
+                                    block_rectangle[2][idx_1] = start_value
 
-                                block_rectangle[0][idx_1] = start_value + block[f'{primary_orientation}']
-                                block_rectangle[3][idx_1] = start_value + block[f'{primary_orientation}']
+                                    block_rectangle[0][idx_1] = start_value + block[primary_orientation]
+                                    block_rectangle[3][idx_1] = start_value + block[primary_orientation]
+
+                                    if not all_space_used:
+                                        block_rectangle[2][idx_2] = block_rectangle[0][idx_2] + secondary_size
+                                        block_rectangle[3][idx_2] = block_rectangle[0][idx_2] + secondary_size
+                                else:
+                                    block_rectangle[0][idx_1] = start_value
+                                    block_rectangle[1][idx_1] = start_value
+
+                                    block_rectangle[2][idx_1] = start_value + block[primary_orientation]
+                                    block_rectangle[3][idx_1] = start_value + block[primary_orientation]
+
+                                    if not all_space_used:
+                                        block_rectangle[1][idx_2] = block_rectangle[0][idx_2] + secondary_size
+                                        block_rectangle[2][idx_2] = block_rectangle[0][idx_2] + secondary_size
+
                                 new_block = dict(
                                     block_type = block,
                                     rec = self.level_img_decoder.create_rect_dict(block_rectangle),
                                     rec_idx = rec_idx
                                 )
+                                add_area = self.level_img_decoder.get_area_between_used_blocks(new_block, next_used_blocks)
+                                used_area += block['area'] + add_area
                                 next_used_blocks.append(new_block)
-                                used_area += block['area']
                                 start_value += block[f'{primary_orientation}'] + 1
 
                                 if tree_node is not None:
@@ -552,7 +591,7 @@ class LevelImgDecoderVisualization:
                                 used_blocks = next_used_blocks,
                                 required_area = required_area,
                                 poly = poly,
-                                occupied_area = occupied_area + (rec['area'] if all_space_used else used_area),
+                                occupied_area = occupied_area + used_area,
                                 tree_node = new_child if tree_node is not None else None
                             )
 
@@ -602,5 +641,6 @@ if __name__ == '__main__':
     visualizer = LevelImgDecoderVisualization()
 
     # visualizer.visualize_one_decoding(level_img, material_id = 2, skip_first = True)
-    visualizer.visualize_rectangle(level_img, material_id = 2, desired_contour_idx = 1, filtered = True)
+    # visualizer.visualize_rectangle(level_img, material_id = 2, desired_contour_idx = 1, filtered = True)
+    visualizer.visualize_pig_position(level_img)
     # visualizer.visualize_rectangles(level_img, material_id = 2)

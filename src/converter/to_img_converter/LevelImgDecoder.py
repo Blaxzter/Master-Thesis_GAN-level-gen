@@ -185,7 +185,7 @@ class LevelImgDecoder:
 
     def select_blocks(self, rectangles, used_blocks, required_area, poly, occupied_area = 0):
         # Break condition
-        if occupied_area != 0 and abs(required_area / occupied_area - 1) < 0.1:
+        if occupied_area != 0 and abs(required_area / occupied_area - 1) < 0.01:
             return used_blocks
 
         if occupied_area > required_area or len(rectangles) == 0:
@@ -205,7 +205,6 @@ class LevelImgDecoder:
 
         # Go over each rectangle
         for rec_idx, rec in rectangles.items():
-            rx_1, rx_2, ry_1, ry_2 = (rec['min_x'], rec['max_x'], rec['min_y'], rec['max_y'])
 
             if rec['height'] in self.original_possible_height and rec['width'] in self.original_possible_width:
                 # Search for matching block sizes
@@ -260,7 +259,7 @@ class LevelImgDecoder:
                 fitting_blocks = {
                     k: _block for k, _block in self.block_data.items()
                     if (_block[primary_orientation] + 2) / rec[primary_orientation] - 1 < 0.001 and \
-                       abs((_block[secondary_orientation]) / rec[secondary_orientation] - 1) < 0.001
+                       (_block[secondary_orientation]) / rec[secondary_orientation] - 1 < 0.001
                 }
 
                 # No combination found for this block
@@ -270,21 +269,22 @@ class LevelImgDecoder:
                 for combination_amount in range(2, 5):
                     combinations = itertools.product(fitting_blocks.items(), repeat = combination_amount)
                     to_big_counter = 0
+                    combi_counter = 0
                     for combination in combinations:
-
-                        secondary_size = rec[secondary_orientation]
+                        combi_counter += 1
+                        secondary_size = combination[0][1][secondary_orientation]
 
                         # Only elements with the same secondary_orientation
-                        # secondary_direction_difference = np.sum(
-                        #     list(map(lambda block: abs(block[1][secondary_orientation] - secondary_size), combination)))
-                        # if secondary_direction_difference > 0.01:
-                        #     continue
+                        secondary_direction_difference = np.sum(
+                            list(map(lambda block: abs(block[1][secondary_orientation] - secondary_size), combination)))
+                        if secondary_direction_difference > 0.01:
+                            continue
 
                         # Check if the two blocks combined can fit in the space
-                        combined_height = np.sum(list(map(lambda block: block[1][primary_orientation], combination))) \
+                        combined_height = np.sum(list(map(lambda _block: _block[1][primary_orientation], combination))) \
                                           + (combination_amount - 1)
 
-                        height_difference = rec[primary_orientation] / (combined_height) - 1
+                        height_difference = rec[primary_orientation] / combined_height - 1
                         if abs(height_difference) < 0.001:
                             # the two blocks fit in the space
 
@@ -295,10 +295,20 @@ class LevelImgDecoder:
                             all_space_used = True
                             if rec[secondary_orientation] / secondary_size - 1 > 0.001:
                                 rectangle = np.ndarray.copy(rec['rectangle'])
-                                rectangle[0][idx_2] += secondary_size
-                                rectangle[1][idx_2] += secondary_size
+                                if primary_orientation == 'height':
+                                    rectangle[0][idx_2] += secondary_size + 1
+                                    rectangle[1][idx_2] += secondary_size + 1
+                                else:
+                                    rectangle[1][idx_2] += secondary_size + 1
+                                    rectangle[2][idx_2] += secondary_size + 1
 
                                 new_dict = self.create_rect_dict(rectangle)
+
+                                if new_dict['width'] <= 1 or new_dict['height'] <= 1 or \
+                                        new_dict['width'] not in self.possible_width or \
+                                        new_dict['height'] not in self.possible_height:
+                                    continue
+
                                 next_rectangles[len(rectangles)] = new_dict
                                 all_space_used = False
 
@@ -308,18 +318,37 @@ class LevelImgDecoder:
                             used_area = 0
                             for block_idx, block in combination:
                                 block_rectangle = np.ndarray.copy(rec['rectangle'])
-                                block_rectangle[1][idx_1] = start_value
-                                block_rectangle[2][idx_1] = start_value
+                                if primary_orientation == 'height':
+                                    block_rectangle[1][idx_1] = start_value
+                                    block_rectangle[2][idx_1] = start_value
 
-                                block_rectangle[0][idx_1] = start_value + block[f'{primary_orientation}']
-                                block_rectangle[3][idx_1] = start_value + block[f'{primary_orientation}']
+                                    block_rectangle[0][idx_1] = start_value + block[primary_orientation]
+                                    block_rectangle[3][idx_1] = start_value + block[primary_orientation]
+
+                                    if not all_space_used:
+                                        block_rectangle[2][idx_2] = block_rectangle[0][idx_2] + secondary_size
+                                        block_rectangle[3][idx_2] = block_rectangle[0][idx_2] + secondary_size
+                                else:
+                                    block_rectangle[0][idx_1] = start_value
+                                    block_rectangle[1][idx_1] = start_value
+
+                                    block_rectangle[2][idx_1] = start_value + block[primary_orientation]
+                                    block_rectangle[3][idx_1] = start_value + block[primary_orientation]
+
+                                    if not all_space_used:
+                                        block_rectangle[1][idx_2] = block_rectangle[0][idx_2] + secondary_size
+                                        block_rectangle[2][idx_2] = block_rectangle[0][idx_2] + secondary_size
+
+
+
                                 new_block = dict(
                                     block_type = block,
                                     rec = self.create_rect_dict(block_rectangle),
                                     rec_idx = rec_idx
                                 )
+                                add_area = self.get_area_between_used_blocks(new_block, next_used_blocks)
+                                used_area += block['area'] + add_area
                                 next_used_blocks.append(new_block)
-                                used_area += block['area']
                                 start_value += block[f'{primary_orientation}'] + 1
 
                             # Remove the current big rectangle
@@ -330,7 +359,7 @@ class LevelImgDecoder:
                                 used_blocks = next_used_blocks,
                                 required_area = required_area,
                                 poly = poly,
-                                occupied_area = occupied_area + (rec['area'] if all_space_used else used_area)
+                                occupied_area = occupied_area + used_area
                             )
 
                             if selected_blocks is not None:
@@ -341,7 +370,7 @@ class LevelImgDecoder:
                             to_big_counter += 1
 
                     # If all blocks combined were to big, we dont need to check more block combinations
-                    if to_big_counter > len(list(combinations)):
+                    if to_big_counter == combi_counter:
                         break
 
         # We tested everything and nothing worked :(
@@ -379,7 +408,7 @@ class LevelImgDecoder:
                 direct_vec[1] = 0 if direct_vec[1] == 0 else (-2 if direct_vec[1] > 1 else 2)
                 poly = translate(new_block['rec']['poly'], xoff = direct_vec[0], yoff = direct_vec[1])
                 intersection = poly.intersection(selected_block['rec']['poly'])
-                ret_area += intersection.area + 1
+                ret_area += intersection.area
 
         return ret_area
 
@@ -414,7 +443,9 @@ class LevelImgDecoder:
         return ret_level_elements
 
     def create_rect_dict(self, rectangle, poly = None):
-        ret_dict = dict(rectangle = rectangle)
+        sorted_rectangle = rectangle[np.lexsort((rectangle[:, 1], rectangle[:, 0]))]
+        sorted_rectangle[[2, 3]] = sorted_rectangle[[3, 2]]
+        ret_dict = dict(rectangle = sorted_rectangle)
         if poly is not None:
             ret_dict['contour_area'] = poly.area
 
