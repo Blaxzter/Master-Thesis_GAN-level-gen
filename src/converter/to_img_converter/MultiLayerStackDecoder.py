@@ -127,10 +127,6 @@ class MultiLayerStackDecoder:
         trimmed_img, trim_data = DecoderUtils.trim_img(layer, ret_trims = True)
         self.visualizer.plot_img(trimmed_img, title = 'Trimmed Img', flip = True)
 
-        if self.use_negative_air_value:
-            trimmed_img = (trimmed_img * 2) - 1
-            trimmed_img[trimmed_img == -1] = self.negative_air_value
-
         hit_probabilities, size_ranking = self.create_confidence_matrix(trimmed_img)
 
         if self.display_decoding:
@@ -147,6 +143,8 @@ class MultiLayerStackDecoder:
             self.visualizer.plot_matrix_complete(rounded_block_rankings, blocks = self.blocks, title = 'Selection Rankings', flipped = True)
 
         rounded_block_rankings[hit_probabilities <= self.cutoff_point] = 0
+        if self.display_decoding:
+            self.visualizer.plot_matrix_complete(rounded_block_rankings, blocks = self.blocks, title = 'Hit Probabilities clipped', flipped = True)
         selected_blocks = self.select_blocks(rounded_block_rankings, [], stop_condition, _covered_area = 0)
 
         ret_blocks = []
@@ -185,9 +183,14 @@ class MultiLayerStackDecoder:
 
             pad_value = self.negative_air_value if self.use_negative_air_value else 0
 
+            sum_img = np.copy(layer)
+            if self.use_negative_air_value:
+                sum_img = (sum_img * 2) - 1
+                sum_img[sum_img == -1] = self.negative_air_value
+
             pad_size = np.max(sum_convolution_kernel.shape)
 
-            sum_padded_img = np.pad(layer, pad_size, 'constant', constant_values = pad_value)
+            sum_padded_img = np.pad(sum_img, pad_size, 'constant', constant_values = pad_value)
             sum_result = cv2.filter2D(sum_padded_img, -1, sum_convolution_kernel)[pad_size:-pad_size, pad_size:-pad_size]
 
             avg_padded_img = np.pad(layer, pad_size, 'constant', constant_values = 0)
@@ -262,7 +265,7 @@ class MultiLayerStackDecoder:
         # Remove all blocks that cant work with that blocks together
         next_block_rankings = self.delete_blocks(_block_rankings, selected_block['idx'], block_position)
         if self.display_decoding:
-            self.display_block_deletion(_block_rankings, block_position, selected_block)
+            self.display_block_deletion(np.around(_block_rankings, 5), block_position, selected_block)
 
         next_blocks = _selected_blocks.copy()
         next_blocks.append(dict(
@@ -316,7 +319,7 @@ class MultiLayerStackDecoder:
         return padded_block_rankings[y_pad: -y_pad, x_pad: -x_pad]
 
     @staticmethod
-    def create_delete_block_matrices(_blocks):
+    def create_delete_block_matrices(_blocks, visualizer = None):
         """
         Function that creates a matrix that deletes the possible blocks at this location over the layer matrix
         """
@@ -332,9 +335,9 @@ class MultiLayerStackDecoder:
                 current_list = list()
 
                 left_extension = (center_block['width'] + 1) // 2
-                right_extension = ((center_block['width'] + 1) // 2) - (center_block['width'] % 2)
+                right_extension = ((center_block['width'] + 1) // 2)
                 top_extension = (center_block['height'] + 1) // 2
-                bottom_extension = ((center_block['height'] + 1) // 2) - (center_block['height'] % 2)
+                bottom_extension = ((center_block['height'] + 1) // 2)
 
                 x_max = -np.inf
                 y_max = -np.inf
@@ -359,6 +362,10 @@ class MultiLayerStackDecoder:
                     range_list = current_list,
                     x_max = x_max,
                     y_max = y_max,
+                    orig_rec = [-left_extension + (x_max // 2),
+                                right_extension + (x_max // 2),
+                                -top_extension + (y_max // 2),
+                                bottom_extension + y_max // 2]
                 )
             return ret_ranges
 
@@ -389,8 +396,17 @@ class MultiLayerStackDecoder:
                 delete_rectangles = delete_rectangles
             )
 
-            # width, height = self.blocks[block_idx]['width'], self.blocks[block_idx]['height']
-            # self.visualizer.plot_matrix_complete(matrix = multiply_matrix, blocks = self.blocks, title = f'{block_range["name"]} {width}, {height}')
+            if visualizer is not None:
+                width, height = _blocks[block_idx]['width'], _blocks[block_idx]['height']
+                title = f'{block_range["name"]} {width}, {height}'
+                delete_rectangles = [block_range['orig_rec'] for _ in range(len(_blocks))]
+                visualizer.plot_matrix_complete(matrix = multiply_matrix,
+                                                blocks = _blocks,
+                                                title = title,
+                                                add_max = False,
+                                                delete_rectangles = delete_rectangles,
+                                                position = [center_pos_y, center_pos_x])
+                print(title)
 
         return ret_matrices
 
@@ -457,5 +473,7 @@ class MultiLayerStackDecoder:
 
 if __name__ == '__main__':
     decoder = MultiLayerStackDecoder()
-    delete_matrix = decoder.create_delete_block_matrices(decoder.blocks)
+    decoder.visualizer.plot_show_immediately = True
+    delete_matrix = decoder.create_delete_block_matrices(decoder.blocks, decoder.visualizer)
+
 

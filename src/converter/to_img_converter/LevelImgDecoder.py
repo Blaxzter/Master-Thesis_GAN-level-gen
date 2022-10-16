@@ -52,6 +52,7 @@ class LevelImgDecoder:
         self.possible_height = self.original_possible_height + self.combined_possible_height
 
         self.level_viz = LevelVisualizer()
+        self.iterations = 0
 
     def decode_level(self, level_img, recalibrate_blocks = False):
         if level_img.shape[0] == 0 or level_img.shape[1] == 0:
@@ -87,7 +88,7 @@ class LevelImgDecoder:
                     rectangles, _ = MathUtil.get_rectangles(contour, poly)
 
                 rect_dict = self.get_rectangle_data(rectangles)
-
+                self.iterations = 0
                 # Select the blocks and designate the correct contour color as material
                 selected_blocks = self.select_blocks(
                     rectangles = rect_dict,
@@ -95,6 +96,7 @@ class LevelImgDecoder:
                     required_area = contour_data['required_area'],
                     poly = poly
                 )
+                print(f'Iterations {self.iterations}')
 
                 if selected_blocks is not None:
                     for selected_block in selected_blocks:
@@ -184,8 +186,11 @@ class LevelImgDecoder:
         return bird_positions
 
     def select_blocks(self, rectangles, used_blocks, required_area, poly, occupied_area = 0):
+        self.iterations += 1
+
         # Break condition
-        if occupied_area != 0 and abs(required_area / occupied_area - 1) < 0.01:
+        if occupied_area != 0 and abs(required_area / occupied_area - 1) < 0.05:
+            print(f'{required_area} / {occupied_area}')
             return used_blocks
 
         if occupied_area > required_area or len(rectangles) == 0:
@@ -347,7 +352,7 @@ class LevelImgDecoder:
                                     rec_idx = rec_idx
                                 )
                                 add_area = self.get_area_between_used_blocks(new_block, next_used_blocks)
-                                used_area += block['area'] + add_area
+                                used_area += block['area'] + add_area - (1 if add_area > 0 else 0)
                                 next_used_blocks.append(new_block)
                                 start_value += block[f'{primary_orientation}'] + 1
 
@@ -403,12 +408,13 @@ class LevelImgDecoder:
                 return -1
 
             if distance == 1:
-                direct_vec = np.rint(new_block['rec']['center_pos'] - selected_block['rec']['center_pos'])
+                major_vec = np.rint(new_block['rec']['center_pos'] - selected_block['rec']['center_pos'])
+                direct_vec = np.copy(major_vec)
                 direct_vec[0] = 0 if direct_vec[0] == 0 else (-2 if direct_vec[0] > 1 else 2)
                 direct_vec[1] = 0 if direct_vec[1] == 0 else (-2 if direct_vec[1] > 1 else 2)
                 poly = translate(new_block['rec']['poly'], xoff = direct_vec[0], yoff = direct_vec[1])
                 intersection = poly.intersection(selected_block['rec']['poly'])
-                ret_area += intersection.area
+                ret_area += intersection.area + 1
 
         return ret_area
 

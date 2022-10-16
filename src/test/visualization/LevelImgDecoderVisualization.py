@@ -28,7 +28,7 @@ class LevelImgDecoderVisualization:
 
         ts = TreeStyle()
         ts.scale = 10
-        ts.mode = "c"
+        # ts.mode = "c"
         # Disable the default tip names config
         ts.show_leaf_name = False
         ts.show_scale = False
@@ -376,7 +376,7 @@ class LevelImgDecoderVisualization:
     def visualize_select_blocks(self, rectangles, used_blocks, required_area, poly, tree_node, occupied_area = 0):
         from ete3 import Tree, TreeNode, TextFace, TreeStyle
         # Break condition
-        if occupied_area != 0 and abs(required_area / occupied_area - 1) < 0.01:
+        if occupied_area != 0 and abs(required_area / occupied_area - 1) < 0.05:
 
             if tree_node is not None:
                 name_face = TextFace(tree_node.name, fgcolor='green', fsize=10)
@@ -443,7 +443,7 @@ class LevelImgDecoderVisualization:
 
                     if tree_node is not None:
                         new_child = tree_node.add_child()
-                        name_face = TextFace(block['name'], fsize = 10)
+                        name_face = TextFace(f"{block['name']} - {rec_idx}" , fsize = 10)
                         new_child.add_face(name_face, column = 0, position = 'branch-right')
 
                     selected_blocks = self.visualize_select_blocks(
@@ -524,8 +524,8 @@ class LevelImgDecoderVisualization:
                                 new_dict = self.level_img_decoder.create_rect_dict(rectangle)
 
                                 if new_dict['width'] <= 1 or new_dict['height'] <= 1 or \
-                                        new_dict['width'] not in self.possible_width or \
-                                        new_dict['height'] not in self.possible_height:
+                                        new_dict['width'] not in self.level_img_decoder.possible_width or \
+                                        new_dict['height'] not in self.level_img_decoder.possible_height:
                                     continue
 
                                 next_rectangles[len(rectangles)] = new_dict
@@ -571,12 +571,12 @@ class LevelImgDecoderVisualization:
                                     rec_idx = rec_idx
                                 )
                                 add_area = self.level_img_decoder.get_area_between_used_blocks(new_block, next_used_blocks)
-                                used_area += block['area'] + add_area
+                                used_area += block['area'] + add_area - (1 if add_area > 0 else 0)
                                 next_used_blocks.append(new_block)
                                 start_value += block[f'{primary_orientation}'] + 1
 
                                 if tree_node is not None:
-                                    text_face_name += f"{block['name']} \n"
+                                    text_face_name += f"{block['name']} - {rec_idx} \n"
 
                             if tree_node is not None:
                                 name_face = TextFace(text_face_name, fsize = 10)
@@ -606,7 +606,7 @@ class LevelImgDecoderVisualization:
                             to_big_counter += 1
 
                     # If all blocks combined were to big, we dont need to check more block combinations
-                    if to_big_counter > len(list(combinations)):
+                    if to_big_counter > combi_counter:
                         break
 
         # We tested everything and nothing worked :(

@@ -30,7 +30,7 @@ class GanDecodingVisualization:
 
         if ax is None:
             fig, ax = plt.subplots(dpi = self.dpi)
-            im = ax.imshow(np.around(img, decimals=5))
+            im = ax.imshow(img)
 
             if title is not None:
                 ax.set_title(title)
@@ -59,9 +59,9 @@ class GanDecodingVisualization:
 
         else:
             if flip:
-                ax.imshow(np.flip(img, axis = 0))
+                ax.imshow(np.flip(img.astype(float), axis = 0))
             else:
-                ax.imshow(img)
+                ax.imshow(img.astype(float))
 
             if remove_ticks:
                 self.remove_ax_ticks(ax)
@@ -88,7 +88,7 @@ class GanDecodingVisualization:
 
             ax_title = ''
             if blocks is not None:
-                ax_title = blocks[layer_idx]['name'] + (f' {np.round(np.max(_plot_img).item() * 100) / 100}' if add_max else '')
+                ax_title = blocks[layer_idx]['name'] + (' (Vert) ' if blocks[layer_idx]['rotated'] else '') + (f' {np.round(np.max(_plot_img).item() * 100) / 100}' if add_max else '')
 
             self.plot_img(_plot_img, ax_title, ax = axs[layer_idx], flip = flipped, remove_ticks = True)
             color = 'blue' if (selected_block is not None and selected_block == layer_idx) else 'red'
@@ -112,8 +112,8 @@ class GanDecodingVisualization:
                         Rectangle((start, top), end - start, bottom - top,
                                   fill = False, color = color, linewidth = 1))
 
-        if title is not None:
-            fig.suptitle(title)
+        # if title is not None:
+        #     fig.suptitle(title)
 
         fig.tight_layout()
 
