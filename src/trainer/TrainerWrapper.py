@@ -50,6 +50,8 @@ class NetworkTrainer:
         else:
             iter_data = range(self.epochs)
 
+        self.visualizer.visualize(0, 0)
+
         for _ in iter_data:
             start_time = time.time()
 

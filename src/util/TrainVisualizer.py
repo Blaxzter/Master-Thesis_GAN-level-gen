@@ -21,7 +21,7 @@ class TensorBoardViz:
         self.model = model
         self.dataset = dataset
 
-        self.create_imgs = False
+        self.create_imgs = True
         self.show_imgs = show_imgs
         self.to_file = to_file
 
@@ -34,7 +34,7 @@ class TensorBoardViz:
         if to_file:
             Path(self.config.get_generated_image_store()).mkdir(parents=True, exist_ok=True)
 
-        self.to_be_created_images = 9
+        self.to_be_created_images = 3
         self.seed = self.model.create_random_vector_batch(self.to_be_created_images)
         self.train_img_data_dict = dict()
 
@@ -128,7 +128,7 @@ class TensorBoardViz:
         normal_img = self.dataset.reverse_norm_layer(img)
 
         self.train_img_data_dict[epoch] = dict(
-            imgs = normal_img,
+            imgs = img.numpy(),
             predictions = pred
         )
 
