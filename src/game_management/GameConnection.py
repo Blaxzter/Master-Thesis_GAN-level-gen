@@ -70,13 +70,14 @@ class GameConnection(threading.Thread):
             msg = self.response
             self.response = None
 
+        print(f'Received({self.port}): {msg}')
         return msg
 
     def game_response(self, message: str, client):
         if len(message) > 200:
             logger.debug(f"Game Response: {message[:200]}")
         else:
-            logger.debug(f"Game Response: {message[:200]}")
+            logger.debug(f"Game Response: {message}")
         self.response = json.loads(message)
         self.condition_object.acquire()
         self.condition_object.notify()
@@ -99,7 +100,7 @@ class GameConnection(threading.Thread):
     def start_game(self, game_path = '../science_birds/win-new/ScienceBirds.exe'):
         os_name = platform.system()
         if os_name == 'Windows':
-            self.game_process = new(game_path, shell = False, stdout = subprocess.DEVNULL, stderr = subprocess.STDOUT)
+            self.game_process = new([game_path, f'generatorPort', str(self.port)], shell = False, stdout = subprocess.DEVNULL, stderr = subprocess.STDOUT)
         elif os_name == 'Darwin':
             os.system(f"open {game_path}")
 
@@ -151,6 +152,7 @@ class GameConnection(threading.Thread):
         self.condition_object.release()
 
     def send(self, msg):
+        print(f"Send({self.port}): {msg}")
         self.response = None
         self.client.send(json.dumps(msg))
 
@@ -166,17 +168,17 @@ class GameConnection(threading.Thread):
         message = [0, 'loadscene', {'scene': 'LevelSelectMenu'}]
         self.send(message)
         self.wait_for_response()
-        response = None
-        while True:
-            if response is not None and 'data' in response[1] and response[1]['data'] == "True":
-                break
-
-            logger.debug(f"In loop: {response}")
-            logger.debug("Level Menu is loaded")
-            message = [0, 'levelsloaded']
-            self.send(message)
-            response = self.wait_for_response()
-            time.sleep(0.2)
+        # response = None
+        # while True:
+        #     if response is not None and 'data' in response[1] and response[1]['data'] == "True":
+        #         break
+        #
+        #     logger.debug(f"In loop: {response}")
+        #     logger.debug("Level Menu is loaded")
+        #     message = [0, 'levelsloaded']
+        #     self.send(message)
+        #     response = self.wait_for_response()
+        #     time.sleep(0.2)
 
     def wait_till_all_level_played(self):
         logger.debug("Wait for level played")
@@ -202,7 +204,20 @@ class GameConnection(threading.Thread):
             raise Exception("Dont stop time and wait for stable at the same time")
         message = [0, 'selectlevel', {'levelIndex': index, 'waitForStable': wait_for_stable, 'stopTime': stopTime}]
         self.send(message)
-        self.wait_for_response()
+        return self.wait_for_response()
+
+    def simulate_all_levels(self, start_idx = 0, end_idx = False, wait_for_stable = False, wait_for_response = True):
+        message = [0, 'simulatealllevels', {'startIndex': start_idx, 'waitForStable': wait_for_stable, 'endIndex': end_idx}]
+        self.send(message)
+        if wait_for_response:
+            return self.wait_for_response()
+        else:
+            return None
+
+    def go_to_menu(self):
+        message = [0, 'loadscene', {'scene': 'MainMenu'}]
+        self.send(message)
+        return self.wait_for_response()
 
     def stop_game(self):
         os_name = platform.system()

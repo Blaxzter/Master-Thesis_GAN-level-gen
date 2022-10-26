@@ -25,7 +25,8 @@ using System;
  using System.Globalization;
  using System.Linq;
  using SimpleJSON;
-using UnityEngine.SceneManagement;
+ using UnityEngine.Networking.NetworkSystem;
+ using UnityEngine.SceneManagement;
 
 delegate IEnumerator Handler(JSONNode data, WebSocket serverSocket);
 
@@ -39,6 +40,7 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 {
 
 	public bool _levelLoaded = false;
+	public bool _sceneChanged = false;
 	Dictionary<String, Handler> handlers;
 	WebSocket generatorWebSocket;
 	WebSocket aiWebSocket;
@@ -267,9 +269,68 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 	#else
 		serverSocket.Send(message);	
 	#endif
-
 	}
 
+	IEnumerator SimulateAllLevels(JSONNode data, WebSocket serverSocket) {
+
+		yield return new WaitForEndOfFrame ();
+		
+		int startIndex = data[2]["startIndex"].AsInt;
+		int endIndex = data[2]["endIndex"].AsInt;
+		bool waitForStable = data[2]["waitForStable"].AsBool;
+
+		LevelList levelList = LevelList.Instance;
+		var lastLevelIndex = startIndex;
+		
+		if (endIndex == -1)
+		{
+			endIndex = levelList.AmountOfLoadedLevels();
+		}
+		
+		for (int levelIndex = startIndex; levelIndex < levelList.AmountOfLoadedLevels() && levelIndex < endIndex; levelIndex++)
+		{
+			SceneChanged = false;
+			
+			lastLevelIndex = levelIndex;
+			levelList.SetLevel(levelIndex);
+			ABSceneManager.Instance.LoadScene ("GameWorld");
+
+			while (SceneChanged == false)
+			{
+				yield return new WaitForSeconds(0.01f);
+			}
+
+			var currentLevelData = levelList.GetCurrentLevelData();
+			if (waitForStable)
+			{
+				while (!ABGameWorld.Instance.IsLevelStable())
+				{
+					print("Not Stable " + levelList.CurrentIndex + " level stability " + ABGameWorld.Instance.GetLevelStability());
+					currentLevelData.IsStable = false;
+					yield return new WaitForSeconds(0.1f);
+				}
+				currentLevelData.InitialDamage = currentLevelData.CumulativeDamage;
+				print("Stable: " + currentLevelData.InitialDamage);			
+			}
+		}
+
+		string msgData = "[" + String.Join(",", LevelList.Instance.GetAllLevelData().Select(pair => pair.Value.GetJson()).ToArray()) + "]";
+
+		Message msg = new Message ();
+		msg.data = "{\"levelData\": " + msgData + ", \"loadedLevels\": " + levelList.AmountOfLoadedLevels() + ", \"levelIndex\": " + lastLevelIndex + "}";
+		msg.time = DateTime.Now.ToString ();
+		
+		string id = data [0];
+		string json = JsonUtility.ToJson (msg);
+		string message = "[" + id + "," + json + "]";
+
+	#if UNITY_WEBGL && !UNITY_EDITOR
+		serverSocket.Send(System.Text.Encoding.UTF8.GetBytes(message));
+	#else
+		serverSocket.Send(message);	
+	#endif
+	}
+	
 	IEnumerator LoadScene(JSONNode data, WebSocket serverSocket) {
 
 		yield return new WaitForEndOfFrame ();
@@ -277,11 +338,20 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		string scene = data[2]["scene"];
 		if (scene.Equals("LevelSelectMenu"))
 		{
+			_levelLoaded = false;
 			LevelList.Instance.ClearLevelData();
 		}
 		
 		ABSceneManager.Instance.LoadScene (scene);
 
+		if (scene.Equals("LevelSelectMenu"))
+		{
+			while (_levelLoaded == false)
+			{
+				yield return new WaitForSeconds(0.2f);
+			}
+		}
+		
 		string id = data [0];
 		string message = "[" + id + "," + "{}" + "]";
 
@@ -536,6 +606,7 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		handlers ["gamestate"]    = GameState;
 		handlers ["loadscene"]    = LoadScene;
 		handlers ["selectlevel"]  = SelectLevel;
+		handlers ["simulatealllevels"]  = SimulateAllLevels;
 		handlers ["score"]        = Score;
 		handlers ["getdata"]      = GetData;
 		handlers ["levelsloaded"] = LevelsLoaded;
@@ -545,14 +616,32 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 		handlers ["clearleveldata"] = ClearLevelData;
 	}
 
+	private static string GetArg(string name)
+	{
+		var args = System.Environment.GetCommandLineArgs();
+		for (int i = 0; i < args.Length; i++)
+		{
+			if (args[i] == name && args.Length > i + 1)
+			{
+				return args[i + 1];
+			}
+		}
+		return null;
+	}
+	
 	// Use this for initialization
 	IEnumerator Start () {
 
 		DontDestroyOnLoad (this.gameObject);
 
 		InitHandlers ();
-		
-		generatorWebSocket = new WebSocket(new Uri("ws://localhost:9001/"));
+
+		string generatorPortArg = GetArg("generatorPort");
+		int generatorPort = 9001;
+		if (generatorPortArg != null)
+			generatorPort = int.Parse(generatorPortArg);
+
+		generatorWebSocket = new WebSocket(new Uri("ws://localhost:" + generatorPort + "/"));
 		yield return StartCoroutine(generatorWebSocket.Connect());
 
 		stored_time = Time.timeScale;
@@ -582,7 +671,7 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 			if (generatorWebSocket.error != null) {
 				yield return new WaitForSeconds (1);
 
-				generatorWebSocket = new WebSocket(new Uri("ws://localhost:9001/"));
+				generatorWebSocket = new WebSocket(new Uri("ws://localhost:" + generatorPort + "/"));
 				yield return StartCoroutine(generatorWebSocket.Connect());
 			}
 
@@ -642,5 +731,11 @@ public class AIBirdsConnection : ABSingleton<AIBirdsConnection>
 	{
 		get { return _levelLoaded; }
 		set { _levelLoaded = value; }
+	}
+
+	public bool SceneChanged
+	{
+		get { return _sceneChanged; }
+		set { _sceneChanged = value; }
 	}
 }

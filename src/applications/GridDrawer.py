@@ -137,10 +137,10 @@ class GridDrawer:
         x_index = round((event.x + (self.rec_width / 2) - 0) / self.rec_width)
         y_index = round((event.y + (self.rec_height / 2) - 0) / self.rec_height)
 
-        block_name, x_axis, x_pos, y_axis, y_pos = self.get_block_position(x_index, y_index, self.selected_block)
+        block_name, x_axis, x_pos, y_axis, y_pos, rotated = self.get_block_position(x_index, y_index, self.selected_block)
 
         if not clear:
-            self.set_block(block_name, fill_color, self.material_id, x_axis, x_pos, y_axis, y_pos)
+            self.set_block(block_name, fill_color, self.material_id, x_axis, x_pos, y_axis, y_pos, rotated = rotated)
 
         single_element = self.draw_mode.get() != '' and self.draw_mode.get() != 'LevelImg'
         level_width, level_height = self.get_level_dims(tab)
@@ -180,7 +180,7 @@ class GridDrawer:
         x_index = round((event.x + (self.rec_width / 2) - 0) / self.rec_width)
         y_index = round((event.y + (self.rec_height / 2) - 0) / self.rec_height)
 
-        block_name, x_axis, x_pos, y_axis, y_pos = self.get_block_position(x_index, y_index, self.selected_block)
+        block_name, x_axis, x_pos, y_axis, y_pos, rotated = self.get_block_position(x_index, y_index, self.selected_block)
 
         single_element = self.draw_mode.get() != 'LevelImg'
         level_width, level_height = self.get_level_dims(tab)
@@ -213,9 +213,9 @@ class GridDrawer:
         y_axis = np.array([y for y in range(y_index, y_index + block_height)])
         x_pos = x_axis * self.rec_width - self.rec_width / 2
         y_pos = y_axis * self.rec_height - self.rec_height / 2
-        return block_name, x_axis, x_pos, y_axis, y_pos
+        return block_name, x_axis, x_pos, y_axis, y_pos, block_height > block_width
 
-    def set_block(self, block_name, fill_color, material_id, x_axis, x_pos, y_axis, y_pos, tab = -1):
+    def set_block(self, block_name, fill_color, material_id, x_axis, x_pos, y_axis, y_pos, tab = -1, rotated = False):
         if tab == -1: tab = self.selected_tab
 
         single_element = self.draw_mode.get() != '' and self.draw_mode.get() != 'LevelImg'
@@ -261,8 +261,11 @@ class GridDrawer:
                         # Only set center element
                         if single_element:
                             if x_idx == centerpos[0] and y_idx == centerpos[1]:
-                                elements[y_idx, x_idx] = (list(Constants.block_names.values()).index(
-                                    block_name) + 1) + (material_id - 1) * 13
+                                if block_name == 'bird':
+                                    elements[y_idx, x_idx] = 40
+                                else:
+                                    elements[y_idx, x_idx] = (list(Constants.block_names.values()).index(
+                                        block_name) + 1 + (1 if rotated else 0)) + (material_id - 1) * 13
                         else:
                             elements[y_idx, x_idx] = material_id
 
@@ -311,7 +314,7 @@ class GridDrawer:
 
             new_block = (random_block['width'] + 1, random_block['height'] + 1, random_block['name'])
 
-            block_name, x_axis, x_pos, y_axis, y_pos = self.get_block_position(random_x, random_y, new_block)
+            block_name, x_axis, x_pos, y_axis, y_pos, rotated = self.get_block_position(random_x, random_y, new_block)
             xx, yy = np.meshgrid(x_axis, y_axis)
             positions = np.vstack([xx.ravel(), yy.ravel()])
 

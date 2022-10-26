@@ -7,9 +7,13 @@ namespace Levels
         private readonly int _levelIndex;
 
         private int _death = -1;
+        private int _woodBlockDestroyed = 0;
+        private int _iceBlockDestroyed = 0;
+        private int _stoneBlockDestroyed = 0;
+        
         private int _birdsUsed = -1;
-        private float _cumulativeDamage = -1;
         private float _initialDamage = -1;
+        private float _cumulativeDamage = -1;
 
         private bool _isStable = true;
         private bool _hasBeenPlayed = false;
@@ -32,6 +36,9 @@ namespace Levels
                     "\"initial_damage\": " + _initialDamage + "," +
                     "\"is_stable\": " + (_isStable ? "true" : "false") + "," +
                     "\"death\": " + _death + "," +
+                    "\"woodBlockDestroyed\": " + _woodBlockDestroyed + "," +
+                    "\"iceBlockDestroyed\": " + _iceBlockDestroyed + "," +
+                    "\"stoneBlockDestroyed\": " + _stoneBlockDestroyed + "," +
                     "\"birds_used\": " + _birdsUsed + "," +
                     "\"has_been_played\": " + (_hasBeenPlayed ? "true" : "false") + "," +
                     "\"won\": " + (_won ? "true" : "false") + "," +
@@ -90,6 +97,24 @@ namespace Levels
         public int LevelIndex
         {
             get { return _levelIndex; }
+        }
+
+        public int WoodBlockDestroyed
+        {
+            get { return _woodBlockDestroyed; }
+            set { _woodBlockDestroyed = value; }
+        }
+
+        public int IceBlockDestroyed
+        {
+            get { return _iceBlockDestroyed; }
+            set { _iceBlockDestroyed = value; }
+        }
+
+        public int StoneBlockDestroyed
+        {
+            get { return _stoneBlockDestroyed; }
+            set { _stoneBlockDestroyed = value; }
         }
     }
 }

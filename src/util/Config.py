@@ -110,6 +110,12 @@ class Config:
         self.eval_root = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/eval/')
         )
+        self.metrics_root = os.path.normpath(
+            os.path.join(self.current_path, 'resources/data/eval/fids/')
+        )
+        self.grid_search_root = os.path.normpath(
+            os.path.join(self.current_path, 'resources/data/eval/grid_search/')
+        )
         self.encoding_folder = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/encoding_data')
         )
@@ -284,6 +290,14 @@ class Config:
     def get_eval_file(self, file_name):
         text_folder = os.path.join(self.eval_root, file_name)
         return text_folder + ".json"
+
+    def get_fids_file(self, file_name):
+        text_folder = os.path.join(self.metrics_root, file_name)
+        return text_folder + ".json"
+
+    def get_grid_search_file(self, file_name):
+        text_folder = os.path.join(self.grid_search_root, file_name)
+        return text_folder + ".pickle"
 
     def get_conv_debug_img_file(self, file_name):
         img_file = os.path.join(self.conv_debug, file_name)

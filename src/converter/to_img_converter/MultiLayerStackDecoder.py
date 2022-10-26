@@ -64,7 +64,8 @@ class MultiLayerStackDecoder:
 
             if self.display_decoding:
                 self.visualizer.plot_img(flattened_img, title = 'Flattened Img', flip = True)
-                level_blocks = self.decode_layer(flattened_img, -1)
+
+            level_blocks = self.decode_layer(flattened_img, -1)
 
             # Get block material by going over each block and check which material is the most confident at this location
             for block in level_blocks:
@@ -248,7 +249,8 @@ class MultiLayerStackDecoder:
         return bird_positions
 
     def select_blocks(self, _block_rankings, _selected_blocks: List, _stop_condition: float, _covered_area: float = 0):
-        print(_covered_area, _stop_condition)
+        if self.display_decoding:
+            print(_covered_area, _stop_condition)
         # if _stop_condition - _covered_area < 1:
         #     return _selected_blocks
 
@@ -259,8 +261,9 @@ class MultiLayerStackDecoder:
         selected_block = self.blocks[next_block[-1]]
         block_position = np.array(next_block[0:2])
 
-        description = f"Selected Block: {selected_block['name']} with {_block_rankings[next_block]} area with {len(_selected_blocks)} selected"
-        print(description)
+        if self.display_decoding:
+            description = f"Selected Block: {selected_block['name']} with {_block_rankings[next_block]} area with {len(_selected_blocks)} selected"
+            print(description)
 
         # Remove all blocks that cant work with that blocks together
         next_block_rankings = self.delete_blocks(_block_rankings, selected_block['idx'], block_position)

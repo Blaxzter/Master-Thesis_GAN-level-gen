@@ -99,7 +99,7 @@ class LevelVisualizer:
                 bottom_left[0] = bottom_left[0] * scale_to[1] / meta_data.max_x
                 bottom_left[1] = bottom_left[1] * scale_to[0] / meta_data.max_y
 
-                height *= scale_to[0]  / meta_data.max_y
+                height *= scale_to[0] / meta_data.max_y
                 width *= scale_to[1] / meta_data.max_x
 
             # Create the matplotlib patch for each element type

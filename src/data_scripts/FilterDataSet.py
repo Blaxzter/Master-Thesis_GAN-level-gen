@@ -11,7 +11,6 @@ from level.LevelReader import LevelReader
 from level.LevelUtil import StructureMetaData
 from util.Config import Config
 
-
 def load_data(data_name):
     with open(data_name, 'rb') as f:
         data = pickle.load(f)
@@ -19,7 +18,7 @@ def load_data(data_name):
 
 
 def get_level_from_data(data_key, data_example):
-    level_path = config.get_instance().get_data_train_path('generated/single_structure')
+    level_path = Config.get_instance().get_data_train_path('generated/single_structure')
     level_names = list(Path(level_path).glob("*"))
     parsed_level_names = list(map(lambda x: x.name[:-4], level_names))
     key_name = data_key.split(os.sep)[-1][:-2]
@@ -188,23 +187,29 @@ def view_files_with_prop(data, amount = -1, min_width = -1, max_width = -1, min_
     print(f'Showed {counter} files')
 
 
-def filter_level(data, out_file, plt_show = False):
-    meta_data_list = []
+def filter_level(data, out_file, plt_show = 0, skip_value = 5):
+    comp_data_list = []
     temp_data = []
+
+    plt_counter = 0
+    remove_counter = 0
 
     out_dict = dict()
     for key in list(data.keys()):
         level_data = data[key]
         meta_data: StructureMetaData = level_data['meta_data']
         if meta_data.block_amount <= 0:
+            remove_counter += 1
             continue
 
-        for idx, comp_meta_data in enumerate(meta_data_list):
-            if comp_meta_data == meta_data:
-                if plt_show:
+        for idx, comp_data in enumerate(comp_data_list):
+
+            if comp_data['meta_data'] == meta_data:
+                remove_counter += 1
+                if plt_counter < plt_show and plt_counter % skip_value == 0:
                     comp_level = temp_data[idx]
-                    fig, axs = plt.subplots(1, 2)
-                    fig.suptitle("Found same metadata")
+                    fig, axs = plt.subplots(1, 2, dpi = 100)
+                    # fig.suptitle("Found same metadata")
 
                     level_data_shape = comp_level.shape
                     axs[0].set_title(str(level_data_shape))
@@ -214,19 +219,39 @@ def filter_level(data, out_file, plt_show = False):
                     axs[1].set_title(str(level_data_shape))
                     axs[1].imshow(level_data['img_data'])
                     plt.show()
+                    plt_counter += 1
 
                 continue
 
+            if level_data['img_data'].shape == comp_data['level_rep'].shape:
+                orig_only_ones = np.zeros_like(level_data['img_data'])
+                comp_only_ones = np.zeros_like(comp_data['level_rep'])
+
+                orig_only_ones[level_data['img_data'] > 0] = 1
+                comp_only_ones[comp_data['level_rep'] > 0] = 1
+
+                negativ = orig_only_ones - comp_only_ones
+                if np.alltrue(negativ == 0):
+                    remove_counter += 1
+                    fig, axs = plt.subplots(1, 2, dpi = 100)
+                    fig.suptitle("Same shape")
+                    axs[0].imshow(level_data['img_data'])
+                    axs[1].imshow(comp_data['level_rep'])
+                    plt.show()
+                    continue
+
         temp_data.append(level_data['img_data'])
-        meta_data_list.append(meta_data)
+        comp_data_list.append(dict(meta_data = meta_data, level_rep = level_data['img_data']))
         out_dict[key] = level_data
+
+    print(f'Removed {remove_counter}')
 
     with open(out_file, 'wb') as handle:
         pickle.dump(out_dict, handle, protocol = pickle.HIGHEST_PROTOCOL)
 
 
 def unify_level(data_dict, out_file):
-    fig, axs = plt.subplots(1, 3, dpi = 300, figsize = (12, 4))
+    fig, axs = plt.subplots(1, 3, dpi = 100, figsize = (12, 4))
 
     height_groups = dict()
     # Group level by height
@@ -284,7 +309,7 @@ def unify_level(data_dict, out_file):
         pickle.dump(save_dict, handle, protocol = pickle.HIGHEST_PROTOCOL)
 
 
-def create_filtered_dataset(data_set_name):
+def create_filtered_dataset(data_set_name, show_plt = False):
     config = Config.get_instance()
     file_name = config.get_data_set(folder_name = data_set_name, file_name = 'original')
     # data_dict = load_data("../resources/data/pickles/level_data_with_screenshot")
@@ -298,7 +323,7 @@ def create_filtered_dataset(data_set_name):
         folder_name = data_set_name,
         file_name = "filtered"
     )
-    filter_level(data_dict, out_file = out_file_filtered)
+    filter_level(data_dict, out_file = out_file_filtered, plt_show = show_plt)
     data_set = config.get_data_set(folder_name = data_set_name, file_name = f'filtered')
     data_dict = load_data(data_set)
     out_file_filtered = config.get_data_set(folder_name = data_set_name,
@@ -307,7 +332,7 @@ def create_filtered_dataset(data_set_name):
 
 
 if __name__ == '__main__':
-    create_filtered_dataset(data_set_name = 'multilayer_with_air')
+    create_filtered_dataset(data_set_name = 'simple_encoding', show_plt = True)
 
     # root_pickle_file = 'original'
     # config = Config.get_instance()

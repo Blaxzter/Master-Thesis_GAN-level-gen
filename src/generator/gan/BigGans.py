@@ -146,11 +146,11 @@ class WGANGP128128_Multilayer(IGAN):
 
 
 if __name__ == '__main__':
-    gan = WGANGP128128_Multilayer()
+    gan = WGANGP128128()
     gan.print_summary()
 
     created_img, img_probability = gan.create_img()
 
-    plt.imshow(created_img)
-    plt.suptitle(f'Probability: {img_probability}')
-    plt.show()
+    # plt.imshow(created_img)
+    # plt.suptitle(f'Probability: {img_probability}')
+    # plt.show()

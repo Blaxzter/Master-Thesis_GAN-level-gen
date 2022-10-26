@@ -17,8 +17,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>
 //
 
-﻿using UnityEngine;
+ using UnityEngine;
 using System.Collections;
+ using Levels;
 
 public class ABBlock : ABGameObject {
 
@@ -41,6 +42,14 @@ public class ABBlock : ABGameObject {
 		if(!ABGameWorld.Instance._isSimulation)
 			ScoreHud.Instance.SpawnScorePoint(_points, transform.position);
 
+		LevelData levelData = LevelList.Instance.GetCurrentLevelData();
+		if (_material == MATERIALS.ice)
+			levelData.IceBlockDestroyed += 1;
+		else if (_material == MATERIALS.wood)
+			levelData.WoodBlockDestroyed += 1;
+		else if (_material == MATERIALS.stone)
+			levelData.StoneBlockDestroyed += 1;
+		
 		base.Die();
 	}
 

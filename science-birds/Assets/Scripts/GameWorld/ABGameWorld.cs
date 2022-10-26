@@ -238,6 +238,7 @@ public class ABGameWorld : ABSingleton<ABGameWorld> {
 		}
 		
 		StartWorld();
+		AIBirdsConnection.Instance.SceneChanged = true;
 	}
 
 	// Update is called once per frame

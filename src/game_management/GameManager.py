@@ -49,18 +49,42 @@ class GameManager:
         logger.debug("Stop Game Components")
         self.game_connection.stop_components()
 
-    def switch_to_level(self, level, element_idx = 4, stop_time = False):
-        self.switch_to_level_elements(level.get_used_elements(), element_idx, stop_time)
+    def simulate_all_levels(self, start_idx = 0, end_idx = False, wait_for_stable = False, wait_for_response = False):
+        self.game_connection.load_level_menu()
+        return self.game_connection.simulate_all_levels(start_idx, end_idx, wait_for_stable, wait_for_response)
 
-    def switch_to_level_elements(self, elements, element_idx = 4, stop_time = False):
-        level_reader = LevelReader()
-        level = level_reader.create_level_from_structure(elements, red_birds = True)
+    def switch_to_level(self, level, element_idx = 4, stop_time = False, wait_for_stable = False):
+        return self.switch_to_level_elements(level.get_used_elements(), element_idx, stop_time, wait_for_stable)
+
+    def switch_to_level_elements(self, elements, element_idx = 4, stop_time = False, wait_for_stable = False):
+        level_path = self.create_level_xml_file(element_idx, elements)
+
+        return self.change_level(path = str(level_path), stopTime = stop_time, wait_for_stable = wait_for_stable)
+
+    def create_levels_xml_file(self, level_list, delete_previous = True):
+        level_paths = []
+
+        if delete_previous:
+            for level in Path(self.conf.get_data_train_path(folder = 'temp')).glob('*.*'):
+                os.remove(level)
+
+        for level_idx, level in enumerate(level_list):
+
+            level_path = self.create_level_xml_file(
+                element_idx = level_idx + 4,
+                elements = level.get_used_elements()
+            )
+            level_paths.append(level_path)
+
+        return level_paths
+
+    def create_level_xml_file(self, element_idx, elements):
+        level = self.level_reader.create_level_from_structure(elements, red_birds = True)
         level_folder = self.conf.get_data_train_path(folder = 'temp')
         level_number = f'0{element_idx}' if len(str(element_idx)) == 1 else str(element_idx)
         level_path = f'{level_folder}/level-{level_number}.xml'
-        level_reader.write_xml_file(level, level_path)
-
-        self.change_level(path = str(level_path), stopTime = stop_time)
+        self.level_reader.write_xml_file(level, level_path)
+        return level_path
 
     def copy_game_levels(self, level_path = None, rescue_level = None):
         if rescue_level is None:
@@ -94,14 +118,13 @@ class GameManager:
         if delete_level:
             for level in Path(self.conf.get_game_level_path()).glob('*.*'):
                 os.remove(level)
+
         shutil.copy(str(path), self.conf.get_game_level_path())
         self.game_connection.load_level_menu()
-        self.game_connection.change_level(index = 4, wait_for_stable = wait_for_stable, stopTime = stopTime)
-        pass
+        return self.game_connection.change_level(index = 4, wait_for_stable = wait_for_stable, stopTime = stopTime)
 
     def create_img_of_level(self, index = 4):
-        self.game_connection.load_level_menu()
-        self.game_connection.change_level(index = index)
+        self.select_level(index)
         return self.get_img()
 
     def get_img(self, structure = True):
@@ -115,3 +138,10 @@ class GameManager:
     def remove_game_levels(self):
         for level in Path(self.conf.get_game_level_path()).glob('*.*'):
             os.remove(level)
+
+    def select_level(self, i):
+        self.game_connection.load_level_menu()
+        self.game_connection.change_level(index = i)
+
+    def go_to_menu(self):
+        self.game_connection.go_to_menu()

@@ -73,6 +73,7 @@ def create_level_data_multi_structure(original_data_level, p_dict, lock):
 
         if use_screen_shot:
             level_screenshot = game_connection.create_level_img(structure = True)
+
         if use_ai:
             game_connection.startAi(start_level = 4, end_level = 4, print_ai_log = True)
 

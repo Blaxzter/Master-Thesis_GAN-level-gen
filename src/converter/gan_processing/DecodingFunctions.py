@@ -17,6 +17,9 @@ class DecodingFunctions:
         self.max_value = max_value
         self.shift_value = shift_value
 
+    def rescale(self, orig_img):
+        return self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
+
     def default_rint_rescaling(self, orig_img):
         norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
         return np.rint(norm_img), None
@@ -40,8 +43,11 @@ class DecodingFunctions:
         stacked_img = np.dstack((np.zeros((128, 128)) + threshold, norm_img))
         return np.argmax(stacked_img, axis = 2), norm_img
 
-    def argmax_multilayer_decoding_with_air(self, orig_img):
-        norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
+    def argmax_multilayer_decoding_with_air(self, orig_img, rescale = True):
+        if rescale:
+            norm_img = self.rescaling(self.max_value / 2)(orig_img + self.shift_value).numpy()
+        else:
+            norm_img = orig_img
 
         threshold = float(self.threshold_callback())
         norm_img[norm_img[:, :, 0] < threshold, 0] = 0

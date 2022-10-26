@@ -39,6 +39,7 @@ class GeneratorApplication:
         self.single_element = False
         self.rescaling = None
         self.seed = None
+        self.small_version = False
 
         self.model_loads = {
             'Standard GAN Old': self.load_model_0,
@@ -89,13 +90,6 @@ class GeneratorApplication:
             fig, ax = plt.subplots(1, 1, dpi = 100)
         else:
             self.level_drawer.clear_figure_canvas()
-            for i in range(len(self.level_drawer.tabs)):
-                fig, ax = self.level_drawer.new_fig()
-                self.level_drawer.tabs[i]['fig'] = fig
-                self.level_drawer.tabs[i]['ax'] = ax
-
-            fig = self.level_drawer.tabs[0]['fig']
-            ax = self.level_drawer.tabs[0]['ax']
 
         # Use the defined decoding algorithm
         img, norm_img = self.img_decoding(orig_img[0])
@@ -107,7 +101,10 @@ class GeneratorApplication:
 
         trimmed_img, trim_data = DecoderUtils.trim_img(img.reshape(img.shape[0:2]), ret_trims = True)
         self.main_visualization = trimmed_img
+
+        fig, ax = self.level_drawer.new_fig()
         self.create_plt_img(ax, fig, f'Probability {pred.item()}', viz_img)
+        self.level_drawer.add_tab_to_fig_canvas(fig, ax, name = f'Flatted Img')
 
         if self.level_drawer is None:
             self.canvas = FigureCanvasTkAgg(fig, master = self.window)
@@ -118,14 +115,16 @@ class GeneratorApplication:
             self.toolbar = NavigationToolbar2Tk(self.canvas, self.window)
             self.toolbar.update()
         else:
-            self.level_drawer.draw_img_to_fig_canvas(tab = 0)
+            # Draw combined img to level
+            depth = orig_img.shape[-1]
+            self.level_drawer.grid_drawer.create_tab_panes(1 if depth == 1 else depth + 1)
             self.level_drawer.draw_level(trimmed_img, tab = 0)
 
-            for i in range(1, len(self.level_drawer.tabs)):
-                fig = self.level_drawer.tabs[i]['fig']
-                ax = self.level_drawer.tabs[i]['ax']
+            for i in range(1, depth):
+                fig, ax = self.level_drawer.new_fig()
                 self.create_plt_img(ax, fig, f'Layer {i}', orig_img[0, :, :, i - 1])
-                self.level_drawer.draw_img_to_fig_canvas(tab = i)
+                self.level_drawer.add_tab_to_fig_canvas(fig, ax, name = f'Layer {i}')
+
                 top_space, bottom_space, left_space, right_space = trim_data
                 bottom_trim = norm_img.shape[0] - bottom_space
                 right_trim = norm_img.shape[1] - right_space
@@ -168,9 +167,6 @@ class GeneratorApplication:
             logger.debug("Initializing from scratch.")
 
         orig_img, pred = self.gan.create_img(self.seed)
-        depth = orig_img.shape[-1]
-        self.level_drawer.grid_drawer.create_tab_panes(1 if depth == 1 else depth + 1)
-        self.level_drawer.create_img_tab_panes(1 if depth == 1 else depth + 1)
         self.generate_img(created_img = (orig_img, pred))
 
     def new_seed(self):
@@ -243,7 +239,7 @@ class GeneratorApplication:
         # Display loaded images
         wrapper = Canvas(self.top_frame)
         wrapper.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
-        label = Label(wrapper, text = "Loaded Model:")
+        label = Label(wrapper, text = "Loaded output:")
         label.pack(side = TOP)
 
         self.stored_images = ttk.Combobox(wrapper, textvariable = self.load_stored_img, width = 30, state = "readonly")

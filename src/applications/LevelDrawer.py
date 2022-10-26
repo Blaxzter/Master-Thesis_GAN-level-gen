@@ -34,7 +34,7 @@ class LevelDrawer:
         self.draw_area_height = 600
 
         self.master = Tk()
-        self.master.title("Painting using Ovals")
+        self.master.title("Level creator and Decoder")
         self.master.bind('<Key>', lambda event: self.key_event(event))
 
         self.selected_block = None
@@ -146,7 +146,7 @@ class LevelDrawer:
     def control_buttons(self):
 
         self.recalibrate_button = Checkbutton(self.top_frame, text = "Recalibrate", variable = self.recalibrate)
-        self.recalibrate_button.pack()
+        self.recalibrate_button.pack(side = LEFT, padx = (20, 10))
 
         # button that displays the plot
         self.decode_level = Button(self.top_frame, command = lambda: self.create_level(), height = 2,
@@ -273,8 +273,9 @@ class LevelDrawer:
                 recalibrate = self.recalibrate.get(),
                 small_version = self.generator_application.small_version
             )
+        if self.draw_mode.get() == 'LevelImg':
+            ax.imshow(np.flip(temp_level_img, axis = 0), origin = 'lower')
 
-        ax.imshow(np.flip(temp_level_img, axis = 0), origin = 'lower')
         self.level_visualizer.create_img_of_structure(
             self.level.get_used_elements(), use_grid = False, ax = ax, scaled = True
         )

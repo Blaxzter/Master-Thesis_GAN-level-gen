@@ -208,11 +208,11 @@ if __name__ == '__main__':
         layers.RandomFlip("horizontal")
     ])
 
-    gan = SimpleGAN100116(
-        data_augmentation = data_augmentation
-    )
+    gan = SimpleGAN88212()
 
-    random_vec = gan.create_random_vector()
-    generated_img = gan.generator(random_vec)
-    plt.imshow(generated_img[0, :, :, 0])
-    plt.show()
+    gan.print_summary()
+
+    # random_vec = gan.create_random_vector()
+    # generated_img = gan.generator(random_vec)
+    # plt.imshow(generated_img[0, :, :, 0])
+    # plt.show()
