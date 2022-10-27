@@ -9,7 +9,6 @@ from pathlib import Path
 import tensorflow as tf
 from matplotlib import pyplot as plt
 
-from converter.to_img_converter.LevelIdImgDecoder import LevelIdImgDecoder
 from level.LevelVisualizer import LevelVisualizer
 from util.Config import Config
 
@@ -17,11 +16,12 @@ from util.Config import Config
 class TensorBoardViz:
     def __init__(self, model, dataset, current_run = 'simple_gan', show_imgs = False, to_file = False):
 
+        self.create_run_imgs = True
         self.config: Config = Config.get_instance()
         self.model = model
         self.dataset = dataset
 
-        self.create_imgs = True
+        self.create_imgs = False
         self.show_imgs = show_imgs
         self.to_file = to_file
 
@@ -43,7 +43,7 @@ class TensorBoardViz:
 
         self.one_encoding = self.config.one_encoding
         self.multilayer = self.config.multilayer
-        self.level_decoder = LevelIdImgDecoder()
+
         self.level_visualizer = LevelVisualizer()
 
         # self.visualize_models()
@@ -98,6 +98,13 @@ class TensorBoardViz:
         if self.config.create_tensorflow_writer is False:
             return
 
+        if self.create_run_imgs:
+            img, pred = self.model.create_img(self.seed)
+            self.train_img_data_dict[epoch] = dict(
+                imgs = img.numpy(),
+                predictions = pred
+            )
+
         if self.create_imgs:
             self.generate_and_save_images(self.seed, epoch)
 
@@ -127,10 +134,8 @@ class TensorBoardViz:
 
         normal_img = self.dataset.reverse_norm_layer(img)
 
-        self.train_img_data_dict[epoch] = dict(
-            imgs = img.numpy(),
-            predictions = pred
-        )
+        from converter.to_img_converter.LevelIdImgDecoder import LevelIdImgDecoder
+        self.level_decoder = LevelIdImgDecoder()
 
         if self.multilayer:
             if self.one_encoding:
@@ -229,7 +234,8 @@ class TensorBoardViz:
             self.metric_dicts[name] = tf.keras.metrics.Mean(name, dtype = tf.float32)
 
     def store_data(self, epoch):
-        pickle_file = self.config.get_epoch_run_data(self.current_run, epoch = epoch)
-        with open(pickle_file, 'wb') as handle:
-            pickle.dump(self.train_img_data_dict, handle, protocol = pickle.HIGHEST_PROTOCOL)
-        self.train_img_data_dict = dict()
+        if self.create_run_imgs:
+            pickle_file = self.config.get_epoch_run_data(self.current_run, epoch = epoch)
+            with open(pickle_file, 'wb') as handle:
+                pickle.dump(self.train_img_data_dict, handle, protocol = pickle.HIGHEST_PROTOCOL)
+            self.train_img_data_dict = dict()

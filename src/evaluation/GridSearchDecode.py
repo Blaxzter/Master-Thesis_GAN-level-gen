@@ -22,6 +22,7 @@ from test.visualization.DashVisualization import LevelVisualization
 
 from util.Config import Config
 
+
 # logger.add(sys.stdout, level="DEBUG")
 
 @dataclass
@@ -33,7 +34,11 @@ class GeneratedDataset:
     name: str = None
     date: str = None
 
+
 def create_data_set(n_amount = 200):
+    """
+    Function to create and store a new dataset
+    """
     from generator.gan.BigGans import WGANGP128128_Multilayer
     import tensorflow as tf
 
@@ -109,21 +114,30 @@ def do_grid_search(start_game = True):
     with open(grid_search_output, 'rb') as f:
         data_output_list = pickle.load(f)
 
+    tested_parameter = data_output_list.keys()
+
     ret_value = True
 
     parameter_list = create_tests()
     for parameter_idx, parameter in tqdm(enumerate(parameter_list), total = len(parameter_list)):
 
-        if parameter_idx < len(data_output_list):
+        already_exists = False
+        for comp_para in tested_parameter:
+            shared_items = {k: comp_para[k] for k in comp_para.items() if k in parameter and comp_para[k] == parameter[k]}
+            if len(shared_items.items()) == len(parameter.items()):
+                already_exists = True
+                break
+
+        if already_exists:
             continue
 
         try:
             run_single_evaluation(config, data_output_list, game_managers, gan_output_list, grid_search_output,
                                   multilayer_stack_decoder, parameter)
         except Exception as e:
-            print(e)
-            print("Inner error error")
+            print(f"Inner error {e}: Restarting evaluation run")
             ret_value = False
+            break
 
     for game_manager in game_managers:
         game_manager.stop_game()
@@ -137,24 +151,31 @@ def run_single_evaluation(config, data_output_list, game_managers, gan_output_li
     logger.debug("Run parameters: " + str(parameter))
     data_output = dict()
     data_output['parameter'] = parameter
+
+    # Set the parameters in the decoder
     for key, value in parameter.items():
         if key == 'negative_air_value' and value == 0:
             multilayer_stack_decoder.use_negative_air_value = False
 
         if hasattr(multilayer_stack_decoder, key):
             setattr(multilayer_stack_decoder, key, value)
+
     start = time.time()
+    # Use 5 Processes toô decode
     with Pool(5) as p:
         level_list = p.map(multilayer_stack_decoder.decode, gan_output_list)
+
     game_managers[0].create_levels_xml_file(level_list)
     game_managers[0].copy_game_levels(
         level_path = config.get_data_train_path(folder = 'temp'),
         rescue_level = False
     )
+
     for game_manager, (start_idx, end_idx) in zip(game_managers,
                                                   list(zip(np.arange(0, 250, 50) + 4, np.arange(50, 250, 50) + 4))):
         game_manager.simulate_all_levels(start_idx = start_idx.item(), end_idx = end_idx.item(), wait_for_stable = True,
                                          wait_for_response = False)
+
     current_data_dict = dict()
     for level_idx, level in enumerate(level_list):
         level_metadata = level.get_level_metadata()
@@ -195,9 +216,11 @@ def create_tests():
     )
 
     test_parameter = []
+
     def get_parameter_set(parameter_dict, indexes = [0 for _ in range(len(parameter_dict.values()))], skip_to = 0):
         test_parameter.append({
-            parameter_name: parameter_dict[parameter_name]['values'][indexes[c_index]] for c_index, parameter_name in enumerate(parameter_dict.keys())
+            parameter_name: parameter_dict[parameter_name]['values'][indexes[c_index]] for c_index, parameter_name in
+            enumerate(parameter_dict.keys())
         })
 
         for c_index, parameter_name in enumerate(parameter_dict.keys()):
