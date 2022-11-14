@@ -70,7 +70,7 @@ class GameConnection(threading.Thread):
             msg = self.response
             self.response = None
 
-        print(f'Received({self.port}): {msg}')
+        # print(f'Received({self.port}): {msg}')
         return msg
 
     def game_response(self, message: str, client):
@@ -199,7 +199,7 @@ class GameConnection(threading.Thread):
                 request_try += 1
         return response[1]['data']
 
-    def change_level(self, index = 0, wait_for_stable = False, stopTime = False):
+    def change_level(self, index = 0, wait_for_stable = True, stopTime = False):
         if stopTime and wait_for_stable:
             raise Exception("Dont stop time and wait for stable at the same time")
         message = [0, 'selectlevel', {'levelIndex': index, 'waitForStable': wait_for_stable, 'stopTime': stopTime}]

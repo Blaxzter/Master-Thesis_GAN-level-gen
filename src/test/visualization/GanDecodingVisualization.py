@@ -66,7 +66,7 @@ class GanDecodingVisualization:
             if remove_ticks:
                 self.remove_ax_ticks(ax)
 
-            ax.set_title(title)
+            ax.set_title(title, fontsize=8)
 
     def create_plt_array(self):
         fig, axs = plt.subplots(5, 3, dpi = self.dpi)
@@ -76,7 +76,8 @@ class GanDecodingVisualization:
         return fig, axs
 
     def plot_matrix_complete(self, matrix, blocks = None, title = None, add_max = True, position = None,
-                             delete_rectangles = None, flipped = False, selected_block = None, save_name = None):
+                             delete_rectangles = None, flipped = False, selected_block = None, save_name = None,
+                             sub_figure_names = None):
 
         if self.disable:
             return
@@ -87,8 +88,11 @@ class GanDecodingVisualization:
             _plot_img = matrix[:, :, layer_idx]
 
             ax_title = ''
-            if blocks is not None:
-                ax_title = blocks[layer_idx]['name'] + (' (Vert) ' if blocks[layer_idx]['rotated'] else '') + (f' {np.round(np.max(_plot_img).item() * 100) / 100}' if add_max else '')
+            if sub_figure_names is None:
+                if blocks is not None:
+                    ax_title = blocks[layer_idx]['name'] + (' (Vert) ' if blocks[layer_idx]['rotated'] else '') + (f' {np.round(np.max(_plot_img).item() * 100) / 100}' if add_max else '')
+            else:
+                ax_title = sub_figure_names[layer_idx]
 
             self.plot_img(_plot_img, ax_title, ax = axs[layer_idx], flip = flipped, remove_ticks = True)
             color = 'blue' if (selected_block is not None and selected_block == layer_idx) else 'red'

@@ -54,6 +54,9 @@ class StructureMetaData:
 
         return True
 
+    def __getitem__(self, item):
+        return getattr(self, item)
+
 
 def normalize_structure(structure, offset = False):
 

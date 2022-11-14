@@ -116,6 +116,12 @@ class Config:
         self.grid_search_root = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/eval/grid_search/')
         )
+        self.good_generated_levels = os.path.normpath(
+            os.path.join(self.current_path, 'resources/data/eval/good_generated_levels/')
+        )
+        self.quality_root = os.path.normpath(
+            os.path.join(self.current_path, 'resources/data/eval/quality_pictures/')
+        )
         self.encoding_folder = os.path.normpath(
             os.path.join(self.current_path, 'resources/data/encoding_data')
         )
@@ -299,9 +305,17 @@ class Config:
         text_folder = os.path.join(self.grid_search_root, file_name)
         return text_folder + ".pickle"
 
+    def get_quality_search_folder(self, folder_name):
+        text_folder = os.path.join(self.quality_root, folder_name)
+        return text_folder + ".pdf"
+
     def get_conv_debug_img_file(self, file_name):
         img_file = os.path.join(self.conv_debug, file_name)
         return img_file + ".png"
+
+    def good_generated_level(self, file_name):
+        img_file = os.path.join(self.good_generated_levels, file_name)
+        return img_file + ".xml"
 
     def get_event_file(self, log_dir):
         for path in Path(log_dir).rglob('events.out.tfevents.*'):

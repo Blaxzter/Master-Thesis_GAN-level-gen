@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="343.36pt" height="160.468pt" viewBox="0 0 343.36 160.468" version="1.1">
+<defs>
+<clipPath id="clip1">
+  <path d="M 1.183594 1.992188 L 341.253906 1.992188 L 341.253906 158 L 1.183594 158 Z M 1.183594 1.992188 "/>
+</clipPath>
+<image id="image7" width="473" height="218" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAdkAAADaCAIAAABlxq9PAAAABmJLR0QA/wD/AP+gvaeTAAAEYElEQVR4nO3dIWtVYRzAYa8aDC7ZFMZAwTAsJlfuJxCMFj+AVQx+BmHiosFo8SsYb9GkQWbSsmBTQYeYnEUQdi9sHs72u87niYd7zvlzYL+94eWcydrW5ilYAh9uP5k/ePn53RGvNuL1YVyn6wEA0GKAJaDFAD0tBuhpMUDvbD0A/Dbulob5qx1yZwUkrIsBeloM0NNigJ4WA/S0GKCnxQA9e9poXLn3at+R949vHOkdF+6Zm9/o5m1BJKyLAXpaDNDTYoCeFgP0tBigp8UAPS0G6GkxQE+LAXpaDNDTYoCeFgP0vBuI/5o3AbEkrIsBeloM0NNigJ4WA/S0GKBnHwWN+S8qzX91aeHP4ESyLgboaTFAT4sBeloM0NNigJ59FAc4t/qtHuE4/NhZGetS043tgWe+WjDD94d7wy525cG7gWMczuzl+liXGv7E/ikjPrETyboYoKfFAD0tBuhpMUBPiwF6WgzQm6xtbdYzLIvzOwv+M+2u/jz+SY7Uwl16I+5pAwawLgboaTFAT4sBeloM0NNigJ4WA/S0GKCnxQA9LQboaTFAT4sBeloM0NNigJ4WA/S0GKCnxQA9LQboaTFAT4sBeloM0NNigJ4WA/S0GKCnxQA9LQboaTFAT4sBeloM0NNigJ4WA/S0GKB3th5g2U03toed+Pr5tXEnOdD1228P87NbF97MH7y/c2fscf7axdne8d/0853dYSf+2FkZd5Jhjv+hfV07M+zE3dWf405ywlgXA/S0GKCnxQA9LQboaTFAzz6KPy69+DR/cLa6fphzH918NuzEwa4+/TLsjrduLthHsQw+TifBXZdjO8RgxUOzHeJIWBcD9LQYoKfFAD0tBuhpMUBPiwF6WgzQ02KAnhYD9LQYoKfFAD0tBuhpMUBPiwF6WgzQ02KAnhYD9LQYoKfFAD0tBuhpMUBPiwF6WgzQ02KAnhYD9LQYoKfFAD0tBuhpMUBPiwF6WgzQ02KAnhYD9LQYoKfFAD0tBuhpMUBPiwF6WgzQ02KAnhYD9LQYoKfFAD0tBuhpMUBPiwF6WgzQ02KAnhYD9LQYoKfFAD0tBuhpMUBPiwF6WgzQ02KAnhYD9LQYoKfFAD0tBuhpMUBPiwF6WgzQ02KAnhYD9LQYoKfFAD0tBuhpMUBPiwF6WgzQ02KAnhYD9LQYoKfFAD0tBuhN1rY26xk42HRje9+R2cv1ZBKW3MXZ3r4jH6eTZJIjdfL+IqyLAXpaDNDTYoCeFgP0tBigp8UAPS0G6GkxQE+LAXpaDNDTYoCeFgP0tBigp8UAPS0G6GkxQE+LAXpaDNDTYoCe790B9KyLAXpaDNDTYoCeFgP0tBigp8UAPS0G6GkxQE+LAXpaDNDTYoCeFgP0tBigp8UAPS0G6GkxQE+LAXpaDNDTYoCeFgP0tBigp8UAPS0G6GkxQE+LAXpaDNDTYoCeFgP0tBigp8UAPS0G6GkxQE+LAXpaDNDTYoCeFgP0tBig9wvK7FqT513bJQAAAABJRU5ErkJggg=="/>
+</defs>
+<g id="surface1">
+<path style=" stroke:none;fill-rule:nonzero;fill:rgb(100%,100%,100%);fill-opacity:1;" d="M 1.183594 158.242188 L 341.253906 158.242188 L 341.253906 1.992188 L 1.183594 1.992188 Z M 1.183594 158.242188 "/>
+<g clip-path="url(#clip1)" clip-rule="nonzero">
+<use xlink:href="#image7" transform="matrix(0.72,0,0,0.72,1.1848,1.280741)"/>
+</g>
+<path style="fill:none;stroke-width:0.8;stroke-linecap:square;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" d="M -0.00120625 -0.0014875 L -0.00120625 156.248512 " transform="matrix(1,0,0,-1,1.1848,158.2407)"/>
+<path style="fill:none;stroke-width:0.8;stroke-linecap:square;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" d="M -0.00139375 -0.0014875 L -0.00139375 156.248512 " transform="matrix(1,0,0,-1,341.2553,158.2407)"/>
+<path style="fill:none;stroke-width:0.8;stroke-linecap:square;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" d="M -0.00120625 -0.0014875 L 340.069106 -0.0014875 " transform="matrix(1,0,0,-1,1.1848,158.2407)"/>
+<path style="fill:none;stroke-width:0.8;stroke-linecap:square;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" d="M -0.00120625 0.0000125 L 340.069106 0.0000125 " transform="matrix(1,0,0,-1,1.1848,1.9922)"/>
+</g>
+</svg>

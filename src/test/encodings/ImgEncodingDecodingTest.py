@@ -1,14 +1,12 @@
 import matplotlib.pyplot as plt
-import numpy as np
 
 from converter.to_img_converter.LevelImgDecoder import LevelImgDecoder
 from converter.to_img_converter.LevelImgEncoder import LevelImgEncoder
 from data_scripts.CreateEncodingData import create_element_for_each_block
-from game_management.GameManager import GameManager
 from level.Level import Level
 from level.LevelVisualizer import LevelVisualizer
 from test.TestEnvironment import TestEnvironment
-from util.Config import Config
+from test.visualization.LevelImgDecoderVisualization import LevelImgDecoderVisualization
 
 
 def decode_test_level(direction = 'vertical', stacked = 3, x_offset = 0, y_offset = 0):
@@ -16,11 +14,9 @@ def decode_test_level(direction = 'vertical', stacked = 3, x_offset = 0, y_offse
 
     test_level = Level.create_level_from_structure(elements)
     img_rep = create_encoding(test_level)
-    decoded_elements = create_decoding(img_rep)
+    decoded_level = create_decoding(img_rep)
 
-    created_level = Level.create_level_from_structure(decoded_elements)
-
-    visualize_encoding_decoding(created_level, img_rep, test_level)
+    visualize_encoding_decoding(decoded_level, img_rep, test_level)
 
 
 def img_encoding_decoding_test(test_with_game = False):
@@ -33,7 +29,7 @@ def img_encoding_decoding_test(test_with_game = False):
         decoded_level = create_decoding(img_rep)
 
         visualize_encoding_decoding(
-            decoded_level = Level.create_level_from_structure(decoded_level),
+            decoded_level = decoded_level,
             img_rep = img_rep,
             original_level = level
         )
@@ -41,14 +37,14 @@ def img_encoding_decoding_test(test_with_game = False):
 
 
 def visualize_encoding_decoding(decoded_level, img_rep, original_level):
-    fig = plt.figure(constrained_layout = True, figsize = (5, 12), dpi = 300)
+    fig = plt.figure(constrained_layout = True, figsize = (5, 12), dpi = 100)
     fig.suptitle('Multi Block encoding: Vertical Stacked')
 
     subfigs = fig.subfigures(nrows = 3, ncols = 1)
     axs = subfigs[0].subplots(1, 2)
 
     subfigs[0].suptitle('Blocks visualized')
-    visualizer = LevelVisualizer()
+    visualizer = LevelVisualizer(line_size = 1)
     visualizer.create_img_of_level(original_level, use_grid = False, add_dots = False, ax = axs[0])
     visualizer.create_img_of_level(decoded_level, use_grid = False, add_dots = False, ax = axs[1])
     axs[0].set_title('Original')
@@ -60,9 +56,10 @@ def visualize_encoding_decoding(decoded_level, img_rep, original_level):
     re_encoded_elements = create_encoding(decoded_level)
     axs[1].imshow(re_encoded_elements)
     #
-    # ax = subfigs[2].subplots(1, 1)
-    # subfigs[1].suptitle('Difference in encoding')
-    # ax.imshow(img_rep - re_encoded_elements)
+    ax = subfigs[2].subplots(1, 1)
+    subfigs[1].suptitle('Difference in encoding')
+    ax.imshow(img_rep - re_encoded_elements)
+    fig.tight_layout()
     plt.show()
 
 
@@ -73,8 +70,9 @@ def get_rectangles():
     create_rectangles(img_rep)
     visualize_decoding(img_rep)
 
+
 def create_rectangles(img_rep):
-    level_img_decoder = LevelImgDecoder()
+    level_img_decoder = LevelImgDecoderVisualization()
     # decoded_level = level_img_decoder.visualize_contours(img_rep)
     # level_img_decoder.visualize_rectangles(img_rep, material_id = 1)
     level_img_decoder.visualize_rectangles(img_rep, material_id = 2)
@@ -82,7 +80,7 @@ def create_rectangles(img_rep):
 
 
 def visualize_decoding(img_rep):
-    level_img_decoder = LevelImgDecoder()
+    level_img_decoder = LevelImgDecoderVisualization()
     # level_img_decoder.visualize_one_decoding(img_rep, material_id = 1)
     level_img_decoder.visualize_one_decoding(img_rep, material_id = 2)
     # level_img_decoder.visualize_rectangles(img_rep, material_id = 3)
@@ -119,7 +117,8 @@ def visualize_encoding(level):
 
     return encoded_calculated
 
+
 if __name__ == '__main__':
-    # decode_test_level()
+    decode_test_level()
     # img_encoding_decoding_test()
-    get_rectangles()
+    # get_rectangles()

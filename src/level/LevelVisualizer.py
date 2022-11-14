@@ -14,7 +14,7 @@ from level.LevelUtil import calc_structure_dimensions
 
 class LevelVisualizer:
 
-    def __init__(self, dpi = 300, id_font_size = 5, dot_size = 2, line_size = 2):
+    def __init__(self, dpi = 300, id_font_size = 5, dot_size = 1, line_size = 2):
         self.dpi = dpi
         self.id_font_size = id_font_size
         self.dot_size = dot_size
@@ -69,7 +69,7 @@ class LevelVisualizer:
             plt.close()
 
     def create_img_of_level(self, level: Level, use_grid = True, add_dots = False, element_ids = True,
-                            write_to_file = None, ax = None, scaled = None):
+                            write_to_file = None, ax = None, scaled = None, material_color = False):
         # Create figure and axes
         show = False
         if ax is None:
@@ -81,18 +81,22 @@ class LevelVisualizer:
         if scaled is not None:
             meta_data = level.get_level_metadata()
 
-        if level.structures is None:
-            hsv = plt.get_cmap('Paired')
-            colors = hsv(np.linspace(0, 0.8, len(element_list)))
-        else:
+        if material_color:
             hsv = plt.get_cmap('brg')
-            colors = hsv(np.linspace(0, 0.8, len(level.structures)))
+            colors = hsv(np.linspace(0, 0.8, 4))
+        else:
+            if level.structures is None:
+                hsv = plt.get_cmap('Paired')
+                colors = hsv(np.linspace(0, 0.8, len(element_list)))
+            else:
+                hsv = plt.get_cmap('brg')
+                colors = hsv(np.linspace(0, 0.8, len(level.structures)))
 
         # Add Forms to img
         for idx, element in enumerate(element_list):
 
             # Receive the data required to draw the element shape
-            bottom_left, current_color, height, width = self.get_element_data(colors, element, idx, level)
+            bottom_left, current_color, height, width = self.get_element_data(colors, element, idx, level, material_color)
 
             if scaled is not None:
                 scale_to = scaled.shape
@@ -128,7 +132,7 @@ class LevelVisualizer:
         ax.axis('scaled')
 
         if show:
-            plt.title(level.path)
+            # plt.title(level.path)
 
             if write_to_file is not None:
                 imgs_folder = f'../imgs/{write_to_file + "/" if len(write_to_file) > 0 else ""}'
@@ -136,7 +140,7 @@ class LevelVisualizer:
                     os.mkdir(imgs_folder)
                 plt.savefig(f'{imgs_folder}{str(level.path)[:-4]}.png')
             else:
-                fig.show()
+                plt.show()
 
             plt.close()
 
@@ -170,20 +174,27 @@ class LevelVisualizer:
             tick.label1.set_visible(False)
             tick.label2.set_visible(False)
 
-    def get_element_data(self, colors, element, idx, level = None):
+    def get_element_data(self, colors, element: LevelElement, idx, level = None, material_color = False):
         bottom_left = element.get_bottom_left()
         width = element.size[0]
         height = element.size[1]
 
         # Define the color of the element, if there are strucutres then the stucture color else random
         current_color = "Black"
-        if level is not None and level.structures is not None:
-            for struct_idx, structure in enumerate(level.structures):
-                if element in structure:
-                    current_color = colors[struct_idx]
-                    break
+        if material_color:
+            if element.object_type == Constants.ObjectType.Pig:
+                current_color = colors[-1]
+            else:
+                material_idx = Constants.materials.index(element.material)
+                current_color = colors[material_idx]
         else:
-            current_color = colors[idx]
+            if level is not None and level.structures is not None:
+                for struct_idx, structure in enumerate(level.structures):
+                    if element in structure:
+                        current_color = colors[struct_idx]
+                        break
+            else:
+                current_color = colors[idx]
 
         return bottom_left, current_color, height, width
 

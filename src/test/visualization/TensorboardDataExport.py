@@ -4,12 +4,17 @@ from collections import defaultdict
 
 import cv2 as cv
 import imageio
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
 from tqdm.auto import tqdm
 
 from util.Config import Config
+
+mpl.rcParams["savefig.format"] = 'pdf'
+mpl.rcParams["savefig.directory"] = 'U:\Programming\ProgrammingUNI\Master-Thesis_GAN-level-gen\images\Results\ModelOutput'
+
 
 upper_bound = None  # 96
 lower_bound = None  # 337
@@ -40,7 +45,7 @@ def get_rectangle(img):
     return left_bound, right_bound, upper_bound, lower_bound
 
 
-def create_pickle_data(event_filename, output_dir, run_name):
+def create_pickle_data(event_filename, output_dir, run_name, image = False):
     data_file = config.get_run_data(run_name)
     if os.path.isfile(data_file):
         logger.debug(f"Pickle file {data_file} already exists")
@@ -63,7 +68,7 @@ def create_pickle_data(event_filename, output_dir, run_name):
                 data[value.tag][element.step] = \
                     tf.io.decode_raw(value.tensor.tensor_content, tf.float32).numpy().item()
 
-            elif value.metadata.plugin_data.plugin_name == 'images':
+            elif value.metadata.plugin_data.plugin_name == 'images' and element.step % 2 == 0 and image:
                 s = value.tensor.string_val[2]  # first elements are W and H
                 tf_img = tf.image.decode_image(s)  # [H, W, C]
                 np_img = tf_img.numpy()
@@ -72,6 +77,7 @@ def create_pickle_data(event_filename, output_dir, run_name):
                     left_bound, right_bound, upper_bound, lower_bound = get_rectangle(np_img)
 
                 data['image'][element.step] = np_img[upper_bound:lower_bound, left_bound:right_bound]
+
         progress_bar.update()
 
     # for data in serialized:
@@ -79,14 +85,16 @@ def create_pickle_data(event_filename, output_dir, run_name):
 
     np.vectorize(extract_data)(serialized)
 
-    img_amount = len(data['image'])
+    if image:
+        img_amount = len(data['image'])
 
-    imageio.mimsave(f'{output_dir}/{run_name}.mp4', data['image'].values(), fps = img_amount // video_duration)
+        imageio.mimsave(f'{output_dir}/{run_name}.mp4', data['image'].values(), fps = img_amount // video_duration)
 
-    last_img = list(data['image'].values())[-1]
-    del data['image']
+        last_img = list(data['image'].values())[-1]
+        del data['image']
 
-    data['image'] = last_img
+        data['image'] = last_img
+
     data_file = config.get_run_data(run_name)
     with open(data_file, 'wb') as handle:
         pickle.dump(data, handle, protocol = pickle.HIGHEST_PROTOCOL)
@@ -124,12 +132,63 @@ def create_run_img(run_name):
     plt.show()
 
 
+def create_multiple_scaler(run_name):
+
+    data_file = config.get_run_data(run_name)
+
+    if not os.path.isfile(data_file):
+        logger.debug(f"Pickle file {data_file} doesn't exists")
+        return
+
+    with open(data_file, 'rb') as f:
+        data = pickle.load(f)
+
+    for name, c_data in data.items():
+        if name == 'image':
+            continue
+
+        fig, ax = plt.subplots(1, 1)
+
+        if 'generator_loss' in name:
+            ax.set_title('Generator Loss')
+        elif 'discriminator_loss' in name:
+            ax.set_title('Discriminator Loss')
+        elif 'gan_116_100_filtered_data_set_adam/discriminator_real_loss' in name:
+            ax.set_title('Discriminator Real Loss')
+        elif 'wgan_116_100_filtered_data_set_adam/discriminator_fake_loss' in name:
+            ax.set_title('Discriminator Fake Loss')
+        elif 'wgan_116_100_filtered_data_set_adam/discriminator_gp' in name:
+            ax.set_title('Discriminator Gradient Penalty')
+        elif 'wgan_116_100_filtered_data_set_adam/real_probabilities' in name:
+            ax.set_title('Real Probabilities')
+        elif 'wgan_116_100_filtered_data_set_adam/fake_probabilities' in name:
+            ax.set_title('Fake Probabilities')
+        else:
+            ax.set_title(name)
+
+        ax.plot(list(c_data.keys())[10:-1], list(c_data.values())[10:-1])
+
+        plt.tight_layout()
+        plt.show()
+
+def create_video():
+    config: Config = Config.get_instance()
+    pickle_file = config.get_epoch_run_data_files('wgan_gp_128_128_multilayer_with_air_new')
+
+    pass
+
 if __name__ == '__main__':
     config: Config = Config.get_instance()
     img_folder = config.get_img_path("generated")
-    log_file, run_name = config.get_log_file("events.out.tfevents.1659021612.ncg26.hpc.itc.rwth-aachen.de.117655.0.v2")
+    # log_file, run_name = config.get_log_file("events.out.tfevents.1659021612.ncg26.hpc.itc.rwth-aachen.de.117655.0.v2")
+    # log_file, run_name = config.get_log_file("events.out.tfevents.1656951638.DESKTOP-NM3B8AH.4152.0.v2")
+    # log_file, run_name = config.get_log_file("events.out.tfevents.1656354301.ubuntu.474168.0.v2")
+    # log_file, run_name = config.get_log_file("events.out.tfevents.1655942083.ubuntu.288944.0.v2") # First Wgan Simple
+    # log_file, run_name = config.get_log_file("events.out.tfevents.1660408018.nrg01.hpc.itc.rwth-aachen.de.31503.0.v2") # Small true hot
+    log_file, run_name = config.get_log_file("events.out.tfevents.1659979818.nrg06.hpc.itc.rwth-aachen.de.144169.0.v2") # True hot
 
     logger.debug(f'Extract data: run_name: {run_name}, log_file: {log_file}')
 
     create_pickle_data(log_file, img_folder, run_name)
-    create_run_img(run_name)
+    # create_run_img(run_name)
+    create_multiple_scaler(run_name)

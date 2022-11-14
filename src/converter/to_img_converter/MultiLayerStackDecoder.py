@@ -48,7 +48,7 @@ class MultiLayerStackDecoder:
         self.recalibrate_blocks = False
         self.combine_layers = True
 
-    def decode(self, gan_output):
+    def decode(self, gan_output, has_air_layer = True):
         if len(gan_output.shape) == 4:
             gan_output = gan_output[0]
 
@@ -73,7 +73,7 @@ class MultiLayerStackDecoder:
                 material = np.argmax(np.sum(gan_output[bottom:top, start:end, 1: -1], axis = (0, 1)))
                 block['material'] = material
         else:
-            for layer_idx in range(1, gan_output.shape[-1] - 1):
+            for layer_idx in range(1 if has_air_layer else 0, gan_output.shape[-1] - 1):
                 layer_blocks = self.decode_layer(gan_output[:, :, layer_idx], layer_idx)
                 level_blocks += layer_blocks
 
@@ -141,7 +141,14 @@ class MultiLayerStackDecoder:
         rounded_block_rankings = np.around(current_size_ranking, 5)  # Round to remove floating point errors
 
         if self.display_decoding:
-            self.visualizer.plot_matrix_complete(rounded_block_rankings, blocks = self.blocks, title = 'Selection Rankings', flipped = True)
+            self.visualizer.plot_matrix_complete(
+                rounded_block_rankings, blocks = self.blocks,
+                title = 'Selection Rankings', flipped = True,
+                sub_figure_names = [block['name'] + (' (Vert) ' if block['rotated'] else ' ') +
+                                    f'{np.round(np.max(hit_probabilities[:, :, block_idx]).item() * 100) / 100} / ' +
+                                    f'{np.round(np.max(size_ranking[:, :, block_idx]).item() * 100) / 100}'
+                                    for block_idx, block in enumerate(self.blocks)]
+            )
 
         rounded_block_rankings[hit_probabilities <= self.cutoff_point] = 0
         if self.display_decoding:
@@ -195,7 +202,7 @@ class MultiLayerStackDecoder:
             sum_result = cv2.filter2D(sum_padded_img, -1, sum_convolution_kernel)[pad_size:-pad_size, pad_size:-pad_size]
 
             avg_padded_img = np.pad(layer, pad_size, 'constant', constant_values = 0)
-            avg_result = cv2.filter2D(avg_padded_img, -1, avg_convolution_kernel)[pad_size:-pad_size, pad_size:-pad_size]
+            avg_result = cv2.filter2D(np.rint(avg_padded_img), -1, avg_convolution_kernel)[pad_size:-pad_size, pad_size:-pad_size]
 
             avg_results.append(avg_result)
             sum_results.append(sum_result)
@@ -304,7 +311,8 @@ class MultiLayerStackDecoder:
             selected_block = selected_block['idx'],
             position = position,
             delete_rectangles = current_delete_rectangles,
-            flipped = True
+            flipped = True,
+            save_name = "selected_block"
         )
 
     def delete_blocks(self, _block_rankings, _selected_block_idx, _block_position):

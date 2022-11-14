@@ -11,6 +11,7 @@ import test.encodings.ConvolutionTest
 from converter.gan_processing.DecodingFunctions import DecodingFunctions
 from converter.to_img_converter import DecoderUtils
 from converter.to_img_converter.MultiLayerStackDecoder import MultiLayerStackDecoder
+from generator.gan.SimpleGans import SimpleGAN88212
 
 matplotlib.use("TkAgg")
 
@@ -52,7 +53,8 @@ class GeneratorApplication:
             'True One Hot': self.load_true_one_hot,
             'Small True One Hot With Air': self.small_true_one_hot_with_air,
             'Multilayer With Air': self.multilayer_with_air,
-            'RELU Multilayer With Air': self.multilayer_with_air_relu
+            'RELU Multilayer With Air': self.multilayer_with_air_relu,
+            'New Multilayer With Air': self.multilayer_with_air_new
         }
 
         if frame is None:
@@ -75,65 +77,104 @@ class GeneratorApplication:
             self.window.mainloop()
 
     def generate_img(self, created_img = None):
-        if created_img is None:
-            orig_img, pred = self.gan.create_img(seed = self.seed)
-        else:
-            orig_img, pred = created_img
+        import tensorflow as tf
+        with tf.device('/CPU:0'):
+            if created_img is None:
+                orig_img, pred = self.gan.create_img(seed = self.seed)
+            else:
+                orig_img, pred = created_img
 
-        if self.level_drawer is None:
-            if self.canvas:
-                self.canvas.get_tk_widget().destroy()
+            if self.level_drawer is None:
+                if self.canvas:
+                    self.canvas.get_tk_widget().destroy()
 
-            if self.toolbar:
-                self.toolbar.destroy()
+                if self.toolbar:
+                    self.toolbar.destroy()
 
-            fig, ax = plt.subplots(1, 1, dpi = 100)
-        else:
-            self.level_drawer.clear_figure_canvas()
+                fig, ax = plt.subplots(1, 1, dpi = 100)
+            else:
+                self.level_drawer.clear_figure_canvas()
 
-        # Use the defined decoding algorithm
-        img, norm_img = self.img_decoding(orig_img[0])
+            # Use the defined decoding algorithm
+            img, norm_img = self.img_decoding(orig_img[0])
 
-        if len(orig_img[0].shape) == 3:
-            viz_img = np.max(orig_img[0], axis = 2)
-        else:
-            viz_img = orig_img[1].numpy()
+            if len(orig_img[0].shape) == 3 and not self.single_element:
+                if str(type(orig_img)) != '<class \'numpy.ndarray\'>':
+                    orig_img = orig_img.numpy()
 
-        trimmed_img, trim_data = DecoderUtils.trim_img(img.reshape(img.shape[0:2]), ret_trims = True)
-        self.main_visualization = trimmed_img
+                layer_amount = orig_img[0].shape[-1]
+                if layer_amount > 1:
+                    for layer in range(1 if self.uses_air_layer else 0, layer_amount):
+                        orig_img[0, orig_img[0, :, :, layer] > 0, layer] += layer + self.decoding_functions.max_value
 
-        fig, ax = self.level_drawer.new_fig()
-        self.create_plt_img(ax, fig, f'Probability {pred.item()}', viz_img)
-        self.level_drawer.add_tab_to_fig_canvas(fig, ax, name = f'Flatted Img')
+                viz_img = np.max(orig_img[0], axis = 2)
+            else:
+                viz_img = img
 
-        if self.level_drawer is None:
-            self.canvas = FigureCanvasTkAgg(fig, master = self.window)
-            self.canvas.draw()
-            self.canvas.get_tk_widget().pack()
+            trimmed_img, trim_data = DecoderUtils.trim_img(img.reshape(img.shape[0:2]), ret_trims = True)
+            self.main_visualization = trimmed_img
 
-            # creating the Matplotlib toolbar
-            self.toolbar = NavigationToolbar2Tk(self.canvas, self.window)
-            self.toolbar.update()
-        else:
-            # Draw combined img to level
             depth = orig_img.shape[-1]
-            self.level_drawer.grid_drawer.create_tab_panes(1 if depth == 1 else depth + 1)
-            self.level_drawer.draw_level(trimmed_img, tab = 0)
 
-            for i in range(1, depth):
-                fig, ax = self.level_drawer.new_fig()
-                self.create_plt_img(ax, fig, f'Layer {i}', orig_img[0, :, :, i - 1])
-                self.level_drawer.add_tab_to_fig_canvas(fig, ax, name = f'Layer {i}')
+            if depth == 1:
+                rounded_image = norm_img
+            else:
+                rounded_image = viz_img
 
-                top_space, bottom_space, left_space, right_space = trim_data
-                bottom_trim = norm_img.shape[0] - bottom_space
-                right_trim = norm_img.shape[1] - right_space
-                self.level_drawer.draw_level(
-                    np.rint(norm_img[top_space: bottom_trim, left_space: right_trim, i - 1]), tab = i)
+            top_space, bottom_space, left_space, right_space = trim_data
+            bottom_trim = rounded_image.shape[0] - bottom_space
+            right_trim = rounded_image.shape[1] - right_space
+
+            fig, ax = self.level_drawer.new_fig()
+            self.create_plt_img(ax, fig, f'Probability {pred.item()}', viz_img)
+            self.level_drawer.add_tab_to_fig_canvas(fig, ax, name = f'Full Img')
+
+            fig, ax = self.level_drawer.new_fig()
+            self.create_plt_img(ax, fig, f'Probability {pred.item()}', self.decoding_functions.orig_multilayer_decoding(orig_img[0]))
+            self.level_drawer.add_tab_to_fig_canvas(fig, ax, name = f'Original Value space')
+
+            fig, ax = self.level_drawer.new_fig()
+            self.create_plt_img(ax, fig, f'Probability {pred.item()}', np.rint(rounded_image[top_space: bottom_trim, left_space: right_trim]))
+            self.level_drawer.add_tab_to_fig_canvas(fig, ax, name = f'Rounded to next Integer')
+
+            if self.level_drawer is None:
+                self.canvas = FigureCanvasTkAgg(fig, master = self.window)
+                self.canvas.draw()
+                self.canvas.get_tk_widget().pack()
+
+                # creating the Matplotlib toolbar
+                self.toolbar = NavigationToolbar2Tk(self.canvas, self.window)
+                self.toolbar.update()
+            else:
+                # Draw combined img to level
+
+                self.level_drawer.grid_drawer.create_tab_panes(1 if depth == 1 or depth > 10 else depth + 1)
+                self.level_drawer.draw_level(trimmed_img, tab = 0)
+                if depth != 1:
+
+                    # Dont visualize every layer if the amount of layers is to high
+                    if depth > 10:
+                        return
+
+                    for i in range(1, depth + 1):
+                        fig, ax = self.level_drawer.new_fig()
+                        self.create_plt_img(ax, fig, f'Layer {i}', orig_img[0, :, :, i - 1])
+                        self.level_drawer.add_tab_to_fig_canvas(fig, ax, name = f'Layer {i}')
+
+                        top_space, bottom_space, left_space, right_space = trim_data
+                        bottom_trim = rounded_image.shape[0] - bottom_space
+                        right_trim = rounded_image.shape[1] - right_space
+                        fig, ax = self.level_drawer.new_fig()
+                        self.create_plt_img(ax, fig, f'Probability {pred.item()}',
+                                            np.rint(norm_img[top_space: bottom_trim, left_space: right_trim, i - 1]))
+                        self.level_drawer.add_tab_to_fig_canvas(fig, ax, name = f'Layer {i} rint')
+
+                        self.level_drawer.draw_level(
+                            np.rint(norm_img[top_space: bottom_trim, left_space: right_trim, i - 1]), tab = i)
 
     def create_plt_img(self, ax, fig, plt_title, viz_img):
         im = ax.imshow(viz_img)
-        ax.set_title(plt_title)
+        # ax.set_title(plt_title)
         divider = make_axes_locatable(ax)
         cax = divider.append_axes('right', size = '5%', pad = 0.05)
         fig.colorbar(im, cax = cax, orientation = 'vertical')
@@ -141,36 +182,40 @@ class GeneratorApplication:
     def load_gan(self):
         import tensorflow as tf
 
-        # Load the model
-        self.model_loads[self.selected_model.get()]()
-        self.seed = self.gan.create_random_vector()
-        self.level_drawer.draw_mode.set('OneElement' if self.single_element else 'LevelImg')
-        self.level_drawer.combobox.set(self.level_drawer.draw_mode.get())
+        with tf.device('/CPU:0'):
 
-        self.load_stored_imgs()
-        self.decoding_functions.set_rescaling(rescaling = tf.keras.layers.Rescaling)
+            # Load the model
+            self.model_loads[self.selected_model.get()]()
+            self.seed = self.gan.create_random_vector()
+            self.level_drawer.draw_mode.set('OneElement' if self.single_element else 'LevelImg')
+            self.level_drawer.combobox.set(self.level_drawer.draw_mode.get())
 
-        checkpoint = tf.train.Checkpoint(
-            generator_optimizer = tf.keras.optimizers.Adam(1e-4),
-            discriminator_optimizer = tf.keras.optimizers.Adam(1e-4),
-            generator = self.gan.generator,
-            discriminator = self.gan.discriminator
-        )
-        checkpoint_prefix = os.path.join(self.checkpoint_dir, "ckpt")
-        manager = tf.train.CheckpointManager(
-            checkpoint, checkpoint_prefix, max_to_keep = 2
-        )
-        checkpoint.restore(manager.latest_checkpoint)
-        if manager.latest_checkpoint:
-            logger.debug("Restored from {}".format(manager.latest_checkpoint))
-        else:
-            logger.debug("Initializing from scratch.")
+            self.load_stored_imgs()
+            self.decoding_functions.set_rescaling(rescaling = tf.keras.layers.Rescaling)
 
-        orig_img, pred = self.gan.create_img(self.seed)
-        self.generate_img(created_img = (orig_img, pred))
+            checkpoint = tf.train.Checkpoint(
+                generator_optimizer = tf.keras.optimizers.Adam(1e-4),
+                discriminator_optimizer = tf.keras.optimizers.Adam(1e-4),
+                generator = self.gan.generator,
+                discriminator = self.gan.discriminator
+            )
+            checkpoint_prefix = os.path.join(self.checkpoint_dir, "ckpt")
+            manager = tf.train.CheckpointManager(
+                checkpoint, checkpoint_prefix, max_to_keep = 2
+            )
+            checkpoint.restore(manager.latest_checkpoint)
+            if manager.latest_checkpoint:
+                logger.debug("Restored from {}".format(manager.latest_checkpoint))
+            else:
+                logger.debug("Initializing from scratch.")
+
+            orig_img, pred = self.gan.create_img(self.seed)
+            self.generate_img(created_img = (orig_img, pred))
 
     def new_seed(self):
-        self.seed = self.gan.create_random_vector()
+        import tensorflow as tf
+        with tf.device('/CPU:0'):
+            self.seed = self.gan.create_random_vector()
 
     def create_window(self):
         self.window = Tk()
@@ -342,9 +387,10 @@ class GeneratorApplication:
 
         if self.gan is not None and self.parameter_dict['use_drawn_level']['data'] == 0:
             orig_img, prediction = self.gan.create_img(self.seed)
+            orig_img = orig_img.numpy()
 
-            if orig_img.shape[-1] < 5:
-                self.level_drawer.level = self.multilayer_stack_decoder.decode(orig_img)
+            if not self.single_element:
+                self.level_drawer.level = self.multilayer_stack_decoder.decode(orig_img, self.uses_air_layer)
             else:
                 self.level_drawer.level = self.level_drawer.level_id_img_decoder.decode_one_hot_encoding(orig_img)
         else:
@@ -356,6 +402,16 @@ class GeneratorApplication:
         )
         self.level_drawer.add_tab_to_fig_canvas(fig, ax, name = 'Decoded Level')
 
+    def load_model_0_0(self):
+        from generator.gan.SimpleGans import SimpleGAN100112
+        self.checkpoint_dir = self.config.get_checkpoint_dir('simple_gan', '20220610-111810')
+        self.gan = SimpleGAN88212()
+        self.decoding_functions.update_rescale_values(max_value = 4, shift_value = 0)
+        self.img_decoding = self.decoding_functions.default_rint_rescaling
+        self.single_element = False
+        self.small_version = False
+        self.uses_air_layer = False
+
     def load_model_0(self):
         from generator.gan.SimpleGans import SimpleGAN100112
         self.checkpoint_dir = self.config.get_checkpoint_dir('simple_gan_112_100', '20220614-155205')
@@ -364,6 +420,7 @@ class GeneratorApplication:
         self.img_decoding = self.decoding_functions.default_rint_rescaling
         self.single_element = False
         self.small_version = False
+        self.uses_air_layer = False
 
     def load_model_1(self):
         from generator.gan.SimpleGans import SimpleGAN100116
@@ -373,6 +430,7 @@ class GeneratorApplication:
         self.img_decoding = self.decoding_functions.default_rint_rescaling
         self.single_element = False
         self.small_version = False
+        self.uses_air_layer = False
 
     def load_model_2(self):
         from generator.gan.SimpleGans import SimpleGAN100116
@@ -382,6 +440,7 @@ class GeneratorApplication:
         self.img_decoding = self.decoding_functions.default_rint_rescaling
         self.single_element = False
         self.small_version = False
+        self.uses_air_layer = False
 
     def load_model_3(self):
         from generator.gan.SimpleGans import SimpleGAN100116
@@ -391,6 +450,7 @@ class GeneratorApplication:
         self.img_decoding = self.decoding_functions.default_rint_rescaling
         self.single_element = False
         self.small_version = False
+        self.uses_air_layer = False
 
     def load_multilayer_encoding(self):
         from generator.gan.BigGans import WGANGP128128_Multilayer
@@ -401,6 +461,7 @@ class GeneratorApplication:
         self.img_decoding = self.decoding_functions.argmax_multilayer_decoding
         self.single_element = False
         self.small_version = False
+        self.uses_air_layer = False
 
     def load_one_element_encoding(self):
         from generator.gan.BigGans import WGANGP128128
@@ -411,6 +472,7 @@ class GeneratorApplication:
         self.gan = WGANGP128128()
         self.single_element = True
         self.small_version = False
+        self.uses_air_layer = False
 
     def load_one_element_multilayer(self):
         from generator.gan.BigGans import WGANGP128128_Multilayer
@@ -421,6 +483,7 @@ class GeneratorApplication:
         self.gan = WGANGP128128_Multilayer()
         self.single_element = True
         self.small_version = False
+        self.uses_air_layer = False
 
     def load_true_one_hot(self):
         from generator.gan.BigGans import WGANGP128128_Multilayer
@@ -430,6 +493,7 @@ class GeneratorApplication:
         self.gan = WGANGP128128_Multilayer(last_dim = 40)
         self.single_element = True
         self.small_version = False
+        self.uses_air_layer = False
 
     def small_true_one_hot_with_air(self):
         from generator.gan.BigGans import WGANGP128128_Multilayer
@@ -440,6 +504,7 @@ class GeneratorApplication:
         self.gan = WGANGP128128_Multilayer(last_dim = 15)
         self.single_element = True
         self.small_version = True
+        self.uses_air_layer = False
 
     def multilayer_with_air(self):
         from generator.gan.BigGans import WGANGP128128_Multilayer
@@ -449,6 +514,7 @@ class GeneratorApplication:
         self.gan = WGANGP128128_Multilayer(last_dim = 5)
         self.single_element = False
         self.small_version = False
+        self.uses_air_layer = True
 
     def multilayer_with_air_relu(self):
         from generator.gan.BigGans import WGANGP128128_Multilayer
@@ -458,6 +524,17 @@ class GeneratorApplication:
         self.gan = WGANGP128128_Multilayer(last_dim = 5)
         self.single_element = False
         self.small_version = False
+        self.uses_air_layer = True
+
+    def multilayer_with_air_new(self):
+        from generator.gan.BigGans import WGANGP128128_Multilayer
+        self.checkpoint_dir = self.config.get_checkpoint_dir('wgan_gp_128_128_multilayer_with_air_new', '20221026-121723')
+        self.decoding_functions.update_rescale_values(max_value = 1, shift_value = 1)
+        self.img_decoding = self.decoding_functions.argmax_multilayer_decoding_with_air
+        self.gan = WGANGP128128_Multilayer(last_dim = 5)
+        self.single_element = False
+        self.small_version = False
+        self.uses_air_layer = True
 
 if __name__ == '__main__':
     generator_application = GeneratorApplication()

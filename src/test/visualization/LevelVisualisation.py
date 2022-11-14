@@ -59,6 +59,10 @@ def level_visualisation():
 
     game_manager.stop_game()
 
+def create_img_of_level():
+    test_environment = TestEnvironment()
+    example_level = test_environment.get_level(0)
+    test_environment.level_visualizer.create_img_of_level(example_level, add_dots = True)
 
 def create_plotly_data(img, true_one_hot = False, seperator = True):
 
@@ -143,7 +147,7 @@ def create_plotly_data(img, true_one_hot = False, seperator = True):
     return boxes_
 
 
-def test_plotly():
+def plotly():
     test_environment = TestEnvironment('generated/single_structure')
     level = test_environment.get_level(1)
 
@@ -160,5 +164,6 @@ def test_plotly():
 
 
 if __name__ == '__main__':
-    # test_plotly()
-    level_visualisation()
+    plotly()
+    # level_visualisation()
+    # create_img_of_level()

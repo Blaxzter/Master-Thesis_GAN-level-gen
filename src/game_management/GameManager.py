@@ -61,7 +61,7 @@ class GameManager:
 
         return self.change_level(path = str(level_path), stopTime = stop_time, wait_for_stable = wait_for_stable)
 
-    def create_levels_xml_file(self, level_list, delete_previous = True):
+    def create_levels_xml_file(self, level_list, delete_previous = True, store_level_name = None):
         level_paths = []
 
         if delete_previous:
@@ -74,6 +74,10 @@ class GameManager:
                 element_idx = level_idx + 4,
                 elements = level.get_used_elements()
             )
+
+            if store_level_name is not None:
+                shutil.copy(str(level_path), self.conf.good_generated_level(store_level_name))
+
             level_paths.append(level_path)
 
         return level_paths

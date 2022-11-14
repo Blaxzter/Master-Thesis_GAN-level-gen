@@ -6,6 +6,7 @@ import time
 from copy import copy
 from dataclasses import dataclass
 from multiprocessing import Process, Pool
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -84,7 +85,7 @@ def create_data_set(n_amount = 200):
 def do_grid_search(start_game = True):
     config = Config.get_instance()
     grid_search_dataset = config.get_grid_search_file("generated_data_set")
-    grid_search_output = config.get_grid_search_file("grid_search_output")
+    grid_search_output = config.get_grid_search_file("grid_search_output_new")
 
     with open(grid_search_dataset, 'rb') as f:
         data: GeneratedDataset = pickle.load(f)
@@ -111,10 +112,13 @@ def do_grid_search(start_game = True):
         current_output = gan_output[output_idx]
         gan_output_list.append(current_output)
 
-    with open(grid_search_output, 'rb') as f:
-        data_output_list = pickle.load(f)
+    if Path(grid_search_output).exists():
+        with open(grid_search_output, 'rb') as f:
+            data_output_list = pickle.load(f)
+    else:
+        data_output_list = []
 
-    tested_parameter = data_output_list.keys()
+    tested_parameter = data_output_list
 
     ret_value = True
 
@@ -122,8 +126,9 @@ def do_grid_search(start_game = True):
     for parameter_idx, parameter in tqdm(enumerate(parameter_list), total = len(parameter_list)):
 
         already_exists = False
-        for comp_para in tested_parameter:
-            shared_items = {k: comp_para[k] for k in comp_para.items() if k in parameter and comp_para[k] == parameter[k]}
+        for comp_data in tested_parameter:
+            comp_para = comp_data['parameter']
+            shared_items = {k: comp_para[k] for k in comp_para.keys() if k in parameter and comp_para[k] == parameter[k]}
             if len(shared_items.items()) == len(parameter.items()):
                 already_exists = True
                 break
@@ -149,6 +154,7 @@ def run_single_evaluation(config, data_output_list, game_managers, gan_output_li
                           multilayer_stack_decoder, parameter):
     print('\n\n')
     logger.debug("Run parameters: " + str(parameter))
+
     data_output = dict()
     data_output['parameter'] = parameter
 
@@ -161,9 +167,13 @@ def run_single_evaluation(config, data_output_list, game_managers, gan_output_li
             setattr(multilayer_stack_decoder, key, value)
 
     start = time.time()
+
     # Use 5 Processes toô decode
     with Pool(5) as p:
         level_list = p.map(multilayer_stack_decoder.decode, gan_output_list)
+
+    intermediate = time.time()
+    print(intermediate - start)
 
     game_managers[0].create_levels_xml_file(level_list)
     game_managers[0].copy_game_levels(
@@ -180,6 +190,7 @@ def run_single_evaluation(config, data_output_list, game_managers, gan_output_li
     for level_idx, level in enumerate(level_list):
         level_metadata = level.get_level_metadata()
         current_data_dict[level_idx + 4] = dict(level_metadata = level_metadata)
+
     for game_manager in game_managers:
         response = game_manager.game_connection.wait_for_response()
         parsed = json.loads(response[1]['data'])
@@ -192,12 +203,16 @@ def run_single_evaluation(config, data_output_list, game_managers, gan_output_li
                 stoneBlockDestroyed = level_data['stoneBlockDestroyed']
             )
             current_data_dict[level_data['level_index'] + 1]['sim_data'] = sim_data
+
     for game_manager in game_managers:
         game_manager.go_to_menu()
+
     end = time.time()
     print(f'Run time: {end - start}')
+
     data_output['data'] = current_data_dict
     data_output['time'] = end - start
+
     data_output_list.append(data_output)
     with open(grid_search_output, 'wb') as handle:
         pickle.dump(data_output_list, handle, protocol = pickle.HIGHEST_PROTOCOL)

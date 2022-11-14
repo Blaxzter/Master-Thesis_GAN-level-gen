@@ -5,6 +5,10 @@ from typing import Dict, List
 
 import numpy as np
 from loguru import logger
+import matplotlib as mpl
+mpl.rcParams["savefig.format"] = 'pdf'
+mpl.rcParams["savefig.directory"] = 'U:\Programming\ProgrammingUNI\Master-Thesis_GAN-level-gen\images\Results\ModelOutput'
+
 from matplotlib import pyplot as plt
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -66,7 +70,7 @@ class LevelDrawer:
         self.level_id_img_decoder: LevelIdImgDecoder = LevelIdImgDecoder()
         self.level_img_decoder_visualization = LevelImgDecoderVisualization()
         self.level_visualizer = LevelVisualizer()
-        self.game_manager = GameManager(Config.get_instance())
+        self.game_manager: GameManager = GameManager(Config.get_instance())
 
         self.control_buttons()
 
@@ -198,6 +202,10 @@ class LevelDrawer:
 
         self.play_level = Button(self.top_frame, command = lambda: self.run_level_in_game(), height = 2, width = 15, text = "Send To Game")
         self.play_level.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
+
+        self.screen_shot = Button(self.top_frame, command = lambda: self.screenshot_structure(), height = 2, width = 15,
+                                 text = "Screen Shot")
+        self.screen_shot.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
 
         wrapper = Canvas(self.top_frame)
         wrapper.pack(side = LEFT, padx = (10, 10), pady = (20, 10))
@@ -424,6 +432,22 @@ class LevelDrawer:
 
         self.game_manager.switch_to_level(self.level, stop_time = False)
 
+    def screenshot_structure(self):
+        if self.level is None:
+            logger.debug("No level decoded")
+            return
+
+        if not self.game_manager.game_is_running:
+            logger.debug("Game isn't running")
+            return
+
+        self.game_manager.switch_to_level(self.level, stop_time = True)
+        img = self.game_manager.get_img(structure = True)
+        fig, ax = self.new_fig()
+        ax.imshow(img)
+        self.add_tab_to_fig_canvas(fig, ax, name = f'Decoded level')
+
+
     def create_parameter_popup(self, dict_data: Dict, ok_button_text: str, callback):
 
         self.decoding_popup_window = Toplevel()
@@ -466,6 +490,7 @@ class LevelDrawer:
         new_manager.canvas.figure = fig
         fig.set_canvas(new_manager.canvas)
         fig.show()
+
 
 if __name__ == '__main__':
     level_drawer = LevelDrawer()

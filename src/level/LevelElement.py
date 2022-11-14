@@ -45,8 +45,8 @@ class LevelElement:
         elif self.type in Constants.pig_types.values():
             self.size = Constants.pig_size
             self.object_type = ObjectType.Pig
-            if self.y <= -3.5 + Constants.pig_size[0] / 2:
-                self.y = -3.5 + Constants.pig_size[0] / 2
+            # if self.y <= -3.5 + Constants.pig_size[0] / 2:
+            #     self.y = -3.5 + Constants.pig_size[0] / 2
 
         elif self.type in Constants.additional_objects.values():
             self.index = list(Constants.additional_objects.values()).index(self.type) + 1
